@@ -71,6 +71,13 @@ const roadmapPhases = [
           "Build high-fidelity interactive models (Mockups) for each section and page, considering a calm and professional color palette that reflects the 'Elite' character.",
           "Focus on ease of navigation and clarity of buttons and interactive elements.",
         ]
+      },
+      {
+        title: "2.4. Theme & Component Library Selection and Application:",
+        details: [
+          "Select a UI component library (e.g., Material-UI, Chakra UI, Ant Design) compatible with Next.js that supports an 'Elite' design.",
+          "Customize theming to match the company's visual identity."
+        ]
       }
     ]
   }
