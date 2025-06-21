@@ -78,6 +78,10 @@ This is a Next.js-based ERP system for a construction company, built with Fireba
   - Build a dashboard interface that displays a summary of key performance indicators (KPIs) from different departments.
   - Develop interactive chart components (using libraries like Chart.js or Recharts) to visualize data.
   - Develop a notification and alert system for pending tasks or important events.
+- **3.4. Employee Management (HR):**
+  - Develop forms to add, edit, and delete employee data (personal information, job, department, salary, contact details).
+  - Implement advanced filters and search for employees.
+  - Build detailed view screens for each employee.
 
 To get started, run the development server:
 

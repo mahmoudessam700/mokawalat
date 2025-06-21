@@ -124,6 +124,14 @@ const roadmapPhases = [
             "Develop interactive chart components (using libraries like Chart.js or Recharts) to visualize data.",
             "Develop a notification and alert system for pending tasks or important events."
         ]
+      },
+      {
+        title: "3.4. Employee Management (HR):",
+        details: [
+          "Develop forms to add, edit, and delete employee data (personal information, job, department, salary, contact details).",
+          "Implement advanced filters and search for employees.",
+          "Build detailed view screens for each employee."
+        ]
       }
     ]
   }
