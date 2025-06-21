@@ -22,6 +22,7 @@ import {
   CheckSquare,
   Settings,
   LogOut,
+  Map,
 } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
@@ -30,6 +31,7 @@ import { Separator } from './ui/separator';
 
 const menuItems = [
   { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
+  { href: '/roadmap', label: 'Roadmap', icon: Map },
   { href: '/projects', label: 'Projects', icon: Briefcase },
   { href: '/employees', label: 'Employees', icon: Users },
   { href: '/suppliers', label: 'Suppliers', icon: Truck },
