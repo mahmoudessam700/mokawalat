@@ -69,6 +69,11 @@ This is a Next.js-based ERP system for a construction company, built with Fireba
   - Set up a new Next.js project.
   - Initialize the Firebase SDK to connect to the database.
   - Set up a Node.js backend environment if needed for complex functions beyond Firebase Functions.
+- **3.2. Login/Register Page:**
+  - Develop a secure login system using Firebase Authentication.
+  - Develop a new user registration function (with initial roles and permissions specified).
+  - Password recovery page via email.
+  - Implement an advanced Role-Based Access Control system to restrict access to pages and functions based on the user's role.
 
 To get started, run the development server:
 
