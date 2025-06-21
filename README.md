@@ -35,6 +35,8 @@ This is a Next.js-based ERP system for a construction company, built with Fireba
   - Determine the optimal data structure to ensure efficient performance and fast queries.
   - Determine when to use Firestore (for structured data) and when to use Realtime Database (for data requiring real-time updates, like notifications).
   - Design Firebase Security Rules to ensure data can only be accessed and modified by authorized users, in line with ISO 9001 data protection requirements.
+- **Defining Data Entry and Validation Criteria:**
+  - Establish rules for validating data input across all forms to ensure data quality and accuracy, a core requirement for ISO 9001.
 
 To get started, run the development server:
 
