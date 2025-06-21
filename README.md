@@ -25,6 +25,9 @@ This is a Next.js-based ERP system for a construction company, built with Fireba
 - **Requirements gathering meetings:**
   - Hold intensive meetings with the heads of various departments (management, HR, warehouses, procurement, finance, projects) to identify and understand workflows, input and output data, required reports, and current challenges.
   - Document all functional and non-functional requirements such as performance and security.
+- **Analysis and Definition of Permissions:**
+  - Define all functional roles within the company (e.g., project manager, HR employee, warehouse keeper, financial manager).
+  - Determine the precise permissions for each role regarding access to sections, and read/write/edit/delete data. This must comply with ISO 9001 principles for access control.
 
 To get started, run the development server:
 
