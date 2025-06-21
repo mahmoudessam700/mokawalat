@@ -82,11 +82,13 @@ This is a Next.js-based ERP system for a construction company, built with Fireba
   - Develop forms to add, edit, and delete employee data (personal information, job, department, salary, contact details).
   - Implement advanced filters and search for employees.
   - Build detailed view screens for each employee.
+- **3.5. Project Management:**
+  - Develop forms to add, edit, and delete projects and their details (name, description, location, dates, budget, status).
+  - Develop functionality to assign work teams to projects.
+  - Build display screens to monitor work progress and the status of each project.
 
 To get started, run the development server:
 
 ```bash
 npm run dev
-```
-
 ```

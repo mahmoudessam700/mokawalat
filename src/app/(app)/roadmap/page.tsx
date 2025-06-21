@@ -132,6 +132,14 @@ const roadmapPhases = [
           "Implement advanced filters and search for employees.",
           "Build detailed view screens for each employee."
         ]
+      },
+      {
+        title: "3.5. Project Management:",
+        details: [
+          "Develop forms to add, edit, and delete projects and their details (name, description, location, dates, budget, status).",
+          "Develop functionality to assign work teams to projects.",
+          "Build display screens to monitor work progress and the status of each project."
+        ]
       }
     ]
   }
