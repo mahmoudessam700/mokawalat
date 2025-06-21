@@ -31,6 +31,15 @@ const roadmapPhases = [
         details: [
             "Build an entity-relationship diagram to clarify how data is interconnected across different departments (employees with projects, suppliers with procurement, materials with inventory)."
         ]
+      },
+      {
+        title: "1.4. Database Structure Design (Firebase - Firestore & Realtime Database):",
+        details: [
+          "Identify the necessary Firestore Collections and Documents for each department.",
+          "Determine the optimal data structure to ensure efficient performance and fast queries.",
+          "Determine when to use Firestore (for structured data) and when to use Realtime Database (for data requiring real-time updates, like notifications).",
+          "Design Firebase Security Rules to ensure data can only be accessed and modified by authorized users, in line with ISO 9001 data protection requirements."
+        ]
       }
     ]
   }
