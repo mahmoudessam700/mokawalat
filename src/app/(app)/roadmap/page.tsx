@@ -94,6 +94,20 @@ const roadmapPhases = [
         ]
       }
     ]
+  },
+  {
+    title: "Phase 3: Core Modules Development",
+    objective: "Build the core sections of the application, ensuring efficiency and security using Node.js, Next.js, and Firebase.",
+    subTasks: [
+      {
+        title: "3.1. Set up the development environment:",
+        details: [
+          "Set up a new Next.js project.",
+          "Initialize the Firebase SDK to connect to the database.",
+          "Set up a Node.js backend environment if needed for complex functions beyond Firebase Functions."
+        ]
+      }
+    ]
   }
 ];
 

@@ -60,6 +60,16 @@ This is a Next.js-based ERP system for a construction company, built with Fireba
   - Provide clear user feedback (success messages, error messages, alerts).
   - Design clear and organized data entry forms.
 
+### Phase 3: Core Modules Development
+
+**Objective:** Build the core sections of the application, ensuring efficiency and security using Node.js, Next.js, and Firebase.
+
+**Sub-tasks:**
+- **3.1. Set up the development environment:**
+  - Set up a new Next.js project.
+  - Initialize the Firebase SDK to connect to the database.
+  - Set up a Node.js backend environment if needed for complex functions beyond Firebase Functions.
+
 To get started, run the development server:
 
 ```bash
