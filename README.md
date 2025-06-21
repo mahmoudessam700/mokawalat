@@ -74,9 +74,15 @@ This is a Next.js-based ERP system for a construction company, built with Fireba
   - Develop a new user registration function (with initial roles and permissions specified).
   - Password recovery page via email.
   - Implement an advanced Role-Based Access Control system to restrict access to pages and functions based on the user's role.
+- **3.3. Main Dashboard:**
+  - Build a dashboard interface that displays a summary of key performance indicators (KPIs) from different departments.
+  - Develop interactive chart components (using libraries like Chart.js or Recharts) to visualize data.
+  - Develop a notification and alert system for pending tasks or important events.
 
 To get started, run the development server:
 
 ```bash
 npm run dev
+```
+
 ```
