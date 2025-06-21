@@ -55,6 +55,10 @@ This is a Next.js-based ERP system for a construction company, built with Fireba
   - Customize theming to match the company's visual identity.
 - **2.5. Responsive Design:**
   - Ensure that the design is adaptive and works perfectly on different screen sizes and devices (desktop, laptop, tablet).
+- **2.6. User Experience (UX) Design Principles:**
+  - Focus on reducing clicks to access important information.
+  - Provide clear user feedback (success messages, error messages, alerts).
+  - Design clear and organized data entry forms.
 
 To get started, run the development server:
 

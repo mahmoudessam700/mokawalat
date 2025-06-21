@@ -84,6 +84,14 @@ const roadmapPhases = [
         details: [
           "Ensure that the design is adaptive and works perfectly on different screen sizes and devices (desktop, laptop, tablet).",
         ]
+      },
+      {
+        title: "2.6. User Experience (UX) Design Principles:",
+        details: [
+          "Focus on reducing clicks to access important information.",
+          "Provide clear user feedback (success messages, error messages, alerts).",
+          "Design clear and organized data entry forms.",
+        ]
       }
     ]
   }
