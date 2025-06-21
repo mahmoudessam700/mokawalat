@@ -38,6 +38,14 @@ This is a Next.js-based ERP system for a construction company, built with Fireba
 - **Defining Data Entry and Validation Criteria:**
   - Establish rules for validating data input across all forms to ensure data quality and accuracy, a core requirement for ISO 9001.
 
+### Phase 2: UI/UX Design
+
+**Objective:** Create an intuitive, attractive, and eye-friendly user interface that follows "Elite" design principles and ensures a smooth user experience compliant with ISO 9001 standards for usability and accessibility.
+
+**Sub-tasks:**
+- **Competitor Research and Analysis:**
+  - Study similar ERP applications in the construction field to draw inspiration from best practices and avoid common mistakes.
+
 To get started, run the development server:
 
 ```bash

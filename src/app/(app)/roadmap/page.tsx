@@ -48,6 +48,18 @@ const roadmapPhases = [
         ]
       }
     ]
+  },
+  {
+    title: "Phase 2: UI/UX Design",
+    objective: "Create an intuitive, attractive, and eye-friendly user interface that follows \"Elite\" design principles and ensures a smooth user experience compliant with ISO 9001 standards for usability and accessibility.",
+    subTasks: [
+      {
+        title: "2.1. Competitor Research and Analysis:",
+        details: [
+          "Study similar ERP applications in the construction field to draw inspiration from best practices and avoid common mistakes.",
+        ]
+      }
+    ]
   }
 ];
 
