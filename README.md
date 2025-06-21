@@ -87,6 +87,35 @@ This is a Next.js-based ERP system for a construction company, built with Fireba
   - Develop functionality to assign work teams to projects.
   - Build display screens to monitor work progress and the status of each project.
 
+### Phase 4: Advanced Modules Development
+
+**Objective:** Build the more complex sections that require greater integration with each other and with the core data.
+
+**Sub-tasks:**
+- **4.1. Supplier Management:**
+  - Develop forms to add, edit, and delete suppliers and their details (contact information, services/products).
+  - Develop a function to track contracts and agreements with suppliers.
+  - Provide the ability to evaluate supplier performance.
+- **4.2. Inventory/Warehouse Management:**
+  - Develop forms to add, edit, and delete materials and equipment, specifying quantities.
+  - Build a system to track inventory entry and exit.
+  - Implement a notification system for low stock levels.
+  - Develop a function to manage material requests from projects and link them to available inventory.
+- **4.3. Procurement Management:**
+  - Develop a system to create and track purchase requests and their statuses (under review, approved, executed).
+  - Develop a system to manage purchase orders and related invoices.
+  - Link purchase orders to suppliers and warehouses.
+- **4.4. Client/Sales Management (CRM):**
+  - Develop a database for clients (potential and current).
+  - Track interaction history with clients.
+  - Develop a system to manage quotations and contracts.
+  - Track the status of payments and outstanding debts from clients.
+- **4.5. Financial & Accounting Management:**
+  - Develop forms to record income and expenses.
+  - Manage payments to suppliers and receipts from clients.
+  - Track bank account balances.
+  - (Note: The focus is on basic tracking, not a full accounting system at this stage).
+
 To get started, run the development server:
 
 ```bash

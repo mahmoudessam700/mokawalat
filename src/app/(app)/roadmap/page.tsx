@@ -142,6 +142,55 @@ const roadmapPhases = [
         ]
       }
     ]
+  },
+  {
+    title: "Phase 4: Advanced Modules Development",
+    objective: "Build the more complex sections that require greater integration with each other and with the core data.",
+    subTasks: [
+      {
+        title: "4.1. Supplier Management:",
+        details: [
+          "Develop forms to add, edit, and delete suppliers and their details (contact information, services/products).",
+          "Develop a function to track contracts and agreements with suppliers.",
+          "Provide the ability to evaluate supplier performance.",
+        ]
+      },
+      {
+        title: "4.2. Inventory/Warehouse Management:",
+        details: [
+          "Develop forms to add, edit, and delete materials and equipment, specifying quantities.",
+          "Build a system to track inventory entry and exit.",
+          "Implement a notification system for low stock levels.",
+          "Develop a function to manage material requests from projects and link them to available inventory.",
+        ]
+      },
+      {
+        title: "4.3. Procurement Management:",
+        details: [
+          "Develop a system to create and track purchase requests and their statuses (under review, approved, executed).",
+          "Develop a system to manage purchase orders and related invoices.",
+          "Link purchase orders to suppliers and warehouses.",
+        ]
+      },
+      {
+        title: "4.4. Client/Sales Management (CRM):",
+        details: [
+          "Develop a database for clients (potential and current).",
+          "Track interaction history with clients.",
+          "Develop a system to manage quotations and contracts.",
+          "Track the status of payments and outstanding debts from clients.",
+        ]
+      },
+      {
+        title: "4.5. Financial & Accounting Management:",
+        details: [
+          "Develop forms to record income and expenses.",
+          "Manage payments to suppliers and receipts from clients.",
+          "Track bank account balances.",
+          "(Note: The focus is on basic tracking, not a full accounting system at this stage).",
+        ]
+      }
+    ]
   }
 ];
 
