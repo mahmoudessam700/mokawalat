@@ -78,6 +78,12 @@ const roadmapPhases = [
           "Select a UI component library (e.g., Material-UI, Chakra UI, Ant Design) compatible with Next.js that supports an 'Elite' design.",
           "Customize theming to match the company's visual identity."
         ]
+      },
+      {
+        title: "2.5. Responsive Design:",
+        details: [
+          "Ensure that the design is adaptive and works perfectly on different screen sizes and devices (desktop, laptop, tablet).",
+        ]
       }
     ]
   }

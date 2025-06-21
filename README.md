@@ -53,6 +53,8 @@ This is a Next.js-based ERP system for a construction company, built with Fireba
 - **2.4. Theme & Component Library Selection and Application:**
   - Select a UI component library (e.g., Material-UI, Chakra UI, Ant Design) compatible with Next.js that supports an 'Elite' design.
   - Customize theming to match the company's visual identity.
+- **2.5. Responsive Design:**
+  - Ensure that the design is adaptive and works perfectly on different screen sizes and devices (desktop, laptop, tablet).
 
 To get started, run the development server:
 
