@@ -47,6 +47,9 @@ This is a Next.js-based ERP system for a construction company, built with Fireba
   - Study similar ERP applications in the construction field to draw inspiration from best practices and avoid common mistakes.
 - **Wireframing:**
   - Create simple initial layouts for each page and screen to determine the placement of key elements and the flow of information.
+- **Prototypes Design:**
+  - Build high-fidelity interactive models (Mockups) for each section and page, considering a calm and professional color palette that reflects the 'Elite' character.
+  - Focus on ease of navigation and clarity of buttons and interactive elements.
 
 To get started, run the development server:
 

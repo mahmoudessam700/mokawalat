@@ -64,6 +64,13 @@ const roadmapPhases = [
         details: [
           "Create simple initial layouts for each page and screen to determine the placement of key elements and the flow of information.",
         ]
+      },
+      {
+        title: "2.3. Prototypes Design:",
+        details: [
+          "Build high-fidelity interactive models (Mockups) for each section and page, considering a calm and professional color palette that reflects the 'Elite' character.",
+          "Focus on ease of navigation and clarity of buttons and interactive elements.",
+        ]
       }
     ]
   }
