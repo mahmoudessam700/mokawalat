@@ -58,7 +58,7 @@ export function AppSidebar() {
       <SidebarHeader>
         <div className="flex items-center gap-2">
           <Logo className="size-8 text-primary" />
-          <span className="font-headline text-xl font-semibold">ElitePlan</span>
+          <span className="font-headline text-xl font-semibold">Mokawalat</span>
         </div>
       </SidebarHeader>
       <SidebarContent className="p-2">
@@ -86,7 +86,7 @@ export function AppSidebar() {
             </Avatar>
             <div className="flex flex-col">
                 <span className="text-sm font-semibold">John Doe</span>
-                <span className="text-xs text-muted-foreground">john.doe@eliteplan.com</span>
+                <span className="text-xs text-muted-foreground">john.doe@mokawalat.com</span>
             </div>
          </div>
       </SidebarFooter>

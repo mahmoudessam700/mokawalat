@@ -1,4 +1,4 @@
-# ElitePlan ERP
+# Mokawalat ERP
 
 This is a Next.js-based ERP system for a construction company, built with Firebase Studio.
 
