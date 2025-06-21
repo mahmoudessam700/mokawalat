@@ -58,6 +58,12 @@ const roadmapPhases = [
         details: [
           "Study similar ERP applications in the construction field to draw inspiration from best practices and avoid common mistakes.",
         ]
+      },
+      {
+        title: "2.2. Wireframing:",
+        details: [
+          "Create simple initial layouts for each page and screen to determine the placement of key elements and the flow of information.",
+        ]
       }
     ]
   }

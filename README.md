@@ -45,6 +45,8 @@ This is a Next.js-based ERP system for a construction company, built with Fireba
 **Sub-tasks:**
 - **Competitor Research and Analysis:**
   - Study similar ERP applications in the construction field to draw inspiration from best practices and avoid common mistakes.
+- **Wireframing:**
+  - Create simple initial layouts for each page and screen to determine the placement of key elements and the flow of information.
 
 To get started, run the development server:
 
