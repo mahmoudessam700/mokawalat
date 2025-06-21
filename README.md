@@ -138,6 +138,29 @@ This is a Next.js-based ERP system for a construction company, built with Fireba
 - **5.7. User Acceptance Testing (UAT):**
   - Involve end-users from various departments to test the application and provide feedback and suggestions.
 
+### Phase 6: Documentation
+
+**Objective:** Provide comprehensive and up-to-date documentation for the application, including code, database design, and user manual, to facilitate future maintenance, development, and compliance with ISO 9001 standards.
+
+**Sub-tasks:**
+- **6.1. Code Documentation:**
+  - Write clear inline comments in the code to explain functions and complex logic.
+  - Create detailed README files for each part of the project (Frontend, Backend, Database Rules).
+- **6.2. Database Design Documentation:**
+  - Create a detailed document for the Firebase Firestore and Realtime Database structure, describing each collection, document, and field, as well as the relationships between them.
+  - Document Firebase Security Rules.
+- **6.3. User Manual:**
+  - Create a comprehensive and clear user manual that explains how to use each section of the application, step-by-step.
+  - Include screenshots to illustrate the steps.
+  - Include a Frequently Asked Questions (FAQ) and troubleshooting section.
+- **6.4. API Documentation (if any):**
+  - If any external or internal APIs are developed, document the endpoints, request methods, parameters, and responses.
+- **6.5. Deployment Documentation:**
+  - Document the steps required to deploy and update the application on production servers.
+- **6.6. ISO 9001 Compliance Documentation:**
+  - Create a separate document that explains how the application's design and processes comply with ISO 9001 requirements, referencing specific features that support each clause of the standard (e.g., how documents are controlled, how processes are tracked).
+
+
 To get started, run the development server:
 
 ```bash
