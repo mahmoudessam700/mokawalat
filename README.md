@@ -28,6 +28,8 @@ This is a Next.js-based ERP system for a construction company, built with Fireba
 - **Analysis and Definition of Permissions:**
   - Define all functional roles within the company (e.g., project manager, HR employee, warehouse keeper, financial manager).
   - Determine the precise permissions for each role regarding access to sections, and read/write/edit/delete data. This must comply with ISO 9001 principles for access control.
+- **Design ERD (Entity-Relationship Diagram):**
+  - Build an entity-relationship diagram to clarify how data is interconnected across different departments (employees with projects, suppliers with procurement, materials with inventory).
 
 To get started, run the development server:
 

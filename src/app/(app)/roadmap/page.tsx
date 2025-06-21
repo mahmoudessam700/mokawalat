@@ -25,6 +25,12 @@ const roadmapPhases = [
             "Define all functional roles within the company (e.g., project manager, HR employee, warehouse keeper, financial manager).",
             "Determine the precise permissions for each role regarding access to sections, and read/write/edit/delete data. This must comply with ISO 9001 principles for access control."
         ]
+      },
+      {
+        title: "1.3. Design ERD (Entity-Relationship Diagram):",
+        details: [
+            "Build an entity-relationship diagram to clarify how data is interconnected across different departments (employees with projects, suppliers with procurement, materials with inventory)."
+        ]
       }
     ]
   }
