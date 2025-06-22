@@ -1,7 +1,7 @@
 'use server';
 
 import { firestore } from '@/lib/firebase';
-import { collection, addDoc } from 'firebase/firestore';
+import { collection, addDoc, doc, deleteDoc } from 'firebase/firestore';
 import { z } from 'zod';
 import { revalidatePath } from 'next/cache';
 
@@ -32,5 +32,20 @@ export async function addInventoryItem(values: InventoryFormValues) {
   } catch (error) {
     console.error('Error adding inventory item:', error);
     return { message: 'Failed to add item.', errors: { _server: ['An unexpected error occurred.'] } };
+  }
+}
+
+export async function deleteInventoryItem(itemId: string) {
+  if (!itemId) {
+    return { success: false, message: 'Item ID is required.' };
+  }
+
+  try {
+    await deleteDoc(doc(firestore, 'inventory', itemId));
+    revalidatePath('/inventory');
+    return { success: true, message: 'Item deleted successfully.' };
+  } catch (error) {
+    console.error('Error deleting item:', error);
+    return { success: false, message: 'Failed to delete item.' };
   }
 }
