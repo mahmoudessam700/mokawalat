@@ -80,6 +80,8 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { format } from 'date-fns';
 import Link from 'next/link';
 import { useAuth } from '@/hooks/use-auth';
+import { Slider } from '@/components/ui/slider';
+import { Progress } from '@/components/ui/progress';
 
 type ProjectStatus = 'In Progress' | 'Planning' | 'Completed' | 'On Hold';
 
@@ -91,6 +93,7 @@ type Project = {
   startDate: Timestamp;
   status: ProjectStatus;
   teamMemberIds?: string[];
+  progress?: number;
 };
 
 const statusVariant: {
@@ -112,6 +115,7 @@ const projectFormSchema = z.object({
       message: 'Please select a valid date.',
     }),
   status: z.enum(['Planning', 'In Progress', 'Completed', 'On Hold']),
+  progress: z.coerce.number().min(0).max(100).optional(),
 });
 
 type ProjectFormValues = z.infer<typeof projectFormSchema>;
@@ -175,6 +179,7 @@ export default function ProjectsPage() {
       budget: 0,
       startDate: '',
       status: 'Planning',
+      progress: 0,
     },
   });
 
@@ -184,6 +189,7 @@ export default function ProjectsPage() {
         ...projectToEdit,
         startDate: projectToEdit.startDate ? format(projectToEdit.startDate.toDate(), 'yyyy-MM-dd') : '',
         description: projectToEdit.description || '',
+        progress: projectToEdit.progress || 0,
       });
     } else {
       form.reset(form.formState.defaultValues);
@@ -372,6 +378,24 @@ export default function ProjectsPage() {
                         </FormItem>
                     )}
                     />
+                    <FormField
+                      control={form.control}
+                      name="progress"
+                      render={({ field }) => (
+                          <FormItem>
+                              <FormLabel>Progress ({field.value || 0}%)</FormLabel>
+                              <FormControl>
+                                  <Slider
+                                      defaultValue={[field.value || 0]}
+                                      onValueChange={(value) => field.onChange(value[0])}
+                                      max={100}
+                                      step={1}
+                                  />
+                              </FormControl>
+                              <FormMessage />
+                          </FormItem>
+                      )}
+                    />
                     <DialogFooter>
                     <Button type="submit" disabled={form.formState.isSubmitting}>
                         {form.formState.isSubmitting ? (
@@ -436,6 +460,7 @@ export default function ProjectsPage() {
                 </TableHead>
                 <TableHead>Budget</TableHead>
                 <TableHead className="hidden sm:table-cell">Team</TableHead>
+                <TableHead>Progress</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead>
                   <span className="sr-only">Actions</span>
@@ -457,6 +482,9 @@ export default function ProjectsPage() {
                     </TableCell>
                      <TableCell className="hidden sm:table-cell">
                       <Skeleton className="h-4 w-[50px]" />
+                    </TableCell>
+                    <TableCell>
+                      <Skeleton className="h-4 w-[100px]" />
                     </TableCell>
                     <TableCell>
                       <Skeleton className="h-6 w-[100px] rounded-full" />
@@ -490,6 +518,9 @@ export default function ProjectsPage() {
                         <Users className="size-4 text-muted-foreground" />
                         <span>{project.teamMemberIds?.length || 0}</span>
                       </div>
+                    </TableCell>
+                    <TableCell>
+                      <Progress value={project.progress || 0} className="w-24" />
                     </TableCell>
                     <TableCell>
                       <Badge variant={statusVariant[project.status]}>
@@ -540,7 +571,7 @@ export default function ProjectsPage() {
                 ))
               ) : (
                 <TableRow>
-                  <TableCell colSpan={6} className="h-24 text-center">
+                  <TableCell colSpan={7} className="h-24 text-center">
                     No projects found for the current filter.
                   </TableCell>
                 </TableRow>

@@ -17,6 +17,7 @@ const projectFormSchema = z.object({
       message: 'Please select a valid date.',
     }),
   status: z.enum(['Planning', 'In Progress', 'Completed', 'On Hold']),
+  progress: z.coerce.number().min(0).max(100).optional(),
 });
 
 const assignTeamFormSchema = z.object({
@@ -44,19 +45,17 @@ export async function addProject(values: ProjectFormValues) {
   }
 
   try {
-    const { name, description, budget, startDate, status } =
-      validatedFields.data;
-    const projectRef = await addDoc(collection(firestore, 'projects'), {
-      name,
-      description: description || '',
-      budget,
-      startDate: new Date(startDate),
-      status,
-      createdAt: serverTimestamp(),
-    });
+    const data = {
+        ...validatedFields.data,
+        progress: validatedFields.data.progress || 0,
+        startDate: new Date(validatedFields.data.startDate),
+        createdAt: serverTimestamp(),
+    };
+    
+    const projectRef = await addDoc(collection(firestore, 'projects'), data);
 
     await addDoc(collection(firestore, 'activityLog'), {
-        message: `New project created: ${name}`,
+        message: `New project created: ${data.name}`,
         type: "PROJECT_CREATED",
         link: `/projects/${projectRef.id}`,
         timestamp: serverTimestamp(),
@@ -91,6 +90,7 @@ export async function updateProject(projectId: string, values: ProjectFormValues
         const projectRef = doc(firestore, 'projects', projectId);
         await updateDoc(projectRef, {
             ...validatedFields.data,
+            progress: validatedFields.data.progress || 0,
             startDate: new Date(validatedFields.data.startDate),
         });
         revalidatePath('/projects');

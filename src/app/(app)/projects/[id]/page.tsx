@@ -7,7 +7,7 @@ import { firestore } from '@/lib/firebase';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
-import { ArrowLeft, Briefcase, Calendar, DollarSign, Activity, Users, ShoppingCart, PackagePlus, PackageCheck, PackageX, PackageSearch, Lightbulb } from 'lucide-react';
+import { ArrowLeft, Briefcase, Calendar, DollarSign, Activity, Users, ShoppingCart, PackagePlus, PackageCheck, PackageX, PackageSearch, Lightbulb, TrendingUp } from 'lucide-react';
 import { format } from 'date-fns';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
@@ -33,6 +33,7 @@ import { addMaterialRequest, updateMaterialRequestStatus, materialRequestFormSch
 import { Loader2 } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ProjectAiAssistant } from './project-ai-assistant';
+import { Progress } from '@/components/ui/progress';
 
 type ProjectStatus = 'In Progress' | 'Planning' | 'Completed' | 'On Hold';
 
@@ -44,6 +45,7 @@ export type Project = {
   startDate: Timestamp;
   status: ProjectStatus;
   teamMemberIds?: string[];
+  progress?: number;
 };
 
 type Employee = {
@@ -226,7 +228,8 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
             <Skeleton className="h-6 w-48" />
             <Skeleton className="h-4 w-full mt-2" />
           </CardHeader>
-          <CardContent className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+          <CardContent className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+            <Skeleton className="h-20 w-full" />
             <Skeleton className="h-20 w-full" />
             <Skeleton className="h-20 w-full" />
             <Skeleton className="h-20 w-full" />
@@ -305,7 +308,7 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
                         )}
                     </CardHeader>
                     <CardContent>
-                        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+                        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
                             <div className="flex items-start gap-4">
                                 <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-primary/10 text-primary">
                                     <DollarSign className="size-6" />
@@ -322,6 +325,16 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
                                 <div>
                                     <p className="text-sm text-muted-foreground">Start Date</p>
                                     <p className="text-lg font-semibold">{project.startDate ? format(project.startDate.toDate(), 'PPP') : 'N/A'}</p>
+                                </div>
+                            </div>
+                             <div className="flex items-start gap-4">
+                                <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                                    <TrendingUp className="size-6" />
+                                </div>
+                                <div>
+                                    <p className="text-sm text-muted-foreground">Progress</p>
+                                    <p className="text-lg font-semibold">{project.progress || 0}%</p>
+                                     <Progress value={project.progress || 0} className="mt-2 w-32" />
                                 </div>
                             </div>
                             <div className="flex items-start gap-4">
