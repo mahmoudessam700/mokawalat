@@ -51,7 +51,7 @@ import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useState, useEffect, useMemo } from 'react';
-import { addTransaction, deleteTransaction } from './actions';
+import { addTransaction, deleteTransaction, updateTransaction } from './actions';
 import { useToast } from '@/hooks/use-toast';
 import { collection, onSnapshot, query, orderBy, type Timestamp } from 'firebase/firestore';
 import { firestore } from '@/lib/firebase';
@@ -90,7 +90,8 @@ const formatCurrency = (value: number) => {
 export default function FinancialsPage() {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isFormDialogOpen, setIsFormDialogOpen] = useState(false);
+  const [transactionToEdit, setTransactionToEdit] = useState<Transaction | null>(null);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [transactionToDelete, setTransactionToDelete] = useState<Transaction | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -138,15 +139,28 @@ export default function FinancialsPage() {
     },
   });
 
+  useEffect(() => {
+    if (transactionToEdit) {
+      form.reset({
+        ...transactionToEdit,
+        date: transactionToEdit.date ? format(transactionToEdit.date.toDate(), 'yyyy-MM-dd') : '',
+      });
+    } else {
+      form.reset(form.formState.defaultValues);
+    }
+  }, [transactionToEdit, form]);
+
   async function onSubmit(values: TransactionFormValues) {
-    const result = await addTransaction(values);
+    const result = transactionToEdit
+      ? await updateTransaction(transactionToEdit.id, values)
+      : await addTransaction(values);
 
     if (result.errors) {
       toast({ variant: 'destructive', title: 'Error', description: result.message });
     } else {
       toast({ title: 'Success', description: result.message });
-      form.reset();
-      setIsDialogOpen(false);
+      setIsFormDialogOpen(false);
+      setTransactionToEdit(null);
     }
   }
 
@@ -171,6 +185,13 @@ export default function FinancialsPage() {
     }
     setIsDeleteDialogOpen(false);
     setTransactionToDelete(null);
+  }
+
+  const handleFormDialogOpenChange = (open: boolean) => {
+    if (!open) {
+      setTransactionToEdit(null);
+    }
+    setIsFormDialogOpen(open);
   }
 
   return (
@@ -221,18 +242,18 @@ export default function FinancialsPage() {
             <CardTitle>Transaction History</CardTitle>
             <CardDescription>A list of all income and expense records.</CardDescription>
           </div>
-            <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+            <Dialog open={isFormDialogOpen} onOpenChange={handleFormDialogOpenChange}>
             <DialogTrigger asChild>
-                <Button>
+                <Button onClick={() => setTransactionToEdit(null)}>
                 <PlusCircle className="mr-2" />
                 Add Transaction
                 </Button>
             </DialogTrigger>
             <DialogContent className="sm:max-w-[480px]">
                 <DialogHeader>
-                <DialogTitle>Add New Transaction</DialogTitle>
+                <DialogTitle>{transactionToEdit ? 'Edit Transaction' : 'Add New Transaction'}</DialogTitle>
                 <DialogDescription>
-                    Fill in the details below to add a new financial record.
+                    {transactionToEdit ? "Update the transaction's details below." : 'Fill in the details below to add a new financial record.'}
                 </DialogDescription>
                 </DialogHeader>
                 <Form {...form}>
@@ -307,7 +328,7 @@ export default function FinancialsPage() {
                             Saving...
                         </>
                         ) : (
-                        'Save Transaction'
+                          transactionToEdit ? 'Save Changes' : 'Save Transaction'
                         )}
                     </Button>
                     </DialogFooter>
@@ -365,7 +386,10 @@ export default function FinancialsPage() {
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
                           <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                          <DropdownMenuItem>Edit</DropdownMenuItem>
+                          <DropdownMenuItem onSelect={() => {
+                            setTransactionToEdit(transaction);
+                            setIsFormDialogOpen(true);
+                          }}>Edit</DropdownMenuItem>
                           <DropdownMenuItem
                             className="text-destructive"
                              onSelect={() => {
