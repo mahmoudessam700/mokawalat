@@ -1,17 +1,25 @@
 'use client';
 
 import { useEffect, useState, useMemo } from 'react';
-import { doc, getDoc, type Timestamp, collection, query, getDocs } from 'firebase/firestore';
+import { doc, getDoc, type Timestamp, collection, query, getDocs, where } from 'firebase/firestore';
 import { firestore } from '@/lib/firebase';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
-import { ArrowLeft, Briefcase, Calendar, DollarSign, Activity, Users } from 'lucide-react';
+import { ArrowLeft, Calendar, DollarSign, Activity, Users, ShoppingCart } from 'lucide-react';
 import { format } from 'date-fns';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { AssignTeamDialog } from './assign-team-dialog';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
 
 type ProjectStatus = 'In Progress' | 'Planning' | 'Completed' | 'On Hold';
 
@@ -32,6 +40,13 @@ type Employee = {
     role: string;
 };
 
+type ProcurementRequest = {
+  id: string;
+  itemName: string;
+  quantity: number;
+  status: 'Pending' | 'Approved' | 'Rejected' | 'Ordered';
+};
+
 const statusVariant: {
   [key in ProjectStatus]: 'secondary' | 'default' | 'outline' | 'destructive';
 } = {
@@ -39,6 +54,13 @@ const statusVariant: {
   Planning: 'default',
   Completed: 'outline',
   'On Hold': 'destructive',
+};
+
+const procurementStatusVariant: { [key in ProcurementRequest['status']]: 'default' | 'secondary' | 'destructive' | 'outline' } = {
+  Pending: 'default',
+  Approved: 'secondary',
+  Ordered: 'outline',
+  Rejected: 'destructive',
 };
 
 const formatCurrency = (value: number) => {
@@ -51,6 +73,7 @@ const formatCurrency = (value: number) => {
 export default function ProjectDetailPage({ params }: { params: { id: string } }) {
   const [project, setProject] = useState<Project | null>(null);
   const [employees, setEmployees] = useState<Employee[]>([]);
+  const [procurements, setProcurements] = useState<ProcurementRequest[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   
@@ -64,10 +87,12 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
       try {
         const projectRef = doc(firestore, 'projects', projectId);
         const employeesQuery = query(collection(firestore, 'employees'));
+        const procurementsQuery = query(collection(firestore, 'procurement'), where('projectId', '==', projectId));
 
-        const [projectDoc, employeesSnapshot] = await Promise.all([
+        const [projectDoc, employeesSnapshot, procurementsSnapshot] = await Promise.all([
             getDoc(projectRef),
-            getDocs(employeesQuery)
+            getDocs(employeesQuery),
+            getDocs(procurementsQuery)
         ]);
 
         if (projectDoc.exists()) {
@@ -82,9 +107,15 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
         });
         setEmployees(employeesData);
 
+        const procurementsData: ProcurementRequest[] = [];
+        procurementsSnapshot.forEach((doc) => {
+            procurementsData.push({ id: doc.id, ...doc.data()} as ProcurementRequest);
+        });
+        setProcurements(procurementsData);
+
       } catch (err) {
         console.error('Error fetching project data:', err);
-        setError('Failed to fetch project details.');
+        setError('Failed to fetch project details. If you see a Firestore error in the console, you may need to create a composite index.');
       } finally {
         setIsLoading(false);
       }
@@ -140,7 +171,7 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
   if (error) {
     return (
       <div className="flex flex-col items-center justify-center text-center h-[50vh]">
-        <Briefcase className="w-16 h-16 mb-4 text-destructive" />
+        <ShoppingCart className="w-16 h-16 mb-4 text-destructive" />
         <h2 className="text-2xl font-bold">Error</h2>
         <p className="text-muted-foreground">{error}</p>
          <Button asChild variant="outline" className="mt-4">
@@ -260,10 +291,35 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
                     <CardDescription>Purchase requests linked to this project.</CardDescription>
                 </CardHeader>
                 <CardContent>
-                     <div className="flex flex-col items-center justify-center gap-2 p-4 text-center text-muted-foreground">
-                        <Briefcase className="size-12" />
-                        <p>Feature coming soon.</p>
-                     </div>
+                    {procurements.length > 0 ? (
+                        <Table>
+                            <TableHeader>
+                                <TableRow>
+                                    <TableHead>Item</TableHead>
+                                    <TableHead>Quantity</TableHead>
+                                    <TableHead>Status</TableHead>
+                                </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                                {procurements.map(req => (
+                                    <TableRow key={req.id}>
+                                        <TableCell className="font-medium">{req.itemName}</TableCell>
+                                        <TableCell>{req.quantity}</TableCell>
+                                        <TableCell>
+                                            <Badge variant={procurementStatusVariant[req.status]}>
+                                                {req.status}
+                                            </Badge>
+                                        </TableCell>
+                                    </TableRow>
+                                ))}
+                            </TableBody>
+                        </Table>
+                    ) : (
+                        <div className="flex flex-col items-center justify-center gap-2 p-4 text-center text-muted-foreground">
+                            <ShoppingCart className="size-12" />
+                            <p>No procurement requests are linked to this project yet.</p>
+                        </div>
+                    )}
                 </CardContent>
             </Card>
         </div>
