@@ -1,71 +1,93 @@
-
 rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
 
+    // Helper function to check if a user is authenticated
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    // Helper function to check if a user has the 'admin' role
     function isAdmin() {
-      return request.auth != null && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
     }
 
+    // Users collection: only admins can change roles
     match /users/{userId} {
-      allow read: if request.auth != null;
-      allow write: if isAdmin();
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated();
+      allow update: if isAdmin();
+      allow delete: if isAdmin();
     }
     
-    match /activityLog/{logId} {
-      allow read, write: if request.auth != null; // Internal service writes
+    // Activity Log collection: only backend can write, any user can read
+    match /activityLog/{activityId} {
+      allow read: if isAuthenticated();
+      allow write: if false; // Only server-side can write
     }
-    
+
+    // Projects collection
     match /projects/{projectId} {
-      allow read: if request.auth != null;
-      allow write: if isAdmin();
-
-      match /materialRequests/{requestId} {
-        allow read, write: if request.auth != null; // Allow project members to create, admins to update status
-      }
+      allow read: if isAuthenticated();
+      allow create, update, delete: if isAdmin();
     }
     
+    // Employees collection
     match /employees/{employeeId} {
-      allow read: if request.auth != null;
-      allow write: if isAdmin();
-    }
-    
-    match /clients/{clientId} {
-      allow read, write: if request.auth != null; // Assuming all users can manage clients for now
-
-      match /interactions/{interactionId} {
-        allow read, write: if request.auth != null;
-      }
+        allow read: if isAuthenticated();
+        allow create, update, delete: if isAdmin();
     }
 
+    // Suppliers collection
     match /suppliers/{supplierId} {
-      allow read: if request.auth != null;
-      allow write: if isAdmin();
+        allow read: if isAuthenticated();
+        allow create, update, delete: if isAdmin();
+
+        // Contracts sub-collection
+        match /contracts/{contractId} {
+            allow read: if isAuthenticated();
+            allow create, delete: if isAdmin();
+        }
+    }
+
+    // Inventory collection
+    match /inventory/{itemId} {
+        allow read: if isAuthenticated();
+        allow create, update, delete: if isAdmin();
+    }
+
+    // Procurement collection
+    match /procurement/{requestId} {
+        allow read: if isAuthenticated();
+        allow create, update, delete: if isAdmin();
+    }
+    
+    // Material Requests collection
+    match /materialRequests/{requestId} {
+        allow read: if isAuthenticated();
+        allow create: if isAuthenticated();
+        allow update, delete: if isAdmin();
+    }
+    
+    // Clients collection
+    match /clients/{clientId} {
+      allow read: if isAuthenticated();
+      allow create, update, delete: if isAdmin();
       
-      match /contracts/{contractId} {
-        allow read: if request.auth != null;
-        allow write: if isAdmin();
+      // Interactions sub-collection
+      match /interactions/{interactionId} {
+        allow read: if isAuthenticated();
+        allow create: if isAuthenticated(); // All authenticated users can log interactions
+        allow update, delete: if isAdmin();
       }
     }
-    
-    match /inventory/{itemId} {
-      allow read: if request.auth != null;
-      allow write: if isAdmin();
-    }
-    
-    match /procurement/{procurementId} {
-      allow read: if request.auth != null;
-      allow write: if isAdmin();
-    }
-    
+
+    // Transactions collection
     match /transactions/{transactionId} {
-      allow read: if request.auth != null;
-      allow write: if isAdmin();
+        allow read: if isAuthenticated();
+        allow create, update, delete: if isAdmin();
     }
-    
-    match /materialRequests/{requestId} {
-       allow read, write: if request.auth != null; 
-    }
+
   }
 }
