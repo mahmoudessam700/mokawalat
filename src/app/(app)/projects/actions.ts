@@ -2,7 +2,7 @@
 'use server';
 
 import { firestore } from '@/lib/firebase';
-import { collection, addDoc, serverTimestamp, doc, deleteDoc, updateDoc } from 'firebase/firestore';
+import { collection, addDoc, serverTimestamp, doc, deleteDoc, updateDoc, getDoc, runTransaction } from 'firebase/firestore';
 import { z } from 'zod';
 import { revalidatePath } from 'next/cache';
 
@@ -22,8 +22,14 @@ const assignTeamFormSchema = z.object({
   employeeIds: z.array(z.string()).default([]),
 });
 
+const materialRequestFormSchema = z.object({
+  itemId: z.string().min(1, 'Please select an item.'),
+  quantity: z.coerce.number().min(1, 'Quantity must be at least 1.'),
+});
+
 export type ProjectFormValues = z.infer<typeof projectFormSchema>;
 export type AssignTeamFormValues = z.infer<typeof assignTeamFormSchema>;
+export type MaterialRequestFormValues = z.infer<typeof materialRequestFormSchema>;
 
 export async function addProject(values: ProjectFormValues) {
   const validatedFields = projectFormSchema.safeParse(values);
@@ -127,4 +133,102 @@ export async function assignTeamToProject(projectId: string, values: AssignTeamF
         console.error('Error assigning team to project:', error);
         return { message: 'Failed to assign team.', errors: { _server: ['An unexpected error occurred.'] } };
     }
+}
+
+export async function addMaterialRequest(projectId: string, values: MaterialRequestFormValues) {
+  if (!projectId) {
+    return { message: 'Project ID is required.', errors: { _server: ['Project ID not provided.'] } };
+  }
+
+  const validatedFields = materialRequestFormSchema.safeParse(values);
+
+  if (!validatedFields.success) {
+    return {
+      errors: validatedFields.error.flatten().fieldErrors,
+      message: 'Invalid data provided.',
+    };
+  }
+  
+  try {
+    const itemRef = doc(firestore, 'inventory', validatedFields.data.itemId);
+    const itemDoc = await getDoc(itemRef);
+
+    if (!itemDoc.exists()) {
+        return { message: 'Selected inventory item not found.', errors: { itemId: ['Invalid item selected.'] } };
+    }
+    
+    const itemName = itemDoc.data().name;
+
+    await addDoc(collection(firestore, 'materialRequests'), {
+      ...validatedFields.data,
+      projectId,
+      itemName,
+      status: 'Pending',
+      requestedAt: serverTimestamp(),
+    });
+    revalidatePath(`/projects/${projectId}`);
+    return { message: 'Material request submitted successfully.', errors: null };
+  } catch (error) {
+    console.error('Error adding material request:', error);
+    return { message: 'Failed to submit material request.', errors: { _server: ['An unexpected error occurred.'] } };
+  }
+}
+
+export async function updateMaterialRequestStatus(requestId: string, newStatus: 'Approved' | 'Rejected') {
+  if (!requestId) {
+    return { success: false, message: 'Request ID is required.' };
+  }
+  
+  const requestRef = doc(firestore, 'materialRequests', requestId);
+
+  try {
+    if (newStatus === 'Approved') {
+        await runTransaction(firestore, async (transaction) => {
+            const requestDoc = await transaction.get(requestRef);
+            if (!requestDoc.exists()) {
+                throw new Error("Request not found.");
+            }
+            const requestData = requestDoc.data();
+            const itemRef = doc(firestore, 'inventory', requestData.itemId);
+            const itemDoc = await transaction.get(itemRef);
+
+            if (!itemDoc.exists()) {
+                throw new Error("Inventory item not found.");
+            }
+            
+            const currentQuantity = itemDoc.data().quantity;
+            const newQuantity = currentQuantity - requestData.quantity;
+
+            if (newQuantity < 0) {
+                throw new Error("Insufficient stock to approve this request.");
+            }
+            
+            let newItemStatus: 'In Stock' | 'Low Stock' | 'Out of Stock';
+            if (newQuantity <= 0) {
+                newItemStatus = 'Out of Stock';
+            } else if (newQuantity <= 10) {
+                newItemStatus = 'Low Stock';
+            } else {
+                newItemStatus = 'In Stock';
+            }
+
+            transaction.update(itemRef, { quantity: newQuantity, status: newItemStatus });
+            transaction.update(requestRef, { status: 'Approved' });
+        });
+    } else {
+        await updateDoc(requestRef, { status: 'Rejected' });
+    }
+
+    const requestSnapshot = await getDoc(requestRef);
+    const projectId = requestSnapshot.data()?.projectId;
+    if (projectId) {
+        revalidatePath(`/projects/${projectId}`);
+    }
+
+    return { success: true, message: `Request has been ${newStatus.toLowerCase()}.` };
+
+  } catch (error: any) {
+    console.error('Error updating material request:', error);
+    return { success: false, message: error.message || 'Failed to update request status.' };
+  }
 }

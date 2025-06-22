@@ -2,12 +2,12 @@
 'use client';
 
 import { useEffect, useState, useMemo } from 'react';
-import { doc, getDoc, type Timestamp, collection, query, getDocs, where, onSnapshot } from 'firebase/firestore';
+import { doc, type Timestamp, collection, query, where, onSnapshot, orderBy } from 'firebase/firestore';
 import { firestore } from '@/lib/firebase';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
-import { ArrowLeft, Briefcase, Calendar, DollarSign, Activity, Users, ShoppingCart } from 'lucide-react';
+import { ArrowLeft, Briefcase, Calendar, DollarSign, Activity, Users, ShoppingCart, PackagePlus, PackageCheck, PackageX, PackageSearch } from 'lucide-react';
 import { format } from 'date-fns';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
@@ -22,6 +22,16 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { useAuth } from '@/hooks/use-auth';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { Input } from '@/components/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
+import { useToast } from '@/hooks/use-toast';
+import { addMaterialRequest, updateMaterialRequestStatus, type MaterialRequestFormValues } from '../actions';
+import { Loader2 } from 'lucide-react';
 
 type ProjectStatus = 'In Progress' | 'Planning' | 'Completed' | 'On Hold';
 
@@ -49,6 +59,20 @@ type ProcurementRequest = {
   status: 'Pending' | 'Approved' | 'Rejected' | 'Ordered';
 };
 
+type MaterialRequest = {
+  id: string;
+  itemName: string;
+  quantity: number;
+  status: 'Pending' | 'Approved' | 'Rejected';
+  requestedAt: Timestamp;
+};
+
+type InventoryItem = {
+    id: string;
+    name: string;
+    quantity: number;
+};
+
 const statusVariant: {
   [key in ProjectStatus]: 'secondary' | 'default' | 'outline' | 'destructive';
 } = {
@@ -65,6 +89,12 @@ const procurementStatusVariant: { [key in ProcurementRequest['status']]: 'defaul
   Rejected: 'destructive',
 };
 
+const materialRequestStatusVariant: { [key in MaterialRequest['status']]: 'default' | 'secondary' | 'destructive' } = {
+  Pending: 'default',
+  Approved: 'secondary',
+  Rejected: 'destructive',
+};
+
 const formatCurrency = (value: number) => {
     const formatter = new Intl.NumberFormat('en-US', {
       minimumFractionDigits: 0,
@@ -72,13 +102,23 @@ const formatCurrency = (value: number) => {
     return `LE ${formatter.format(value)}`;
 };
 
+const materialRequestFormSchema = z.object({
+  itemId: z.string().min(1, 'Please select an item.'),
+  quantity: z.coerce.number().min(1, 'Quantity must be at least 1.'),
+});
+
+
 export default function ProjectDetailPage({ params }: { params: { id: string } }) {
   const [project, setProject] = useState<Project | null>(null);
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [procurements, setProcurements] = useState<ProcurementRequest[]>([]);
+  const [materialRequests, setMaterialRequests] = useState<MaterialRequest[]>([]);
+  const [inventoryItems, setInventoryItems] = useState<InventoryItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [isRequestDialogOpen, setIsRequestDialogOpen] = useState(false);
   const { profile } = useAuth();
+  const { toast } = useToast();
   
   const projectId = params.id;
 
@@ -96,7 +136,6 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
         } else {
             setError('Project not found.');
         }
-        // Set loading false after project is fetched to avoid flicker
         setIsLoading(false);
     }, (err) => {
         console.error('Error fetching project:', err);
@@ -118,10 +157,25 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
         setProcurements(procurementsData);
     }, (err) => {
         console.error('Error fetching procurements:', err);
-        setError('Failed to fetch procurement details. You may need to create a composite index in Firestore.');
+    }));
+    
+    // Subscribe to material requests for this project
+    const materialRequestsQuery = query(collection(firestore, 'materialRequests'), where('projectId', '==', projectId), orderBy('requestedAt', 'desc'));
+    unsubscribes.push(onSnapshot(materialRequestsQuery, (snapshot) => {
+        const requestsData: MaterialRequest[] = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as MaterialRequest));
+        setMaterialRequests(requestsData);
+    }, (err) => {
+        console.error('Error fetching material requests:', err);
     }));
 
-    // Cleanup function
+    // Fetch all inventory items for the dropdown
+    const inventoryQuery = query(collection(firestore, 'inventory'), where('quantity', '>', 0), orderBy('name', 'asc'));
+    unsubscribes.push(onSnapshot(inventoryQuery, (snapshot) => {
+        const itemsData: InventoryItem[] = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as InventoryItem));
+        setInventoryItems(itemsData);
+    }));
+
+
     return () => unsubscribes.forEach(unsub => unsub());
 
   }, [projectId]);
@@ -132,6 +186,35 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
     }
     return employees.filter(employee => project.teamMemberIds!.includes(employee.id));
   }, [project, employees]);
+  
+  const requestForm = useForm<MaterialRequestFormValues>({
+    resolver: zodResolver(materialRequestFormSchema),
+    defaultValues: {
+      itemId: '',
+      quantity: 1,
+    },
+  });
+
+  async function onMaterialRequestSubmit(values: MaterialRequestFormValues) {
+    const result = await addMaterialRequest(projectId, values);
+    if (result.errors) {
+      toast({ variant: 'destructive', title: 'Error', description: result.message });
+    } else {
+      toast({ title: 'Success', description: result.message });
+      requestForm.reset();
+      setIsRequestDialogOpen(false);
+    }
+  }
+
+  async function handleRequestStatusUpdate(requestId: string, status: 'Approved' | 'Rejected') {
+    const result = await updateMaterialRequestStatus(requestId, status);
+    if (result.success) {
+        toast({ title: 'Success', description: result.message });
+    } else {
+        toast({ variant: 'destructive', title: 'Error', description: result.message });
+    }
+  }
+
 
   if (isLoading) {
     return (
@@ -329,6 +412,123 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
                 </CardContent>
             </Card>
         </div>
+        
+        <Card>
+            <CardHeader className="flex-row items-center justify-between">
+                <div>
+                    <CardTitle>Material Requests</CardTitle>
+                    <CardDescription>Requests for materials from inventory for this project.</CardDescription>
+                </div>
+                 <Dialog open={isRequestDialogOpen} onOpenChange={setIsRequestDialogOpen}>
+                    <DialogTrigger asChild>
+                        <Button>
+                            <PackagePlus className="mr-2" /> Request Material
+                        </Button>
+                    </DialogTrigger>
+                    <DialogContent>
+                        <DialogHeader>
+                            <DialogTitle>Request Material from Inventory</DialogTitle>
+                            <DialogDescription>Select an item and specify the quantity needed for the project.</DialogDescription>
+                        </DialogHeader>
+                        <Form {...requestForm}>
+                            <form onSubmit={requestForm.handleSubmit(onMaterialRequestSubmit)} className="space-y-4 py-4">
+                                 <FormField
+                                    control={requestForm.control}
+                                    name="itemId"
+                                    render={({ field }) => (
+                                        <FormItem>
+                                            <FormLabel>Inventory Item</FormLabel>
+                                            <Select onValueChange={field.onChange} value={field.value}>
+                                                <FormControl>
+                                                <SelectTrigger>
+                                                    <SelectValue placeholder="Select an item" />
+                                                </SelectTrigger>
+                                                </FormControl>
+                                                <SelectContent>
+                                                {inventoryItems.map(item => (
+                                                    <SelectItem key={item.id} value={item.id}>
+                                                        {item.name} (Available: {item.quantity})
+                                                    </SelectItem>
+                                                ))}
+                                                </SelectContent>
+                                            </Select>
+                                            <FormMessage />
+                                        </FormItem>
+                                    )}
+                                />
+                                <FormField
+                                    control={requestForm.control}
+                                    name="quantity"
+                                    render={({ field }) => (
+                                        <FormItem>
+                                            <FormLabel>Quantity</FormLabel>
+                                            <FormControl>
+                                                <Input type="number" placeholder="e.g., 10" {...field} />
+                                            </FormControl>
+                                            <FormMessage />
+                                        </FormItem>
+                                    )}
+                                />
+                                <DialogFooter>
+                                    <Button type="submit" disabled={requestForm.formState.isSubmitting}>
+                                        {requestForm.formState.isSubmitting ? (
+                                        <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Submitting...</>
+                                        ) : ( 'Submit Request' )}
+                                    </Button>
+                                </DialogFooter>
+                            </form>
+                        </Form>
+                    </DialogContent>
+                </Dialog>
+            </CardHeader>
+            <CardContent>
+                {materialRequests.length > 0 ? (
+                    <Table>
+                        <TableHeader>
+                            <TableRow>
+                                <TableHead>Item</TableHead>
+                                <TableHead>Quantity</TableHead>
+                                <TableHead>Date</TableHead>
+                                <TableHead>Status</TableHead>
+                                {profile?.role === 'admin' && <TableHead className="text-right">Actions</TableHead>}
+                            </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                            {materialRequests.map(req => (
+                                <TableRow key={req.id}>
+                                    <TableCell className="font-medium">{req.itemName}</TableCell>
+                                    <TableCell>{req.quantity}</TableCell>
+                                    <TableCell>{req.requestedAt ? format(req.requestedAt.toDate(), 'PPP') : 'N/A'}</TableCell>
+                                    <TableCell>
+                                        <Badge variant={materialRequestStatusVariant[req.status]}>{req.status}</Badge>
+                                    </TableCell>
+                                    {profile?.role === 'admin' && (
+                                        <TableCell className="text-right">
+                                            {req.status === 'Pending' && (
+                                                <div className="flex gap-2 justify-end">
+                                                    <Button size="sm" variant="outline" className="text-success hover:text-success border-green-500 hover:bg-green-50" onClick={() => handleRequestStatusUpdate(req.id, 'Approved')}>
+                                                        <PackageCheck className="mr-2" /> Approve
+                                                    </Button>
+                                                    <Button size="sm" variant="outline" className="text-destructive hover:text-destructive border-red-500 hover:bg-red-50" onClick={() => handleRequestStatusUpdate(req.id, 'Rejected')}>
+                                                        <PackageX className="mr-2" /> Reject
+                                                    </Button>
+                                                </div>
+                                            )}
+                                        </TableCell>
+                                    )}
+                                </TableRow>
+                            ))}
+                        </TableBody>
+                    </Table>
+                ) : (
+                    <div className="flex flex-col items-center justify-center gap-2 p-8 text-center text-muted-foreground">
+                        <PackageSearch className="size-12" />
+                        <p>No material requests for this project yet.</p>
+                        <p className="text-xs">Use the "Request Material" button to get started.</p>
+                    </div>
+                )}
+            </CardContent>
+        </Card>
     </div>
   );
 }
