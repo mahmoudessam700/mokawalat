@@ -72,7 +72,7 @@ export default function InventoryPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const { toast } = useToast();
-  
+
   const statusVariant: { [key in InventoryItem['status']]: 'secondary' | 'outline' | 'destructive' } = {
     'In Stock': 'secondary',
     'Low Stock': 'outline',
