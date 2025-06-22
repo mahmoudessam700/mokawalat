@@ -13,6 +13,7 @@ const transactionFormSchema = z.object({
   date: z.string().refine((date) => !isNaN(Date.parse(date)), {
     message: 'Please select a valid date.',
   }),
+  accountId: z.string().min(1, "An account is required."),
   projectId: z.string().optional(),
   clientId: z.string().optional(),
   supplierId: z.string().optional(),
@@ -45,6 +46,7 @@ export async function addTransaction(values: TransactionFormValues) {
     });
 
     revalidatePath('/financials');
+    revalidatePath('/financials/accounts');
     if (validatedFields.data.clientId) revalidatePath(`/clients/${validatedFields.data.clientId}`);
     if (validatedFields.data.supplierId) revalidatePath(`/suppliers/${validatedFields.data.supplierId}`);
     return { message: 'Transaction added successfully.', errors: null };
@@ -75,6 +77,7 @@ export async function updateTransaction(transactionId: string, values: Transacti
       date: new Date(validatedFields.data.date),
     });
     revalidatePath('/financials');
+    revalidatePath('/financials/accounts');
     if (validatedFields.data.clientId) revalidatePath(`/clients/${validatedFields.data.clientId}`);
     if (validatedFields.data.supplierId) revalidatePath(`/suppliers/${validatedFields.data.supplierId}`);
     return { message: 'Transaction updated successfully.', errors: null };
@@ -92,6 +95,7 @@ export async function deleteTransaction(transactionId: string) {
   try {
     await deleteDoc(doc(firestore, 'transactions', transactionId));
     revalidatePath('/financials');
+    revalidatePath('/financials/accounts');
     revalidatePath('/clients');
     revalidatePath('/suppliers');
     return { success: true, message: 'Transaction deleted successfully.' };

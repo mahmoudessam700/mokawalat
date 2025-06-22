@@ -18,7 +18,7 @@ import {
   DropdownMenuLabel,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Loader2, MoreHorizontal, PlusCircle, TrendingUp, TrendingDown, Minus, Trash2 } from 'lucide-react';
+import { Loader2, MoreHorizontal, PlusCircle, TrendingUp, TrendingDown, Minus, Trash2, Banknote, Landmark } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   Dialog,
@@ -70,6 +70,7 @@ type Transaction = {
   type: TransactionType;
   date: Timestamp;
   createdAt: Timestamp;
+  accountId: string;
   projectId?: string;
   clientId?: string;
   supplierId?: string;
@@ -78,6 +79,8 @@ type Transaction = {
 type Project = { id: string; name: string; };
 type Client = { id: string; name: string; };
 type Supplier = { id: string; name: string; };
+type Account = { id: string; name: string; initialBalance: number; };
+
 
 const transactionFormSchema = z.object({
   description: z.string().min(2, "Description must be at least 2 characters long."),
@@ -86,6 +89,7 @@ const transactionFormSchema = z.object({
   date: z.string().refine((date) => !isNaN(Date.parse(date)), {
     message: 'Please select a valid date.',
   }),
+  accountId: z.string().min(1, "An account is required."),
   projectId: z.string().optional(),
   clientId: z.string().optional(),
   supplierId: z.string().optional(),
@@ -105,6 +109,7 @@ export default function FinancialsPage() {
   const [projects, setProjects] = useState<Project[]>([]);
   const [clients, setClients] = useState<Client[]>([]);
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
+  const [accounts, setAccounts] = useState<Account[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isFormDialogOpen, setIsFormDialogOpen] = useState(false);
   const [transactionToEdit, setTransactionToEdit] = useState<Transaction | null>(null);
@@ -142,30 +147,49 @@ export default function FinancialsPage() {
     unsubscribes.push(onSnapshot(qSuppliers, (snapshot) => {
         setSuppliers(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Supplier)));
     }));
+    
+    const qAccounts = query(collection(firestore, 'accounts'), orderBy('name', 'asc'));
+    unsubscribes.push(onSnapshot(qAccounts, (snapshot) => {
+        setAccounts(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Account)));
+    }));
 
 
     return () => unsubscribes.forEach(unsub => unsub());
   }, [toast]);
 
-  const { totalIncome, totalExpenses, netBalance } = useMemo(() => {
-    return transactions.reduce((acc, transaction) => {
+  const { totalIncome, totalExpenses, netBalance, accountBalances } = useMemo(() => {
+    const totals = transactions.reduce((acc, transaction) => {
       if (transaction.type === 'Income') {
         acc.totalIncome += transaction.amount;
       } else {
         acc.totalExpenses += transaction.amount;
       }
-      acc.netBalance = acc.totalIncome - acc.totalExpenses;
       return acc;
-    }, { totalIncome: 0, totalExpenses: 0, netBalance: 0 });
-  }, [transactions]);
+    }, { totalIncome: 0, totalExpenses: 0 });
+
+    const accBalances = new Map<string, number>();
+    accounts.forEach(acc => {
+        let currentBalance = acc.initialBalance;
+        transactions.forEach(t => {
+            if (t.accountId === acc.id) {
+                if (t.type === 'Income') currentBalance += t.amount;
+                else currentBalance -= t.amount;
+            }
+        });
+        accBalances.set(acc.id, currentBalance);
+    });
+
+    return { ...totals, netBalance: totals.totalIncome - totals.totalExpenses, accountBalances: accBalances };
+  }, [transactions, accounts]);
   
   const nameMaps = useMemo(() => {
     return {
       projects: new Map(projects.map(p => [p.id, p.name])),
       clients: new Map(clients.map(c => [c.id, c.name])),
       suppliers: new Map(suppliers.map(s => [s.id, s.name])),
+      accounts: new Map(accounts.map(a => [a.id, a.name])),
     }
-  }, [projects, clients, suppliers]);
+  }, [projects, clients, suppliers, accounts]);
 
 
   const form = useForm<TransactionFormValues>({
@@ -175,6 +199,7 @@ export default function FinancialsPage() {
       amount: 0,
       type: 'Expense',
       date: new Date().toISOString().split('T')[0],
+      accountId: '',
       projectId: '',
       clientId: '',
       supplierId: '',
@@ -186,6 +211,7 @@ export default function FinancialsPage() {
       form.reset({
         ...transactionToEdit,
         date: transactionToEdit.date ? format(transactionToEdit.date.toDate(), 'yyyy-MM-dd') : '',
+        accountId: transactionToEdit.accountId || '',
         projectId: transactionToEdit.projectId || '',
         clientId: transactionToEdit.clientId || '',
         supplierId: transactionToEdit.supplierId || '',
@@ -264,34 +290,72 @@ export default function FinancialsPage() {
         </p>
       </div>
 
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Total Income</CardTitle>
-                <TrendingUp className="size-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-                <div className="text-2xl font-bold">{formatCurrency(totalIncome)}</div>
-            </CardContent>
-        </Card>
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Total Expenses</CardTitle>
-                <TrendingDown className="size-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-                <div className="text-2xl font-bold">{formatCurrency(totalExpenses)}</div>
-            </CardContent>
-        </Card>
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Net Balance</CardTitle>
-                <Minus className="size-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-                <div className={`text-2xl font-bold ${netBalance >= 0 ? 'text-success' : 'text-destructive'}`}>{formatCurrency(netBalance)}</div>
-            </CardContent>
-        </Card>
+      <div className="space-y-4">
+        <CardTitle className="text-xl">Overall Summary</CardTitle>
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">Total Income</CardTitle>
+                    <TrendingUp className="size-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                    <div className="text-2xl font-bold">{formatCurrency(totalIncome)}</div>
+                </CardContent>
+            </Card>
+            <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">Total Expenses</CardTitle>
+                    <TrendingDown className="size-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                    <div className="text-2xl font-bold">{formatCurrency(totalExpenses)}</div>
+                </CardContent>
+            </Card>
+            <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">Net Balance</CardTitle>
+                    <Minus className="size-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                    <div className={`text-2xl font-bold ${netBalance >= 0 ? 'text-success' : 'text-destructive'}`}>{formatCurrency(netBalance)}</div>
+                </CardContent>
+            </Card>
+        </div>
+      </div>
+
+      <div className="space-y-4">
+        <div className="flex items-center justify-between">
+            <CardTitle className="text-xl">Account Balances</CardTitle>
+            {profile?.role === 'admin' && (
+                <Button asChild variant="outline">
+                    <Link href="/financials/accounts">
+                        <Landmark className="mr-2"/> Manage Accounts
+                    </Link>
+                </Button>
+            )}
+        </div>
+        {isLoading ? (
+             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                <Skeleton className="h-24 w-full" />
+                <Skeleton className="h-24 w-full" />
+             </div>
+        ) : accounts.length > 0 ? (
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                {accounts.map(account => (
+                    <Card key={account.id}>
+                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                            <CardTitle className="text-sm font-medium">{account.name}</CardTitle>
+                            <Banknote className="size-4 text-muted-foreground" />
+                        </CardHeader>
+                        <CardContent>
+                            <div className="text-2xl font-bold">{formatCurrency(accountBalances.get(account.id) || 0)}</div>
+                        </CardContent>
+                    </Card>
+                ))}
+            </div>
+        ) : (
+             <p className="text-sm text-muted-foreground">No bank accounts created yet. Go to "Manage Accounts" to add one.</p>
+        )}
       </div>
 
       <Card>
@@ -303,7 +367,7 @@ export default function FinancialsPage() {
           {profile?.role === 'admin' && (
             <Dialog open={isFormDialogOpen} onOpenChange={handleFormDialogOpenChange}>
             <DialogTrigger asChild>
-                <Button onClick={() => setTransactionToEdit(null)}>
+                <Button onClick={() => setTransactionToEdit(null)} disabled={accounts.length === 0}>
                 <PlusCircle className="mr-2" />
                 Add Transaction
                 </Button>
@@ -322,7 +386,10 @@ export default function FinancialsPage() {
                       <FormField control={form.control} name="amount" render={({ field }) => (<FormItem><FormLabel>Amount (LE)</FormLabel><FormControl><Input type="number" placeholder="e.g., 1500.00" {...field} /></FormControl><FormMessage /></FormItem>)} />
                       <FormField control={form.control} name="type" render={({ field }) => (<FormItem><FormLabel>Type</FormLabel><Select onValueChange={field.onChange} defaultValue={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Select type" /></SelectTrigger></FormControl><SelectContent><SelectItem value="Income">Income</SelectItem><SelectItem value="Expense">Expense</SelectItem></SelectContent></Select><FormMessage /></FormItem>)} />
                     </div>
-                    <FormField control={form.control} name="date" render={({ field }) => (<FormItem><FormLabel>Transaction Date</FormLabel><FormControl><Input type="date" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                     <div className="grid grid-cols-2 gap-4">
+                        <FormField control={form.control} name="date" render={({ field }) => (<FormItem><FormLabel>Transaction Date</FormLabel><FormControl><Input type="date" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                        <FormField control={form.control} name="accountId" render={({ field }) => (<FormItem><FormLabel>Account</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Select an account" /></SelectTrigger></FormControl><SelectContent>{accounts.map(acc => (<SelectItem key={acc.id} value={acc.id}>{acc.name}</SelectItem>))}</SelectContent></Select><FormMessage /></FormItem>)} />
+                    </div>
                     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                         <FormField control={form.control} name="clientId" render={({ field }) => (<FormItem><FormLabel>Client (Optional)</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Link to a client" /></SelectTrigger></FormControl><SelectContent><SelectItem value="">None</SelectItem>{clients.map(client => (<SelectItem key={client.id} value={client.id}>{client.name}</SelectItem>))}</SelectContent></Select><FormMessage /></FormItem>)} />
                         <FormField control={form.control} name="supplierId" render={({ field }) => (<FormItem><FormLabel>Supplier (Optional)</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Link to a supplier" /></SelectTrigger></FormControl><SelectContent><SelectItem value="">None</SelectItem>{suppliers.map(supplier => (<SelectItem key={supplier.id} value={supplier.id}>{supplier.name}</SelectItem>))}</SelectContent></Select><FormMessage /></FormItem>)} />
@@ -343,6 +410,7 @@ export default function FinancialsPage() {
               <TableRow>
                 <TableHead>Date</TableHead>
                 <TableHead>Description</TableHead>
+                <TableHead>Account</TableHead>
                 <TableHead className="hidden md:table-cell">Linked To</TableHead>
                 <TableHead>Type</TableHead>
                 <TableHead className="text-right">Amount</TableHead>
@@ -354,7 +422,8 @@ export default function FinancialsPage() {
                 Array.from({ length: 5 }).map((_, index) => (
                   <TableRow key={index}>
                     <TableCell><Skeleton className="h-4 w-[100px]" /></TableCell>
-                    <TableCell><Skeleton className="h-4 w-[250px]" /></TableCell>
+                    <TableCell><Skeleton className="h-4 w-[200px]" /></TableCell>
+                     <TableCell><Skeleton className="h-4 w-[120px]" /></TableCell>
                     <TableCell className="hidden md:table-cell"><Skeleton className="h-4 w-[150px]" /></TableCell>
                     <TableCell><Skeleton className="h-6 w-[80px] rounded-full" /></TableCell>
                     <TableCell className="text-right"><Skeleton className="h-4 w-[100px] ml-auto" /></TableCell>
@@ -368,6 +437,7 @@ export default function FinancialsPage() {
                     <TableRow key={transaction.id}>
                         <TableCell>{transaction.date ? format(transaction.date.toDate(), 'PPP') : 'N/A'}</TableCell>
                         <TableCell className="font-medium">{transaction.description}</TableCell>
+                        <TableCell>{nameMaps.accounts.get(transaction.accountId) || 'N/A'}</TableCell>
                         <TableCell className="hidden md:table-cell">
                             {linkedEntity ? <Link href={linkedEntity.url} className="hover:underline">{linkedEntity.name} <span className="text-muted-foreground text-xs">({linkedEntity.type})</span></Link> : 'N/A'}
                         </TableCell>
@@ -389,7 +459,7 @@ export default function FinancialsPage() {
                 )})
               ) : (
                 <TableRow>
-                  <TableCell colSpan={6} className="h-24 text-center">No transactions found. Add one to get started.</TableCell>
+                  <TableCell colSpan={7} className="h-24 text-center">No transactions found. Add one to get started.</TableCell>
                 </TableRow>
               )}
             </TableBody>
