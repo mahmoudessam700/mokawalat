@@ -60,6 +60,7 @@ import { collection, onSnapshot, query, orderBy } from 'firebase/firestore';
 import { firestore } from '@/lib/firebase';
 import { Skeleton } from '@/components/ui/skeleton';
 
+// Define the inventory item type
 type InventoryItem = {
   id: string;
   name: string;
@@ -105,7 +106,7 @@ export default function InventoryPage() {
         toast({
           variant: 'destructive',
           title: 'Error',
-          description: 'Failed to fetch inventory. Check console for details.',
+          description: 'Failed to fetch inventory. Check permissions.',
         });
         setIsLoading(false);
       }
@@ -143,14 +144,6 @@ export default function InventoryPage() {
       setIsDialogOpen(false);
     }
   }
-
-  const getStatusVariant = (
-    status: InventoryItem['status']
-  ): 'secondary' | 'outline' | 'destructive' => {
-    if (status === 'Low Stock') return 'outline';
-    if (status === 'Out of Stock') return 'destructive';
-    return 'secondary';
-  };
 
   return (
     <div className="space-y-6">
@@ -221,7 +214,9 @@ export default function InventoryPage() {
                             Structural Steel
                           </SelectItem>
                           <SelectItem value="Aggregates">Aggregates</SelectItem>
-                          <SelectItem value="Safety Gear">Safety Gear</SelectItem>
+                          <SelectItem value="Safety Gear">
+                            Safety Gear
+                          </SelectItem>
                           <SelectItem value="Plumbing">Plumbing</SelectItem>
                           <SelectItem value="Electrical">Electrical</SelectItem>
                           <SelectItem value="Tools">Tools</SelectItem>
@@ -395,7 +390,15 @@ export default function InventoryPage() {
                       {item.warehouse}
                     </TableCell>
                     <TableCell>
-                      <Badge variant={getStatusVariant(item.status)}>
+                      <Badge
+                        variant={
+                          item.status === 'Low Stock'
+                            ? 'outline'
+                            : item.status === 'Out of Stock'
+                            ? 'destructive'
+                            : 'secondary'
+                        }
+                      >
                         {item.status}
                       </Badge>
                     </TableCell>
