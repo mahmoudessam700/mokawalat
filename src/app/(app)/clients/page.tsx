@@ -56,6 +56,7 @@ import { useToast } from '@/hooks/use-toast';
 import { collection, onSnapshot, query, orderBy, type Timestamp } from 'firebase/firestore';
 import { firestore } from '@/lib/firebase';
 import { Skeleton } from '@/components/ui/skeleton';
+import Link from 'next/link';
 
 type ClientStatus = 'Lead' | 'Active' | 'Inactive';
 
@@ -374,7 +375,9 @@ export default function ClientsPage() {
                             setClientToEdit(client);
                             setIsFormDialogOpen(true);
                           }}>Edit</DropdownMenuItem>
-                          <DropdownMenuItem>View Interactions</DropdownMenuItem>
+                          <DropdownMenuItem asChild>
+                            <Link href={`/clients/${client.id}`}>View Details</Link>
+                          </DropdownMenuItem>
                           <DropdownMenuItem
                             className="text-destructive"
                             onSelect={() => {
