@@ -40,47 +40,22 @@ import {
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { addEmployee } from './actions';
 import { useToast } from '@/hooks/use-toast';
+import { collection, onSnapshot, query, orderBy } from 'firebase/firestore';
+import { firestore } from '@/lib/firebase';
+import { Skeleton } from '@/components/ui/skeleton';
 
-const employees = [
-  {
-    name: 'Ahmed Ali',
-    email: 'ahmed.ali@example.com',
-    role: 'Project Manager',
-    department: 'Engineering',
-    status: 'Active',
-  },
-  {
-    name: 'Fatima Zahra',
-    email: 'fatima.zahra@example.com',
-    role: 'HR Specialist',
-    department: 'Human Resources',
-    status: 'Active',
-  },
-  {
-    name: 'Youssef Ibrahim',
-    email: 'youssef.ibrahim@example.com',
-    role: 'Accountant',
-    department: 'Finance',
-    status: 'On Leave',
-  },
-  {
-    name: 'Layla Hassan',
-    email: 'layla.hassan@example.com',
-    role: 'Civil Engineer',
-    department: 'Engineering',
-    status: 'Active',
-  },
-  {
-    name: 'Omar Abdullah',
-    email: 'omar.abdullah@example.com',
-    role: 'Procurement Officer',
-    department: 'Procurement',
-    status: 'Inactive',
-  },
-];
+// Define the employee type based on the schema and database structure
+type Employee = {
+  id: string;
+  name: string;
+  email: string;
+  role: string;
+  department: string;
+  status: 'Active' | 'On Leave' | 'Inactive';
+};
 
 const employeeFormSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters long."),
@@ -93,8 +68,25 @@ const employeeFormSchema = z.object({
 type EmployeeFormValues = z.infer<typeof employeeFormSchema>;
 
 export default function EmployeesPage() {
+  const [employees, setEmployees] = useState<Employee[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const { toast } = useToast();
+
+  useEffect(() => {
+    const q = query(collection(firestore, 'employees'), orderBy('name', 'asc'));
+    const unsubscribe = onSnapshot(q, (querySnapshot) => {
+      const employeesData: Employee[] = [];
+      querySnapshot.forEach((doc) => {
+        employeesData.push({ id: doc.id, ...doc.data() } as Employee);
+      });
+      setEmployees(employeesData);
+      setIsLoading(false);
+    });
+
+    // Cleanup subscription on unmount
+    return () => unsubscribe();
+  }, []);
 
   const form = useForm<EmployeeFormValues>({
     resolver: zodResolver(employeeFormSchema),
@@ -288,37 +280,61 @@ export default function EmployeesPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {employees.map((employee) => (
-                <TableRow key={employee.email}>
-                  <TableCell className="font-medium">{employee.name}</TableCell>
-                  <TableCell className="hidden md:table-cell">{employee.email}</TableCell>
-                  <TableCell>{employee.role}</TableCell>
-                  <TableCell className="hidden md:table-cell">{employee.department}</TableCell>
-                  <TableCell>
-                    <Badge variant={employee.status === 'Active' ? 'secondary' : employee.status === 'On Leave' ? 'outline' : 'destructive'}>
-                      {employee.status}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button aria-haspopup="true" size="icon" variant="ghost">
-                          <MoreHorizontal className="h-4 w-4" />
-                          <span className="sr-only">Toggle menu</span>
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                        <DropdownMenuItem>Edit</DropdownMenuItem>
-                        <DropdownMenuItem>View Details</DropdownMenuItem>
-                        <DropdownMenuItem className="text-destructive">
-                          Delete
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
+              {isLoading ? (
+                Array.from({ length: 5 }).map((_, index) => (
+                  <TableRow key={index}>
+                    <TableCell><Skeleton className="h-4 w-[150px]" /></TableCell>
+                    <TableCell className="hidden md:table-cell"><Skeleton className="h-4 w-[200px]" /></TableCell>
+                    <TableCell><Skeleton className="h-4 w-[100px]" /></TableCell>
+                    <TableCell className="hidden md:table-cell"><Skeleton className="h-4 w-[100px]" /></TableCell>
+                    <TableCell><Skeleton className="h-6 w-[70px] rounded-full" /></TableCell>
+                    <TableCell>
+                      <Button aria-haspopup="true" size="icon" variant="ghost" disabled>
+                        <MoreHorizontal className="h-4 w-4" />
+                        <span className="sr-only">Toggle menu</span>
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))
+              ) : employees.length > 0 ? (
+                employees.map((employee) => (
+                  <TableRow key={employee.id}>
+                    <TableCell className="font-medium">{employee.name}</TableCell>
+                    <TableCell className="hidden md:table-cell">{employee.email}</TableCell>
+                    <TableCell>{employee.role}</TableCell>
+                    <TableCell className="hidden md:table-cell">{employee.department}</TableCell>
+                    <TableCell>
+                      <Badge variant={employee.status === 'Active' ? 'secondary' : employee.status === 'On Leave' ? 'outline' : 'destructive'}>
+                        {employee.status}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button aria-haspopup="true" size="icon" variant="ghost">
+                            <MoreHorizontal className="h-4 w-4" />
+                            <span className="sr-only">Toggle menu</span>
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                          <DropdownMenuItem>Edit</DropdownMenuItem>
+                          <DropdownMenuItem>View Details</DropdownMenuItem>
+                          <DropdownMenuItem className="text-destructive">
+                            Delete
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </TableCell>
+                  </TableRow>
+                ))
+              ) : (
+                 <TableRow>
+                  <TableCell colSpan={6} className="h-24 text-center">
+                    No employees found. Add one to get started.
                   </TableCell>
                 </TableRow>
-              ))}
+              )}
             </TableBody>
           </Table>
         </CardContent>
