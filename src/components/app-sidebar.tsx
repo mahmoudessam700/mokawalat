@@ -1,3 +1,4 @@
+
 'use client';
 
 import {
@@ -25,9 +26,25 @@ import {
   Map,
 } from 'lucide-react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Separator } from './ui/separator';
+import { useState } from 'react';
+import { signOut } from 'firebase/auth';
+import { auth } from '@/lib/firebase';
+import { useToast } from '@/hooks/use-toast';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
+
 
 const menuItems = [
   { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
@@ -43,16 +60,33 @@ const menuItems = [
   { href: '/iso-compliance', label: 'ISO Compliance', icon: CheckSquare },
 ];
 
-const bottomMenuItems = [
-    { href: '/settings', label: 'Settings', icon: Settings },
-    { href: '/logout', label: 'Logout', icon: LogOut },
-]
-
 export function AppSidebar() {
   const pathname = usePathname();
+  const router = useRouter();
+  const { toast } = useToast();
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
 
   const isActive = (href: string) => {
     return pathname === href;
+  };
+  
+  const handleLogout = async () => {
+    setIsLoggingOut(true);
+    try {
+      await signOut(auth);
+      toast({
+        title: 'Logged Out',
+        description: 'You have been successfully logged out.',
+      });
+      router.push('/login');
+    } catch (error) {
+      toast({
+        variant: 'destructive',
+        title: 'Logout Failed',
+        description: 'An error occurred while logging out.',
+      });
+      setIsLoggingOut(false);
+    }
   };
 
   return (
@@ -63,7 +97,7 @@ export function AppSidebar() {
           <span className="font-headline text-xl font-semibold">Mokawalat</span>
         </div>
       </SidebarHeader>
-      <SidebarContent className="p-2">
+      <SidebarContent className="flex flex-col p-2">
         <SidebarMenu>
           {menuItems.map((item) => (
             <SidebarMenuItem key={item.href}>
@@ -75,6 +109,46 @@ export function AppSidebar() {
               </SidebarMenuButton>
             </SidebarMenuItem>
           ))}
+        </SidebarMenu>
+
+        <SidebarMenu className="mt-auto">
+            <SidebarMenuItem>
+                <SidebarMenuButton asChild isActive={isActive('/settings')} tooltip="Settings">
+                    <Link href="/settings">
+                        <Settings />
+                        <span>Settings</span>
+                    </Link>
+                </SidebarMenuButton>
+            </SidebarMenuItem>
+            <SidebarMenuItem>
+                <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                        <SidebarMenuButton
+                        variant="ghost"
+                        className="w-full justify-start text-sidebar-foreground hover:bg-destructive/10 hover:text-destructive"
+                        disabled={isLoggingOut}
+                        tooltip="Logout"
+                        >
+                        <LogOut />
+                        <span>Logout</span>
+                        </SidebarMenuButton>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                        <AlertDialogHeader>
+                        <AlertDialogTitle>Are you sure you want to log out?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            You will be returned to the login page.
+                        </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction onClick={handleLogout} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                            {isLoggingOut ? 'Logging out...' : 'Logout'}
+                        </AlertDialogAction>
+                        </AlertDialogFooter>
+                    </AlertDialogContent>
+                </AlertDialog>
+            </SidebarMenuItem>
         </SidebarMenu>
       </SidebarContent>
       <SidebarFooter className='mt-auto'>
