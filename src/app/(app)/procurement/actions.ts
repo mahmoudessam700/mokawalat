@@ -1,7 +1,7 @@
 'use server';
 
 import { firestore } from '@/lib/firebase';
-import { collection, addDoc, serverTimestamp, doc, deleteDoc } from 'firebase/firestore';
+import { collection, addDoc, serverTimestamp, doc, deleteDoc, updateDoc } from 'firebase/firestore';
 import { z } from 'zod';
 import { revalidatePath } from 'next/cache';
 
@@ -36,6 +36,31 @@ export async function addPurchaseRequest(values: ProcurementFormValues) {
     console.error('Error creating purchase request:', error);
     return { message: 'Failed to create purchase request.', errors: { _server: ['An unexpected error occurred.'] } };
   }
+}
+
+export async function updatePurchaseRequest(requestId: string, values: ProcurementFormValues) {
+    if (!requestId) {
+        return { message: 'Request ID is required.', errors: { _server: ['Request ID not provided.'] } };
+    }
+
+    const validatedFields = procurementFormSchema.safeParse(values);
+
+    if (!validatedFields.success) {
+        return {
+            errors: validatedFields.error.flatten().fieldErrors,
+            message: 'Invalid data provided. Please check the form.',
+        };
+    }
+
+    try {
+        const requestRef = doc(firestore, 'procurement', requestId);
+        await updateDoc(requestRef, validatedFields.data);
+        revalidatePath('/procurement');
+        return { message: 'Purchase request updated successfully.', errors: null };
+    } catch (error) {
+        console.error('Error updating purchase request:', error);
+        return { message: 'Failed to update purchase request.', errors: { _server: ['An unexpected error occurred.'] } };
+    }
 }
 
 export async function deletePurchaseRequest(requestId: string) {

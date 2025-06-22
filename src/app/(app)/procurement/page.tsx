@@ -64,7 +64,7 @@ import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useState, useEffect, useMemo } from 'react';
-import { addPurchaseRequest, deletePurchaseRequest } from './actions';
+import { addPurchaseRequest, deletePurchaseRequest, updatePurchaseRequest } from './actions';
 import { useToast } from '@/hooks/use-toast';
 import { collection, onSnapshot, query, orderBy, Timestamp } from 'firebase/firestore';
 import { firestore } from '@/lib/firebase';
@@ -116,6 +116,7 @@ export default function ProcurementPage() {
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [requestToEdit, setRequestToEdit] = useState<PurchaseRequest | null>(null);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [requestToDelete, setRequestToDelete] = useState<PurchaseRequest | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -171,15 +172,25 @@ export default function ProcurementPage() {
     },
   });
 
+  useEffect(() => {
+    if (requestToEdit) {
+      form.reset(requestToEdit);
+    } else {
+      form.reset(form.formState.defaultValues);
+    }
+  }, [requestToEdit, form]);
+
   async function onSubmit(values: ProcurementFormValues) {
-    const result = await addPurchaseRequest(values);
+    const result = requestToEdit
+        ? await updatePurchaseRequest(requestToEdit.id, values)
+        : await addPurchaseRequest(values);
 
     if (result.errors) {
       toast({ variant: 'destructive', title: 'Error', description: result.message });
     } else {
       toast({ title: 'Success', description: result.message });
-      form.reset();
       setIsDialogOpen(false);
+      setRequestToEdit(null);
     }
   }
 
@@ -206,6 +217,13 @@ export default function ProcurementPage() {
     setRequestToDelete(null);
   }
 
+  const handleFormDialogOpenChange = (open: boolean) => {
+    if (!open) {
+      setRequestToEdit(null);
+    }
+    setIsDialogOpen(open);
+  }
+
   return (
     <>
     <div className="space-y-6">
@@ -214,17 +232,19 @@ export default function ProcurementPage() {
           <h1 className="font-headline text-3xl font-bold tracking-tight">Procurement Management</h1>
           <p className="text-muted-foreground">Create and track all purchase requests.</p>
         </div>
-        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+        <Dialog open={isDialogOpen} onOpenChange={handleFormDialogOpenChange}>
           <DialogTrigger asChild>
-            <Button>
+            <Button onClick={() => setRequestToEdit(null)}>
               <PlusCircle className="mr-2" />
               Create Purchase Request
             </Button>
           </DialogTrigger>
           <DialogContent className="sm:max-w-[480px]">
             <DialogHeader>
-              <DialogTitle>New Purchase Request</DialogTitle>
-              <DialogDescription>Fill in the details to create a new purchase request.</DialogDescription>
+              <DialogTitle>{requestToEdit ? 'Edit Purchase Request' : 'New Purchase Request'}</DialogTitle>
+              <DialogDescription>
+                {requestToEdit ? "Update the details of the purchase request." : "Fill in the details to create a new purchase request."}
+              </DialogDescription>
             </DialogHeader>
             <Form {...form}>
               <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 py-4">
@@ -260,7 +280,7 @@ export default function ProcurementPage() {
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Supplier</FormLabel>
-                      <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <Select onValueChange={field.onChange} value={field.value}>
                         <FormControl>
                           <SelectTrigger>
                             <SelectValue placeholder="Select a supplier" />
@@ -282,7 +302,7 @@ export default function ProcurementPage() {
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Project</FormLabel>
-                      <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <Select onValueChange={field.onChange} value={field.value}>
                         <FormControl>
                           <SelectTrigger>
                             <SelectValue placeholder="Select a project" />
@@ -298,12 +318,35 @@ export default function ProcurementPage() {
                     </FormItem>
                   )}
                 />
+                 <FormField
+                  control={form.control}
+                  name="status"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Status</FormLabel>
+                      <Select onValueChange={field.onChange} value={field.value}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select status" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="Pending">Pending</SelectItem>
+                          <SelectItem value="Approved">Approved</SelectItem>
+                          <SelectItem value="Rejected">Rejected</SelectItem>
+                          <SelectItem value="Ordered">Ordered</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
                 <DialogFooter>
                   <Button type="submit" disabled={form.formState.isSubmitting}>
                     {form.formState.isSubmitting ? (
-                      <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Submitting...</>
+                      <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Saving...</>
                     ) : (
-                      'Submit Request'
+                      requestToEdit ? 'Save Changes' : 'Submit Request'
                     )}
                   </Button>
                 </DialogFooter>
@@ -363,8 +406,11 @@ export default function ProcurementPage() {
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
                           <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                           <DropdownMenuItem onSelect={() => {
+                            setRequestToEdit(request);
+                            setIsDialogOpen(true);
+                           }}>Edit</DropdownMenuItem>
                           <DropdownMenuItem>View Details</DropdownMenuItem>
-                          <DropdownMenuItem>Approve</DropdownMenuItem>
                           <DropdownMenuItem
                             className="text-destructive"
                             onSelect={() => {
