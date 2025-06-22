@@ -2,7 +2,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { doc, getDoc, collection, query, where, getDocs, type Timestamp } from 'firebase/firestore';
+import { doc, onSnapshot, collection, query, where, type Timestamp } from 'firebase/firestore';
 import { firestore } from '@/lib/firebase';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -65,41 +65,38 @@ export default function EmployeeDetailPage({ params }: { params: { id: string } 
 
   useEffect(() => {
     if (!employeeId) return;
+    setIsLoading(true);
+    setError(null);
 
-    const fetchData = async () => {
-      setIsLoading(true);
-      setError(null);
-      try {
-        const employeeRef = doc(firestore, 'employees', employeeId);
-        const employeeDoc = await getDoc(employeeRef);
+    const unsubscribes: (() => void)[] = [];
 
-        if (employeeDoc.exists()) {
-          setEmployee({ id: employeeDoc.id, ...employeeDoc.data() } as Employee);
-          
-          // Query for projects this employee is assigned to
-          const projectsQuery = query(
-            collection(firestore, 'projects'),
-            where('teamMemberIds', 'array-contains', employeeId)
-          );
-          const projectsSnapshot = await getDocs(projectsQuery);
-          const projectsData: Project[] = [];
-          projectsSnapshot.forEach(doc => {
-            projectsData.push({ id: doc.id, ...doc.data() } as Project);
-          });
-          setProjects(projectsData);
-
+    const employeeRef = doc(firestore, 'employees', employeeId);
+    unsubscribes.push(onSnapshot(employeeRef, (doc) => {
+        if (doc.exists()) {
+            setEmployee({ id: doc.id, ...doc.data() } as Employee);
         } else {
-          setError('Employee not found.');
+            setError('Employee not found.');
         }
-      } catch (err) {
-        console.error('Error fetching employee details:', err);
-        setError('Failed to fetch employee details. If you see a Firestore error in the console, you may need to create a composite index for querying projects by team members.');
-      } finally {
         setIsLoading(false);
-      }
-    };
+    }, (err) => {
+        console.error('Error fetching employee:', err);
+        setError('Failed to fetch employee details.');
+        setIsLoading(false);
+    }));
 
-    fetchData();
+    const projectsQuery = query(
+        collection(firestore, 'projects'),
+        where('teamMemberIds', 'array-contains', employeeId)
+    );
+    unsubscribes.push(onSnapshot(projectsQuery, (snapshot) => {
+        const projectsData: Project[] = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Project));
+        setProjects(projectsData);
+    }, (err) => {
+        console.error('Error fetching projects:', err);
+        setError('Failed to fetch assigned projects. If you see a Firestore error in the console, you may need to create a composite index.');
+    }));
+
+    return () => unsubscribes.forEach(unsub => unsub());
   }, [employeeId]);
   
   if (isLoading) {
@@ -222,7 +219,7 @@ export default function EmployeeDetailPage({ params }: { params: { id: string } 
                                         </TableCell>
                                     </TableRow>
                                 ))}
-                            </TableBody>
+                            </Body>
                         </Table>
                     ) : (
                         <div className="flex flex-col items-center justify-center gap-2 py-8 text-center text-muted-foreground">

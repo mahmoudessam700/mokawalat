@@ -1,7 +1,8 @@
+
 'use client';
 
 import { useEffect, useState } from 'react';
-import { doc, getDoc, collection, query, where, getDocs, type Timestamp } from 'firebase/firestore';
+import { doc, onSnapshot, collection, query, where, type Timestamp } from 'firebase/firestore';
 import { firestore } from '@/lib/firebase';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -67,57 +68,47 @@ export default function SupplierDetailPage({ params }: { params: { id: string } 
 
   useEffect(() => {
     if (!supplierId) return;
+    setIsLoading(true);
+    setError(null);
 
-    const fetchData = async () => {
-      setIsLoading(true);
-      setError(null);
-      try {
-        const supplierRef = doc(firestore, 'suppliers', supplierId);
-        const supplierDoc = await getDoc(supplierRef);
+    const unsubscribes: (() => void)[] = [];
 
-        if (supplierDoc.exists()) {
-          setSupplier({ id: supplierDoc.id, ...supplierDoc.data() } as Supplier);
-
-          // Query for purchase requests from this supplier
-          const requestsQuery = query(
-            collection(firestore, 'procurement'),
-            where('supplierId', '==', supplierId)
-          );
-          const requestsSnapshot = await getDocs(requestsQuery);
-          const requestsData: PurchaseRequest[] = [];
-          const projectIds = new Set<string>();
-          requestsSnapshot.forEach(doc => {
-            const request = { id: doc.id, ...doc.data() } as PurchaseRequest;
-            requestsData.push(request);
-            if (request.projectId) {
-                projectIds.add(request.projectId);
-            }
-          });
-          setRequests(requestsData);
-
-          // Fetch project names for display
-          if (projectIds.size > 0) {
-            const projectsQuery = query(collection(firestore, 'projects'), where('__name__', 'in', Array.from(projectIds)));
-            const projectsSnapshot = await getDocs(projectsQuery);
-            const projectMap = new Map<string, string>();
-            projectsSnapshot.forEach(doc => {
-                projectMap.set(doc.id, (doc.data() as Project).name);
-            });
-            setProjects(projectMap);
-          }
-
+    const supplierRef = doc(firestore, 'suppliers', supplierId);
+    unsubscribes.push(onSnapshot(supplierRef, (doc) => {
+        if (doc.exists()) {
+            setSupplier({ id: doc.id, ...doc.data() } as Supplier);
         } else {
-          setError('Supplier not found.');
+            setError('Supplier not found.');
         }
-      } catch (err) {
-        console.error('Error fetching supplier details:', err);
-        setError('Failed to fetch supplier details. If you see a Firestore error in the console, you may need to create a composite index.');
-      } finally {
         setIsLoading(false);
-      }
-    };
+    }, (err) => {
+        console.error('Error fetching supplier:', err);
+        setError('Failed to fetch supplier details.');
+        setIsLoading(false);
+    }));
 
-    fetchData();
+    const requestsQuery = query(
+        collection(firestore, 'procurement'),
+        where('supplierId', '==', supplierId)
+    );
+    unsubscribes.push(onSnapshot(requestsQuery, (snapshot) => {
+        const requestsData: PurchaseRequest[] = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as PurchaseRequest));
+        setRequests(requestsData);
+    }, (err) => {
+        console.error('Error fetching procurement history:', err);
+        setError('Failed to fetch procurement history. You may need to create a composite index in Firestore.');
+    }));
+
+    const projectsQuery = query(collection(firestore, 'projects'));
+    unsubscribes.push(onSnapshot(projectsQuery, (snapshot) => {
+        const projectMap = new Map<string, string>();
+        snapshot.forEach(doc => {
+            projectMap.set(doc.id, (doc.data() as Project).name);
+        });
+        setProjects(projectMap);
+    }));
+    
+    return () => unsubscribes.forEach(unsub => unsub());
   }, [supplierId]);
 
   if (isLoading) {
