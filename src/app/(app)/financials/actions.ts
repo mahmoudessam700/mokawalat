@@ -1,7 +1,7 @@
 'use server';
 
 import { firestore } from '@/lib/firebase';
-import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
+import { collection, addDoc, serverTimestamp, doc, deleteDoc } from 'firebase/firestore';
 import { z } from 'zod';
 import { revalidatePath } from 'next/cache';
 
@@ -37,5 +37,20 @@ export async function addTransaction(values: TransactionFormValues) {
   } catch (error) {
     console.error('Error adding transaction:', error);
     return { message: 'Failed to add transaction.', errors: { _server: ['An unexpected error occurred.'] } };
+  }
+}
+
+export async function deleteTransaction(transactionId: string) {
+  if (!transactionId) {
+    return { success: false, message: 'Transaction ID is required.' };
+  }
+
+  try {
+    await deleteDoc(doc(firestore, 'transactions', transactionId));
+    revalidatePath('/financials');
+    return { success: true, message: 'Transaction deleted successfully.' };
+  } catch (error) {
+    console.error('Error deleting transaction:', error);
+    return { success: false, message: 'Failed to delete transaction.' };
   }
 }
