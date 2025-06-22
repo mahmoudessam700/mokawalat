@@ -56,6 +56,11 @@ type InventoryItem = {
   name: string;
   status: 'In Stock' | 'Low Stock' | 'Out of Stock';
 };
+type MaterialRequest = {
+  itemName: string;
+  projectId: string;
+  status: 'Pending' | 'Approved' | 'Rejected';
+};
 type PendingTask = {
   id: string;
   title: string;
@@ -82,11 +87,12 @@ export default function DashboardPage() {
   const [projectStatusData, setProjectStatusData] = useState<any[]>([]);
   const [procurementTasks, setProcurementTasks] = useState<PendingTask[]>([]);
   const [inventoryTasks, setInventoryTasks] = useState<PendingTask[]>([]);
+  const [materialRequestTasks, setMaterialRequestTasks] = useState<PendingTask[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   const pendingTasks = useMemo(
-    () => [...procurementTasks, ...inventoryTasks],
-    [procurementTasks, inventoryTasks]
+    () => [...procurementTasks, ...inventoryTasks, ...materialRequestTasks],
+    [procurementTasks, inventoryTasks, materialRequestTasks]
   );
   const netBalance = useMemo(
     () => monthlyFinancials.revenue - monthlyFinancials.expenses,
@@ -201,6 +207,25 @@ export default function DashboardPage() {
           };
         });
         setProcurementTasks(tasks);
+      })
+    );
+    
+    const qMaterialRequests = query(
+      collection(firestore, 'materialRequests'),
+      where('status', '==', 'Pending')
+    );
+    unsubscribes.push(
+      onSnapshot(qMaterialRequests, (snapshot) => {
+        const tasks = snapshot.docs.map((doc) => {
+          const data = doc.data() as MaterialRequest;
+          return {
+            id: doc.id,
+            title: `Material request for "${data.itemName}"`,
+            type: 'Project Request',
+            link: `/projects/${data.projectId}`,
+          };
+        });
+        setMaterialRequestTasks(tasks);
       })
     );
 
