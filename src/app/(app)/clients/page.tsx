@@ -17,7 +17,7 @@ import {
   DropdownMenuLabel,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Loader2, MoreHorizontal, PlusCircle } from 'lucide-react';
+import { Loader2, MoreHorizontal, PlusCircle, Trash2 } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   Dialog,
@@ -28,6 +28,16 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog';
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import {
@@ -41,7 +51,7 @@ import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useState, useEffect } from 'react';
-import { addClient } from './actions';
+import { addClient, deleteClient } from './actions';
 import { useToast } from '@/hooks/use-toast';
 import { collection, onSnapshot, query, orderBy, type Timestamp } from 'firebase/firestore';
 import { firestore } from '@/lib/firebase';
@@ -78,7 +88,10 @@ type ClientFormValues = z.infer<typeof clientFormSchema>;
 export default function ClientsPage() {
   const [clients, setClients] = useState<Client[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [clientToDelete, setClientToDelete] = useState<Client | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -129,11 +142,36 @@ export default function ClientsPage() {
         description: result.message,
       });
       form.reset();
-      setIsDialogOpen(false);
+      setIsAddDialogOpen(false);
     }
   }
 
+  async function handleDeleteClient() {
+    if (!clientToDelete) return;
+
+    setIsDeleting(true);
+    const result = await deleteClient(clientToDelete.id);
+    setIsDeleting(false);
+
+    if (result.success) {
+      toast({
+        title: 'Success',
+        description: result.message,
+      });
+    } else {
+      toast({
+        variant: 'destructive',
+        title: 'Error',
+        description: result.message,
+      });
+    }
+    setIsDeleteDialogOpen(false);
+    setClientToDelete(null);
+  }
+
+
   return (
+    <>
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
@@ -144,7 +182,7 @@ export default function ClientsPage() {
             Manage your current and potential clients.
           </p>
         </div>
-        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+        <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
           <DialogTrigger asChild>
             <Button>
               <PlusCircle className="mr-2" />
@@ -315,7 +353,14 @@ export default function ClientsPage() {
                           <DropdownMenuLabel>Actions</DropdownMenuLabel>
                           <DropdownMenuItem>Edit</DropdownMenuItem>
                           <DropdownMenuItem>View Interactions</DropdownMenuItem>
-                          <DropdownMenuItem className="text-destructive">
+                          <DropdownMenuItem
+                            className="text-destructive"
+                            onSelect={() => {
+                              setClientToDelete(client);
+                              setIsDeleteDialogOpen(true);
+                            }}
+                          >
+                            <Trash2 className="mr-2 h-4 w-4" />
                             Delete
                           </DropdownMenuItem>
                         </DropdownMenuContent>
@@ -335,5 +380,27 @@ export default function ClientsPage() {
         </CardContent>
       </Card>
     </div>
+    <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <AlertDialogContent>
+            <AlertDialogHeader>
+                <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                <AlertDialogDescription>
+                    This action cannot be undone. This will permanently delete the client "{clientToDelete?.name}" from your records.
+                </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+                <AlertDialogCancel onClick={() => setClientToDelete(null)}>Cancel</AlertDialogCancel>
+                <AlertDialogAction
+                    onClick={handleDeleteClient}
+                    disabled={isDeleting}
+                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                >
+                    {isDeleting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Trash2 className="mr-2 h-4 w-4" />}
+                    Delete
+                </AlertDialogAction>
+            </AlertDialogFooter>
+        </AlertDialogContent>
+    </AlertDialog>
+    </>
   );
 }

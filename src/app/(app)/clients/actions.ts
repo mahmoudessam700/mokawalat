@@ -1,7 +1,7 @@
 'use server';
 
 import { firestore } from '@/lib/firebase';
-import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
+import { collection, addDoc, serverTimestamp, doc, deleteDoc } from 'firebase/firestore';
 import { z } from 'zod';
 import { revalidatePath } from 'next/cache';
 
@@ -35,5 +35,20 @@ export async function addClient(values: ClientFormValues) {
   } catch (error) {
     console.error('Error adding client:', error);
     return { message: 'Failed to add client.', errors: { _server: ['An unexpected error occurred.'] } };
+  }
+}
+
+export async function deleteClient(clientId: string) {
+  if (!clientId) {
+    return { success: false, message: 'Client ID is required.' };
+  }
+
+  try {
+    await deleteDoc(doc(firestore, 'clients', clientId));
+    revalidatePath('/clients');
+    return { success: true, message: 'Client deleted successfully.' };
+  } catch (error) {
+    console.error('Error deleting client:', error);
+    return { success: false, message: 'Failed to delete client.' };
   }
 }
