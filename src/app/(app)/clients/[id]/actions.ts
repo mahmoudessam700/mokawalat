@@ -1,9 +1,11 @@
 'use server';
 
 import { firestore } from '@/lib/firebase';
-import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
+import { collection, addDoc, serverTimestamp, getDocs, query, orderBy, Timestamp } from 'firebase/firestore';
 import { z } from 'zod';
 import { revalidatePath } from 'next/cache';
+import { summarizeClientInteractions } from '@/ai/flows/summarize-client-interactions';
+import { format } from 'date-fns';
 
 const interactionFormSchema = z.object({
   type: z.enum(["Call", "Email", "Meeting", "Note"]),
@@ -46,4 +48,41 @@ export async function addInteraction(clientId: string, values: InteractionFormVa
     console.error('Error adding interaction:', error);
     return { message: 'Failed to log interaction.', errors: { _server: ['An unexpected error occurred.'] } };
   }
+}
+
+
+export async function getInteractionSummary(clientId: string) {
+    if (!clientId) {
+        return { error: true, message: 'Client ID is required.', data: null };
+    }
+
+    try {
+        const interactionsQuery = query(
+            collection(firestore, 'clients', clientId, 'interactions'),
+            orderBy('date', 'desc')
+        );
+        const snapshot = await getDocs(interactionsQuery);
+        
+        if (snapshot.empty) {
+            return { error: false, message: 'No interactions to summarize.', data: { summary: 'This client has no recorded interactions yet.'} };
+        }
+        
+        const interactionLog = snapshot.docs.map(doc => {
+            const data = doc.data() as { date: Timestamp; type: string; notes: string };
+            const date = data.date ? format(data.date.toDate(), 'PPP') : 'N/A';
+            return `- Date: ${date}, Type: ${data.type}\n  Notes: ${data.notes}`;
+        }).join('\n\n');
+
+        const result = await summarizeClientInteractions({ interactionLog });
+        
+        if (result.summary) {
+             return { error: false, message: 'Summary generated.', data: result };
+        } else {
+            return { error: true, message: 'AI could not generate a summary.', data: null };
+        }
+
+    } catch(error) {
+        console.error('Error generating interaction summary:', error);
+        return { error: true, message: 'An unexpected error occurred while generating the summary.', data: null };
+    }
 }

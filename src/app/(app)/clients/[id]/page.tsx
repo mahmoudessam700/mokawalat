@@ -1,12 +1,12 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { doc, getDoc, onSnapshot, collection, query, orderBy, Timestamp } from 'firebase/firestore';
+import { doc, onSnapshot, collection, query, orderBy, Timestamp } from 'firebase/firestore';
 import { firestore } from '@/lib/firebase';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
-import { ArrowLeft, User, Phone, Mail, PlusCircle, Loader2, MessageSquare, Briefcase, PhoneCall, MailIcon, Users, NotepadText } from 'lucide-react';
+import { ArrowLeft, User, Phone, Mail, PlusCircle, Loader2, MessageSquare, Briefcase, PhoneCall, MailIcon, Users, NotepadText, Lightbulb, Sparkles, AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import {
@@ -27,7 +27,8 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useToast } from '@/hooks/use-toast';
-import { addInteraction } from './actions';
+import { addInteraction, getInteractionSummary } from './actions';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
 type ClientStatus = 'Lead' | 'Active' | 'Inactive';
 type InteractionType = 'Call' | 'Email' | 'Meeting' | 'Note';
@@ -70,6 +71,86 @@ const interactionFormSchema = z.object({
 });
 
 type InteractionFormValues = z.infer<typeof interactionFormSchema>;
+
+function ClientAiSummary({ clientId, clientName }: { clientId: string, clientName: string }) {
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [summary, setSummary] = useState<string | null>(null);
+
+  const handleAnalyze = async () => {
+    setIsLoading(true);
+    setError(null);
+    setSummary(null);
+    try {
+      const result = await getInteractionSummary(clientId);
+      if (result.error || !result.data) {
+        throw new Error(result.message || 'Failed to get summary.');
+      }
+      setSummary(result.data.summary);
+    } catch (err: any) {
+      setError(err.message || 'An unexpected error occurred.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+            <Sparkles className="size-5 text-primary"/>
+            AI Interaction Summary
+        </CardTitle>
+        <CardDescription>
+          Get an AI-generated summary of the entire interaction history with {clientName}.
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        {!summary && !isLoading && (
+            <div className="flex flex-col items-center justify-center gap-4 rounded-lg border-2 border-dashed border-muted p-8 text-center">
+                <Lightbulb className="size-12 text-muted-foreground" />
+                <p className="text-muted-foreground">Ready to summarize client interactions.</p>
+                <Button onClick={handleAnalyze} disabled={isLoading}>
+                    {isLoading ? (
+                        <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Analyzing...</>
+                    ) : ( 'Generate Summary' )}
+                </Button>
+            </div>
+        )}
+        
+        {isLoading && (
+            <div className="space-y-3">
+                <Skeleton className="h-4 w-4/5" />
+                <Skeleton className="h-4 w-full" />
+                <Skeleton className="h-4 w-full" />
+                <Skeleton className="h-4 w-3/4" />
+            </div>
+        )}
+
+        {error && (
+            <Alert variant="destructive">
+                <AlertCircle className="h-4 w-4" />
+                <AlertTitle>Summary Failed</AlertTitle>
+                <AlertDescription>{error}</AlertDescription>
+            </Alert>
+        )}
+
+        {summary && (
+            <div>
+                <p className="text-sm text-foreground whitespace-pre-wrap">{summary}</p>
+                <div className="flex justify-end mt-4">
+                    <Button onClick={handleAnalyze} variant="outline" size="sm" disabled={isLoading}>
+                        {isLoading ? (
+                            <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Regenerating...</>
+                        ) : ( 'Regenerate' )}
+                    </Button>
+                </div>
+            </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
 
 export default function ClientDetailPage({ params }: { params: { id: string } }) {
   const [client, setClient] = useState<Client | null>(null);
@@ -157,8 +238,11 @@ export default function ClientDetailPage({ params }: { params: { id: string } })
             </div>
         </div>
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-            <Card className="lg:col-span-1"><CardContent className="p-6"><Skeleton className="h-48 w-full" /></CardContent></Card>
-            <Card className="lg:col-span-2"><CardContent className="p-6"><Skeleton className="h-48 w-full" /></CardContent></Card>
+            <div className="lg:col-span-1 space-y-6">
+                <Card><CardContent className="p-6"><Skeleton className="h-32 w-full" /></CardContent></Card>
+                <Card><CardContent className="p-6"><Skeleton className="h-48 w-full" /></CardContent></Card>
+            </div>
+            <Card className="lg:col-span-2"><CardContent className="p-6"><Skeleton className="h-80 w-full" /></CardContent></Card>
         </div>
       </div>
     );
@@ -202,29 +286,33 @@ export default function ClientDetailPage({ params }: { params: { id: string } })
         </div>
         
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-           <Card className="lg:col-span-1">
-                <CardHeader>
-                    <CardTitle>Client Information</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                    <div className="flex items-center gap-4">
-                        <Briefcase className="size-4 text-muted-foreground" />
-                        <span className="text-sm">{client.company || 'N/A'}</span>
-                    </div>
-                    <div className="flex items-center gap-4">
-                        <Mail className="size-4 text-muted-foreground" />
-                        <a href={`mailto:${client.email}`} className="text-sm hover:underline">{client.email}</a>
-                    </div>
-                    <div className="flex items-center gap-4">
-                        <Phone className="size-4 text-muted-foreground" />
-                        <span className="text-sm">{client.phone}</span>
-                    </div>
-                    <div className="flex items-center gap-4">
-                        <User className="size-4 text-muted-foreground" />
-                        <Badge variant={statusVariant[client.status]}>{client.status}</Badge>
-                    </div>
-                </CardContent>
-            </Card>
+           <div className="lg:col-span-1 space-y-6">
+                <Card>
+                    <CardHeader>
+                        <CardTitle>Client Information</CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                        <div className="flex items-center gap-4">
+                            <Briefcase className="size-4 text-muted-foreground" />
+                            <span className="text-sm">{client.company || 'N/A'}</span>
+                        </div>
+                        <div className="flex items-center gap-4">
+                            <Mail className="size-4 text-muted-foreground" />
+                            <a href={`mailto:${client.email}`} className="text-sm hover:underline">{client.email}</a>
+                        </div>
+                        <div className="flex items-center gap-4">
+                            <Phone className="size-4 text-muted-foreground" />
+                            <span className="text-sm">{client.phone}</span>
+                        </div>
+                        <div className="flex items-center gap-4">
+                            <User className="size-4 text-muted-foreground" />
+                            <Badge variant={statusVariant[client.status]}>{client.status}</Badge>
+                        </div>
+                    </CardContent>
+                </Card>
+
+                <ClientAiSummary clientId={client.id} clientName={client.name} />
+           </div>
 
             <Card className="lg:col-span-2">
                  <CardHeader className="flex-row items-center justify-between">
