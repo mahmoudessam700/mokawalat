@@ -51,7 +51,7 @@ import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useState, useEffect } from 'react';
-import { addSupplier, deleteSupplier } from './actions';
+import { addSupplier, deleteSupplier, updateSupplier } from './actions';
 import { useToast } from '@/hooks/use-toast';
 import { collection, onSnapshot, query, orderBy } from 'firebase/firestore';
 import { firestore } from '@/lib/firebase';
@@ -80,7 +80,8 @@ type SupplierFormValues = z.infer<typeof supplierFormSchema>;
 export default function SuppliersPage() {
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isFormDialogOpen, setIsFormDialogOpen] = useState(false);
+  const [supplierToEdit, setSupplierToEdit] = useState<Supplier | null>(null);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [supplierToDelete, setSupplierToDelete] = useState<Supplier | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -119,8 +120,19 @@ export default function SuppliersPage() {
     },
   });
 
+  useEffect(() => {
+    if (supplierToEdit) {
+      form.reset(supplierToEdit);
+    } else {
+      form.reset(form.formState.defaultValues);
+    }
+  }, [supplierToEdit, form]);
+
+
   async function onSubmit(values: SupplierFormValues) {
-    const result = await addSupplier(values);
+    const result = supplierToEdit
+        ? await updateSupplier(supplierToEdit.id, values)
+        : await addSupplier(values);
 
     if (result.errors) {
       toast({
@@ -133,8 +145,8 @@ export default function SuppliersPage() {
         title: 'Success',
         description: result.message,
       });
-      form.reset();
-      setIsDialogOpen(false);
+      setIsFormDialogOpen(false);
+      setSupplierToEdit(null);
     }
   }
   
@@ -161,6 +173,13 @@ export default function SuppliersPage() {
     setSupplierToDelete(null);
   }
 
+  const handleFormDialogOpenChange = (open: boolean) => {
+    if (!open) {
+      setSupplierToEdit(null);
+    }
+    setIsFormDialogOpen(open);
+  }
+
   return (
     <>
     <div className="space-y-6">
@@ -173,18 +192,18 @@ export default function SuppliersPage() {
             Manage all your company's suppliers and vendors.
           </p>
         </div>
-        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+        <Dialog open={isFormDialogOpen} onOpenChange={handleFormDialogOpenChange}>
           <DialogTrigger asChild>
-            <Button>
+            <Button onClick={() => setSupplierToEdit(null)}>
               <PlusCircle className="mr-2" />
               Add Supplier
             </Button>
           </DialogTrigger>
           <DialogContent className="sm:max-w-[480px]">
             <DialogHeader>
-              <DialogTitle>Add New Supplier</DialogTitle>
+              <DialogTitle>{supplierToEdit ? 'Edit Supplier' : 'Add New Supplier'}</DialogTitle>
               <DialogDescription>
-                Fill in the details below to add a new supplier.
+                 {supplierToEdit ? "Update the supplier's details below." : 'Fill in the details below to add a new supplier.'}
               </DialogDescription>
             </DialogHeader>
             <Form {...form}>
@@ -272,7 +291,7 @@ export default function SuppliersPage() {
                         Saving...
                       </>
                     ) : (
-                      'Save Supplier'
+                      supplierToEdit ? 'Save Changes' : 'Save Supplier'
                     )}
                   </Button>
                 </DialogFooter>
@@ -340,7 +359,12 @@ export default function SuppliersPage() {
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
                           <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                          <DropdownMenuItem>Edit</DropdownMenuItem>
+                          <DropdownMenuItem onSelect={() => {
+                              setSupplierToEdit(supplier);
+                              setIsFormDialogOpen(true);
+                          }}>
+                            Edit
+                          </DropdownMenuItem>
                           <DropdownMenuItem>View Details</DropdownMenuItem>
                           <DropdownMenuItem
                             className="text-destructive"

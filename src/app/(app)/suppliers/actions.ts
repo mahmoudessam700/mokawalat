@@ -1,7 +1,7 @@
 'use server';
 
 import { firestore } from '@/lib/firebase';
-import { collection, addDoc, doc, deleteDoc } from 'firebase/firestore';
+import { collection, addDoc, doc, deleteDoc, updateDoc } from 'firebase/firestore';
 import { z } from 'zod';
 import { revalidatePath } from 'next/cache';
 
@@ -32,6 +32,31 @@ export async function addSupplier(values: SupplierFormValues) {
   } catch (error) {
     console.error('Error adding supplier:', error);
     return { message: 'Failed to add supplier.', errors: { _server: ['An unexpected error occurred.'] } };
+  }
+}
+
+export async function updateSupplier(supplierId: string, values: SupplierFormValues) {
+  if (!supplierId) {
+    return { message: 'Supplier ID is required.', errors: { _server: ['Supplier ID not provided.'] } };
+  }
+
+  const validatedFields = supplierFormSchema.safeParse(values);
+
+  if (!validatedFields.success) {
+    return {
+      errors: validatedFields.error.flatten().fieldErrors,
+      message: 'Invalid data provided. Please check the form.',
+    };
+  }
+
+  try {
+    const supplierRef = doc(firestore, 'suppliers', supplierId);
+    await updateDoc(supplierRef, validatedFields.data);
+    revalidatePath('/suppliers');
+    return { message: 'Supplier updated successfully.', errors: null };
+  } catch (error) {
+    console.error('Error updating supplier:', error);
+    return { message: 'Failed to update supplier.', errors: { _server: ['An unexpected error occurred.'] } };
   }
 }
 
