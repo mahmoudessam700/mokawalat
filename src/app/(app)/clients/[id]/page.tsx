@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { doc, onSnapshot, collection, query, orderBy, Timestamp, where } from 'firebase/firestore';
 import { firestore } from '@/lib/firebase';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
@@ -33,6 +33,7 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAuth } from '@/hooks/use-auth';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
+import React from 'react';
 
 
 type ClientStatus = 'Lead' | 'Active' | 'Inactive';
@@ -109,14 +110,13 @@ const formatCurrency = (value: number) => {
 };
 
 function ClientAiSummary({ clientId, clientName }: { clientId: string, clientName: string }) {
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [summary, setSummary] = useState<string | null>(null);
 
-  const handleAnalyze = async () => {
+  const fetchSummary = React.useCallback(async () => {
     setIsLoading(true);
     setError(null);
-    setSummary(null);
     try {
       const result = await getInteractionSummary(clientId);
       if (result.error || !result.data) {
@@ -125,10 +125,16 @@ function ClientAiSummary({ clientId, clientName }: { clientId: string, clientNam
       setSummary(result.data.summary);
     } catch (err: any) {
       setError(err.message || 'An unexpected error occurred.');
+      setSummary(null);
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [clientId]);
+
+  useEffect(() => {
+    fetchSummary();
+  }, [fetchSummary]);
+
 
   return (
     <Card>
@@ -138,22 +144,10 @@ function ClientAiSummary({ clientId, clientName }: { clientId: string, clientNam
             AI Interaction Summary
         </CardTitle>
         <CardDescription>
-          Get an AI-generated summary of the entire interaction history with {clientName}.
+          An AI-generated summary of the interaction history with {clientName}.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
-        {!summary && !isLoading && (
-            <div className="flex flex-col items-center justify-center gap-4 rounded-lg border-2 border-dashed border-muted p-8 text-center">
-                <Lightbulb className="size-12 text-muted-foreground" />
-                <p className="text-muted-foreground">Ready to summarize client interactions.</p>
-                <Button onClick={handleAnalyze} disabled={isLoading}>
-                    {isLoading ? (
-                        <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Analyzing...</>
-                    ) : ( 'Generate Summary' )}
-                </Button>
-            </div>
-        )}
-        
         {isLoading && (
             <div className="space-y-3">
                 <Skeleton className="h-4 w-4/5" />
@@ -163,19 +157,24 @@ function ClientAiSummary({ clientId, clientName }: { clientId: string, clientNam
             </div>
         )}
 
-        {error && (
+        {error && !isLoading && (
             <Alert variant="destructive">
                 <AlertCircle className="h-4 w-4" />
                 <AlertTitle>Summary Failed</AlertTitle>
                 <AlertDescription>{error}</AlertDescription>
+                 <div className="flex justify-end mt-4">
+                    <Button onClick={fetchSummary} variant="outline" size="sm" disabled={isLoading}>
+                       Regenerate
+                    </Button>
+                </div>
             </Alert>
         )}
 
-        {summary && (
+        {summary && !isLoading && (
             <div>
                 <p className="text-sm text-foreground whitespace-pre-wrap">{summary}</p>
                 <div className="flex justify-end mt-4">
-                    <Button onClick={handleAnalyze} variant="outline" size="sm" disabled={isLoading}>
+                    <Button onClick={fetchSummary} variant="outline" size="sm" disabled={isLoading}>
                         {isLoading ? (
                             <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Regenerating...</>
                         ) : ( 'Regenerate' )}
