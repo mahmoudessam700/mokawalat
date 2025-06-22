@@ -465,7 +465,6 @@ export default function ProjectsPage() {
                           <DropdownMenuItem asChild>
                             <Link href={`/projects/${project.id}`}>View Details</Link>
                           </DropdownMenuItem>
-                          <DropdownMenuItem>Assign Team</DropdownMenuItem>
                           <DropdownMenuItem
                             className="text-destructive"
                             onSelect={() => {

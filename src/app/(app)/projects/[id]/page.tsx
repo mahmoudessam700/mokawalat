@@ -1,7 +1,8 @@
+
 'use client';
 
 import { useEffect, useState, useMemo } from 'react';
-import { doc, getDoc, type Timestamp, collection, query, getDocs, where } from 'firebase/firestore';
+import { doc, getDoc, type Timestamp, collection, query, getDocs, where, onSnapshot } from 'firebase/firestore';
 import { firestore } from '@/lib/firebase';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -81,47 +82,46 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
 
   useEffect(() => {
     if (!projectId) return;
+    setIsLoading(true);
 
-    const fetchData = async () => {
-      setIsLoading(true);
-      try {
-        const projectRef = doc(firestore, 'projects', projectId);
-        const employeesQuery = query(collection(firestore, 'employees'));
-        const procurementsQuery = query(collection(firestore, 'procurement'), where('projectId', '==', projectId));
+    const unsubscribes: (() => void)[] = [];
 
-        const [projectDoc, employeesSnapshot, procurementsSnapshot] = await Promise.all([
-            getDoc(projectRef),
-            getDocs(employeesQuery),
-            getDocs(procurementsQuery)
-        ]);
-
-        if (projectDoc.exists()) {
-          setProject({ id: projectDoc.id, ...projectDoc.data() } as Project);
+    // Subscribe to project document
+    const projectRef = doc(firestore, 'projects', projectId);
+    unsubscribes.push(onSnapshot(projectRef, (doc) => {
+        if (doc.exists()) {
+            setProject({ id: doc.id, ...doc.data() } as Project);
         } else {
-          setError('Project not found.');
+            setError('Project not found.');
         }
-
-        const employeesData: Employee[] = [];
-        employeesSnapshot.forEach((doc) => {
-            employeesData.push({ id: doc.id, ...doc.data()} as Employee);
-        });
-        setEmployees(employeesData);
-
-        const procurementsData: ProcurementRequest[] = [];
-        procurementsSnapshot.forEach((doc) => {
-            procurementsData.push({ id: doc.id, ...doc.data()} as ProcurementRequest);
-        });
-        setProcurements(procurementsData);
-
-      } catch (err) {
-        console.error('Error fetching project data:', err);
-        setError('Failed to fetch project details. If you see a Firestore error in the console, you may need to create a composite index.');
-      } finally {
+        // Set loading false after project is fetched to avoid flicker
         setIsLoading(false);
-      }
-    };
+    }, (err) => {
+        console.error('Error fetching project:', err);
+        setError('Failed to fetch project details.');
+        setIsLoading(false);
+    }));
 
-    fetchData();
+    // Subscribe to employees collection
+    const employeesQuery = query(collection(firestore, 'employees'));
+    unsubscribes.push(onSnapshot(employeesQuery, (snapshot) => {
+        const employeesData: Employee[] = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data()} as Employee));
+        setEmployees(employeesData);
+    }));
+    
+    // Subscribe to related procurements
+    const procurementsQuery = query(collection(firestore, 'procurement'), where('projectId', '==', projectId));
+    unsubscribes.push(onSnapshot(procurementsQuery, (snapshot) => {
+        const procurementsData: ProcurementRequest[] = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data()} as ProcurementRequest));
+        setProcurements(procurementsData);
+    }, (err) => {
+        console.error('Error fetching procurements:', err);
+        setError('Failed to fetch procurement details. You may need to create a composite index in Firestore.');
+    }));
+
+    // Cleanup function
+    return () => unsubscribes.forEach(unsub => unsub());
+
   }, [projectId]);
   
   const assignedTeam = useMemo(() => {
@@ -171,7 +171,7 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
   if (error) {
     return (
       <div className="flex flex-col items-center justify-center text-center h-[50vh]">
-        <ShoppingCart className="w-16 h-16 mb-4 text-destructive" />
+        <Briefcase className="w-16 h-16 mb-4 text-destructive" />
         <h2 className="text-2xl font-bold">Error</h2>
         <p className="text-muted-foreground">{error}</p>
          <Button asChild variant="outline" className="mt-4">
