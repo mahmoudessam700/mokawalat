@@ -5,6 +5,7 @@ import { firestore } from '@/lib/firebase';
 import { collection, addDoc, serverTimestamp, doc, deleteDoc, updateDoc, getDoc, runTransaction } from 'firebase/firestore';
 import { z } from 'zod';
 import { revalidatePath } from 'next/cache';
+import { analyzeProjectRisks, ProjectRiskAnalysisInput, ProjectRiskAnalysisOutput } from '@/ai/flows/project-risk-analysis';
 
 const projectFormSchema = z.object({
   name: z.string().min(3, 'Project name must be at least 3 characters long.'),
@@ -30,6 +31,13 @@ const materialRequestFormSchema = z.object({
 export type ProjectFormValues = z.infer<typeof projectFormSchema>;
 export type AssignTeamFormValues = z.infer<typeof assignTeamFormSchema>;
 export type MaterialRequestFormValues = z.infer<typeof materialRequestFormSchema>;
+export type ProjectRiskAnalysisOutput = z.infer<typeof ProjectRiskAnalysisOutput>;
+
+export interface AiAnalysisState {
+    message: string | null;
+    data: ProjectRiskAnalysisOutput | null;
+    error: boolean;
+}
 
 export async function addProject(values: ProjectFormValues) {
   const validatedFields = projectFormSchema.safeParse(values);
@@ -238,5 +246,50 @@ export async function updateMaterialRequestStatus(requestId: string, newStatus: 
   } catch (error: any) {
     console.error('Error updating material request:', error);
     return { success: false, message: error.message || 'Failed to update request status.' };
+  }
+}
+
+export async function getProjectRiskAnalysis(projectId: string): Promise<AiAnalysisState> {
+  if (!projectId) {
+    return { message: 'Project ID is required.', data: null, error: true };
+  }
+
+  try {
+    const projectRef = doc(firestore, 'projects', projectId);
+    const projectDoc = await getDoc(projectRef);
+
+    if (!projectDoc.exists()) {
+      return { message: 'Project not found.', data: null, error: true };
+    }
+
+    const projectData = projectDoc.data();
+    const analysisInput: ProjectRiskAnalysisInput = {
+      name: projectData.name,
+      description: projectData.description || 'No description provided.',
+      budget: projectData.budget,
+    };
+    
+    const result = await analyzeProjectRisks(analysisInput);
+    
+    if (result.risks && result.risks.length > 0) {
+      return {
+        message: 'Analysis generated successfully.',
+        data: result,
+        error: false,
+      };
+    } else {
+       return {
+        message: 'No specific risks could be identified based on the project description.',
+        data: { risks: [] },
+        error: false,
+      };
+    }
+  } catch (error) {
+    console.error('Error getting project risk analysis:', error);
+    return {
+      message: 'An unexpected AI error occurred. Please try again.',
+      data: null,
+      error: true,
+    };
   }
 }
