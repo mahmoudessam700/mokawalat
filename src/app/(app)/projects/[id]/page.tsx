@@ -7,7 +7,7 @@ import { firestore } from '@/lib/firebase';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
-import { ArrowLeft, Calendar, DollarSign, Activity, Users, ShoppingCart } from 'lucide-react';
+import { ArrowLeft, Briefcase, Calendar, DollarSign, Activity, Users, ShoppingCart } from 'lucide-react';
 import { format } from 'date-fns';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
