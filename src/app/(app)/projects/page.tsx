@@ -18,7 +18,7 @@ import {
   DropdownMenuLabel,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Loader2, MoreHorizontal, PlusCircle, Trash2 } from 'lucide-react';
+import { Loader2, MoreHorizontal, PlusCircle, Search, Trash2 } from 'lucide-react';
 import {
   Card,
   CardContent,
@@ -65,7 +65,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { addProject, deleteProject, updateProject } from './actions';
 import { useToast } from '@/hooks/use-toast';
 import {
@@ -122,6 +122,8 @@ export default function ProjectsPage() {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [projectToDelete, setProjectToDelete] = useState<Project | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [statusFilter, setStatusFilter] = useState('All');
   const { toast } = useToast();
 
   useEffect(() => {
@@ -152,6 +154,15 @@ export default function ProjectsPage() {
 
     return () => unsubscribe();
   }, [toast]);
+  
+  const filteredProjects = useMemo(() => {
+    return projects.filter(project => {
+        const lowercasedTerm = searchTerm.toLowerCase();
+        const matchesSearch = project.name.toLowerCase().includes(lowercasedTerm);
+        const matchesStatus = statusFilter === 'All' || project.status === statusFilter;
+        return matchesSearch && matchesStatus;
+    });
+  }, [projects, searchTerm, statusFilter]);
 
   const form = useForm<ProjectFormValues>({
     resolver: zodResolver(projectFormSchema),
@@ -377,10 +388,38 @@ export default function ProjectsPage() {
 
       <Card>
         <CardHeader>
-          <CardTitle>Project List</CardTitle>
-          <CardDescription>
-            A list of all projects in the system, fetched in real-time.
-          </CardDescription>
+           <div className="flex items-center justify-between gap-4">
+            <div>
+              <CardTitle>Project List</CardTitle>
+              <CardDescription>
+                A list of all projects in the system.
+              </CardDescription>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="relative w-full max-w-xs">
+                  <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                  <Input
+                      type="search"
+                      placeholder="Search by name..."
+                      className="pl-8"
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                  />
+              </div>
+              <Select value={statusFilter} onValueChange={setStatusFilter}>
+                <SelectTrigger className="w-[180px]">
+                  <SelectValue placeholder="Filter by status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="All">All Statuses</SelectItem>
+                  <SelectItem value="Planning">Planning</SelectItem>
+                  <SelectItem value="In Progress">In Progress</SelectItem>
+                  <SelectItem value="Completed">Completed</SelectItem>
+                  <SelectItem value="On Hold">On Hold</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
         </CardHeader>
         <CardContent>
           <Table>
@@ -425,8 +464,8 @@ export default function ProjectsPage() {
                     </TableCell>
                   </TableRow>
                 ))
-              ) : projects.length > 0 ? (
-                projects.map((project) => (
+              ) : filteredProjects.length > 0 ? (
+                filteredProjects.map((project) => (
                   <TableRow key={project.id}>
                     <TableCell className="font-medium">
                       {project.name}
@@ -483,7 +522,7 @@ export default function ProjectsPage() {
               ) : (
                 <TableRow>
                   <TableCell colSpan={5} className="h-24 text-center">
-                    No projects found. Add one to get started.
+                    No projects found for the current filter.
                   </TableCell>
                 </TableRow>
               )}
