@@ -2,46 +2,60 @@ rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
-    
+
+    // Helper function to check if the requesting user is an admin
     function isAdmin() {
-      // Check if the authenticated user's document in the 'users' collection has the role 'admin'.
       return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
     }
 
-    // Users: Can create their own user doc, can read their own profile. Admins can update roles.
+    // --- User Profiles ---
+    // Users can create their own profile on signup
+    // Users can read their own profile
+    // Admins can read and write any user profile (to change roles)
     match /users/{userId} {
-      allow read: if request.auth.uid == userId || isAdmin();
       allow create: if request.auth.uid == userId;
-      allow update: if isAdmin();
-      allow delete: if isAdmin();
+      allow get: if request.auth.uid == userId;
+      allow list, update: if isAdmin();
     }
-
-    // Projects: Admins can perform all actions, authenticated users can only read.
+    
+    // --- Project Management (Admin-only write) ---
     match /projects/{projectId} {
       allow read: if request.auth != null;
       allow write: if isAdmin();
     }
-    
-    // For other collections, allow authenticated users to read and write for now
-    // to ensure the rest of the app continues to function. We can lock these
-    // down with more specific roles in subsequent steps.
-    match /clients/{path=**} {
-      allow read, write: if request.auth != null;
+
+    // --- Employee Management (Admin-only write) ---
+    match /employees/{employeeId} {
+      allow read: if request.auth != null;
+      allow write: if isAdmin();
     }
-    match /employees/{path=**} {
-      allow read, write: if request.auth != null;
+
+    // --- Supplier Management (Authenticated users) ---
+    match /suppliers/{supplierId} {
+        allow read, write: if request.auth != null;
     }
-    match /inventory/{path=**} {
-      allow read, write: if request.auth != null;
+
+    // --- Inventory Management (Authenticated users) ---
+    match /inventory/{itemId} {
+        allow read, write: if request.auth != null;
     }
-    match /procurement/{path=**} {
-      allow read, write: if request.auth != null;
+
+    // --- Procurement Management (Authenticated users) ---
+    match /procurement/{requestId} {
+        allow read, write: if request.auth != null;
     }
-    match /suppliers/{path=**} {
-      allow read, write: if request.auth != null;
+
+    // --- Client & Sales Management (Authenticated users) ---
+    match /clients/{clientId} {
+        allow read, write: if request.auth != null;
     }
-    match /transactions/{path=**} {
-      allow read, write: if request.auth != null;
+    match /clients/{clientId}/interactions/{interactionId} {
+        allow read, write: if request.auth != null;
+    }
+
+    // --- Financial Management (Authenticated users) ---
+    match /transactions/{transactionId} {
+        allow read, write: if request.auth != null;
     }
   }
 }
