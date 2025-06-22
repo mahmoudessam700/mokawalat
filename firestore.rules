@@ -1,35 +1,46 @@
 rules_version = '2';
+
 service cloud.firestore {
   match /databases/{database}/documents {
+    
+    function isAdmin() {
+      // Check if the authenticated user's document in the 'users' collection has the role 'admin'.
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+    }
+
+    // Users: Can create their own user doc, can read their own profile. Admins can update roles.
     match /users/{userId} {
-      allow read, write: if request.auth != null && request.auth.uid == userId;
+      allow read: if request.auth.uid == userId || isAdmin();
+      allow create: if request.auth.uid == userId;
+      allow update: if isAdmin();
+      allow delete: if isAdmin();
     }
 
-    match /clients/{document=**} {
-      allow read, write: if request.auth != null;
-    }
-
-    match /employees/{document=**} {
-      allow read, write: if request.auth != null;
-    }
-
-    match /inventory/{document=**} {
-      allow read, write: if request.auth != null;
-    }
-
-    match /projects/{document=**} {
-      allow read, write: if request.auth != null;
-    }
-
-    match /procurement/{document=**} {
-      allow read, write: if request.auth != null;
-    }
-
-    match /suppliers/{document=**} {
-      allow read, write: if request.auth != null;
+    // Projects: Admins can perform all actions, authenticated users can only read.
+    match /projects/{projectId} {
+      allow read: if request.auth != null;
+      allow write: if isAdmin();
     }
     
-    match /transactions/{document=**} {
+    // For other collections, allow authenticated users to read and write for now
+    // to ensure the rest of the app continues to function. We can lock these
+    // down with more specific roles in subsequent steps.
+    match /clients/{path=**} {
+      allow read, write: if request.auth != null;
+    }
+    match /employees/{path=**} {
+      allow read, write: if request.auth != null;
+    }
+    match /inventory/{path=**} {
+      allow read, write: if request.auth != null;
+    }
+    match /procurement/{path=**} {
+      allow read, write: if request.auth != null;
+    }
+    match /suppliers/{path=**} {
+      allow read, write: if request.auth != null;
+    }
+    match /transactions/{path=**} {
       allow read, write: if request.auth != null;
     }
   }

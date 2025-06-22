@@ -21,6 +21,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import { useAuth } from '@/hooks/use-auth';
 
 type ProjectStatus = 'In Progress' | 'Planning' | 'Completed' | 'On Hold';
 
@@ -77,6 +78,7 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
   const [procurements, setProcurements] = useState<ProcurementRequest[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const { profile } = useAuth();
   
   const projectId = params.id;
 
@@ -254,11 +256,13 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
                         <CardTitle>Assigned Team</CardTitle>
                         <CardDescription>Team members assigned to this project.</CardDescription>
                     </div>
-                     <AssignTeamDialog
-                        projectId={project.id}
-                        employees={employees}
-                        assignedEmployeeIds={project.teamMemberIds || []}
-                    />
+                     {profile?.role === 'admin' && (
+                        <AssignTeamDialog
+                            projectId={project.id}
+                            employees={employees}
+                            assignedEmployeeIds={project.teamMemberIds || []}
+                        />
+                     )}
                 </CardHeader>
                 <CardContent>
                      {assignedTeam.length > 0 ? (
@@ -266,7 +270,7 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
                             {assignedTeam.map(member => (
                                 <li key={member.id} className="flex items-center gap-4">
                                     <Avatar>
-                                        <AvatarImage src={`https://placehold.co/40x40.png`} data-ai-hint="profile picture" />
+                                        <AvatarImage src={`https://placehold.co/40x40.png`} alt={member.name} data-ai-hint="profile picture" />
                                         <AvatarFallback>{member.name.split(' ').map(n => n[0]).join('')}</AvatarFallback>
                                     </Avatar>
                                     <div>
@@ -280,7 +284,9 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
                         <div className="flex flex-col items-center justify-center gap-2 p-4 text-center text-muted-foreground">
                             <Users className="size-12" />
                             <p>No team members assigned yet.</p>
-                            <p className="text-xs">Use the "Assign Team" button to add members.</p>
+                             {profile?.role === 'admin' && (
+                                <p className="text-xs">Use the "Assign Team" button to add members.</p>
+                             )}
                         </div>
                     )}
                 </CardContent>

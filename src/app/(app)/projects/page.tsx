@@ -79,6 +79,7 @@ import { firestore } from '@/lib/firebase';
 import { Skeleton } from '@/components/ui/skeleton';
 import { format } from 'date-fns';
 import Link from 'next/link';
+import { useAuth } from '@/hooks/use-auth';
 
 type ProjectStatus = 'In Progress' | 'Planning' | 'Completed' | 'On Hold';
 
@@ -125,6 +126,7 @@ export default function ProjectsPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('All');
   const { toast } = useToast();
+  const { profile } = useAuth();
 
   useEffect(() => {
     const q = query(
@@ -257,133 +259,135 @@ export default function ProjectsPage() {
             Track and manage all construction projects.
           </p>
         </div>
-        <Dialog open={isDialogOpen} onOpenChange={handleFormDialog_onOpenChange}>
-          <DialogTrigger asChild>
-            <Button onClick={() => setProjectToEdit(null)}>
-              <PlusCircle className="mr-2" />
-              Add Project
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="sm:max-w-[480px]">
-            <DialogHeader>
-              <DialogTitle>{projectToEdit ? 'Edit Project' : 'Add New Project'}</DialogTitle>
-              <DialogDescription>
-                {projectToEdit ? 'Update the details of the project.' : 'Fill in the details below to add a new project.'}
-              </DialogDescription>
-            </DialogHeader>
-            <Form {...form}>
-              <form
-                onSubmit={form.handleSubmit(onSubmit)}
-                className="space-y-4 py-4"
-              >
-                <FormField
-                  control={form.control}
-                  name="name"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Project Name</FormLabel>
-                      <FormControl>
-                        <Input
-                          placeholder="e.g., Al-Rayan Tower Construction"
-                          {...field}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="description"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Description</FormLabel>
-                      <FormControl>
-                        <Textarea
-                          placeholder="Describe the project..."
-                          {...field}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <div className="grid grid-cols-2 gap-4">
-                  <FormField
+        {profile?.role === 'admin' && (
+            <Dialog open={isDialogOpen} onOpenChange={handleFormDialog_onOpenChange}>
+            <DialogTrigger asChild>
+                <Button onClick={() => setProjectToEdit(null)}>
+                <PlusCircle className="mr-2" />
+                Add Project
+                </Button>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-[480px]">
+                <DialogHeader>
+                <DialogTitle>{projectToEdit ? 'Edit Project' : 'Add New Project'}</DialogTitle>
+                <DialogDescription>
+                    {projectToEdit ? 'Update the details of the project.' : 'Fill in the details below to add a new project.'}
+                </DialogDescription>
+                </DialogHeader>
+                <Form {...form}>
+                <form
+                    onSubmit={form.handleSubmit(onSubmit)}
+                    className="space-y-4 py-4"
+                >
+                    <FormField
                     control={form.control}
-                    name="budget"
+                    name="name"
                     render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Budget (LE)</FormLabel>
+                        <FormItem>
+                        <FormLabel>Project Name</FormLabel>
                         <FormControl>
-                          <Input
-                            type="number"
-                            placeholder="e.g., 5000000"
+                            <Input
+                            placeholder="e.g., Al-Rayan Tower Construction"
                             {...field}
-                          />
+                            />
                         </FormControl>
                         <FormMessage />
-                      </FormItem>
+                        </FormItem>
                     )}
-                  />
-                  <FormField
+                    />
+                    <FormField
                     control={form.control}
-                    name="startDate"
+                    name="description"
                     render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Start Date</FormLabel>
+                        <FormItem>
+                        <FormLabel>Description</FormLabel>
                         <FormControl>
-                          <Input type="date" {...field} />
+                            <Textarea
+                            placeholder="Describe the project..."
+                            {...field}
+                            />
                         </FormControl>
                         <FormMessage />
-                      </FormItem>
+                        </FormItem>
                     )}
-                  />
-                </div>
-                <FormField
-                  control={form.control}
-                  name="status"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Status</FormLabel>
-                      <Select
-                        onValueChange={field.onChange}
-                        value={field.value}
-                      >
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select status" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          <SelectItem value="Planning">Planning</SelectItem>
-                          <SelectItem value="In Progress">
-                            In Progress
-                          </SelectItem>
-                          <SelectItem value="Completed">Completed</SelectItem>
-                          <SelectItem value="On Hold">On Hold</SelectItem>
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <DialogFooter>
-                  <Button type="submit" disabled={form.formState.isSubmitting}>
-                    {form.formState.isSubmitting ? (
-                      <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        Saving...
-                      </>
-                    ) : (
-                      projectToEdit ? 'Save Changes' : 'Save Project'
+                    />
+                    <div className="grid grid-cols-2 gap-4">
+                    <FormField
+                        control={form.control}
+                        name="budget"
+                        render={({ field }) => (
+                        <FormItem>
+                            <FormLabel>Budget (LE)</FormLabel>
+                            <FormControl>
+                            <Input
+                                type="number"
+                                placeholder="e.g., 5000000"
+                                {...field}
+                            />
+                            </FormControl>
+                            <FormMessage />
+                        </FormItem>
+                        )}
+                    />
+                    <FormField
+                        control={form.control}
+                        name="startDate"
+                        render={({ field }) => (
+                        <FormItem>
+                            <FormLabel>Start Date</FormLabel>
+                            <FormControl>
+                            <Input type="date" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                        </FormItem>
+                        )}
+                    />
+                    </div>
+                    <FormField
+                    control={form.control}
+                    name="status"
+                    render={({ field }) => (
+                        <FormItem>
+                        <FormLabel>Status</FormLabel>
+                        <Select
+                            onValueChange={field.onChange}
+                            value={field.value}
+                        >
+                            <FormControl>
+                            <SelectTrigger>
+                                <SelectValue placeholder="Select status" />
+                            </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                            <SelectItem value="Planning">Planning</SelectItem>
+                            <SelectItem value="In Progress">
+                                In Progress
+                            </SelectItem>
+                            <SelectItem value="Completed">Completed</SelectItem>
+                            <SelectItem value="On Hold">On Hold</SelectItem>
+                            </SelectContent>
+                        </Select>
+                        <FormMessage />
+                        </FormItem>
                     )}
-                  </Button>
-                </DialogFooter>
-              </form>
-            </Form>
-          </DialogContent>
-        </Dialog>
+                    />
+                    <DialogFooter>
+                    <Button type="submit" disabled={form.formState.isSubmitting}>
+                        {form.formState.isSubmitting ? (
+                        <>
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            Saving...
+                        </>
+                        ) : (
+                        projectToEdit ? 'Save Changes' : 'Save Project'
+                        )}
+                    </Button>
+                    </DialogFooter>
+                </form>
+                </Form>
+            </DialogContent>
+            </Dialog>
+        )}
       </div>
 
       <Card>
@@ -495,25 +499,29 @@ export default function ProjectsPage() {
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
                           <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                          <DropdownMenuItem onSelect={() => {
-                              setProjectToEdit(project);
-                              setIsDialogOpen(true);
-                          }}>
-                            Edit
-                          </DropdownMenuItem>
                           <DropdownMenuItem asChild>
                             <Link href={`/projects/${project.id}`}>View Details</Link>
                           </DropdownMenuItem>
-                          <DropdownMenuItem
-                            className="text-destructive"
-                            onSelect={() => {
-                              setProjectToDelete(project);
-                              setIsDeleteDialogOpen(true);
-                            }}
-                          >
-                             <Trash2 className="mr-2 h-4 w-4" />
-                            Delete
-                          </DropdownMenuItem>
+                          {profile?.role === 'admin' && (
+                            <>
+                                <DropdownMenuItem onSelect={() => {
+                                    setProjectToEdit(project);
+                                    setIsDialogOpen(true);
+                                }}>
+                                    Edit
+                                </DropdownMenuItem>
+                                <DropdownMenuItem
+                                    className="text-destructive"
+                                    onSelect={() => {
+                                    setProjectToDelete(project);
+                                    setIsDeleteDialogOpen(true);
+                                    }}
+                                >
+                                    <Trash2 className="mr-2 h-4 w-4" />
+                                    Delete
+                                </DropdownMenuItem>
+                            </>
+                          )}
                         </DropdownMenuContent>
                       </DropdownMenu>
                     </TableCell>
