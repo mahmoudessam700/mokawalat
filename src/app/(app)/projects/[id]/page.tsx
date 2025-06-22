@@ -7,7 +7,7 @@ import { firestore } from '@/lib/firebase';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
-import { ArrowLeft, Briefcase, Calendar, DollarSign, Activity, Users, ShoppingCart, PackagePlus, PackageCheck, PackageX, PackageSearch, Lightbulb, TrendingUp } from 'lucide-react';
+import { ArrowLeft, Briefcase, Calendar, DollarSign, Activity, Users, ShoppingCart, PackagePlus, PackageCheck, PackageX, PackageSearch, Lightbulb, TrendingUp, MapPin } from 'lucide-react';
 import { format } from 'date-fns';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
@@ -41,6 +41,7 @@ export type Project = {
   id: string;
   name: string;
   description?: string;
+  location?: string;
   budget: number;
   startDate: Timestamp;
   status: ProjectStatus;
@@ -305,6 +306,12 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
                         <CardTitle>Project Details</CardTitle>
                         {project.description && (
                             <CardDescription>{project.description}</CardDescription>
+                        )}
+                        {project.location && (
+                            <div className="flex items-center gap-2 pt-2 text-sm text-muted-foreground">
+                                <MapPin className="size-4" />
+                                <span>{project.location}</span>
+                            </div>
                         )}
                     </CardHeader>
                     <CardContent>

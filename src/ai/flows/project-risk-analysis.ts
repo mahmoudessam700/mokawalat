@@ -14,6 +14,7 @@ export const ProjectRiskAnalysisInputSchema = z.object({
   name: z.string().describe('The name of the construction project.'),
   description: z.string().describe('A detailed description of the project.'),
   budget: z.number().describe('The total budget for the project in the local currency.'),
+  location: z.string().describe('The physical location of the project.'),
 });
 export type ProjectRiskAnalysisInput = z.infer<typeof ProjectRiskAnalysisInputSchema>;
 
@@ -40,10 +41,11 @@ const prompt = ai.definePrompt({
   output: {schema: ProjectRiskAnalysisOutputSchema},
   prompt: `You are an expert risk management consultant specializing in large-scale construction projects.
 
-  Based on the following project details, identify a list of potential risks. For each risk, provide a severity level (Low, Medium, or High) and a practical suggestion for mitigation. Focus on common construction risks such as budget overruns, schedule delays, safety hazards, supplier issues, and regulatory hurdles.
+  Based on the following project details, identify a list of potential risks. For each risk, provide a severity level (Low, Medium, or High) and a practical suggestion for mitigation. Focus on common construction risks such as budget overruns, schedule delays, safety hazards, supplier issues, and regulatory hurdles. Also consider location-specific risks (e.g., geological, weather, local regulations).
 
   Project Name: {{{name}}}
   Project Budget: {{{budget}}}
+  Project Location: {{{location}}}
   Project Description: {{{description}}}
   `,
 });

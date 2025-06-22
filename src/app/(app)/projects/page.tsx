@@ -89,6 +89,7 @@ type Project = {
   id: string;
   name: string;
   description?: string;
+  location?: string;
   budget: number;
   startDate: Timestamp;
   status: ProjectStatus;
@@ -108,6 +109,7 @@ const statusVariant: {
 const projectFormSchema = z.object({
   name: z.string().min(3, 'Project name must be at least 3 characters long.'),
   description: z.string().optional(),
+  location: z.string().optional(),
   budget: z.coerce.number().positive('Budget must be a positive number.'),
   startDate: z
     .string()
@@ -176,6 +178,7 @@ export default function ProjectsPage() {
     defaultValues: {
       name: '',
       description: '',
+      location: '',
       budget: 0,
       startDate: '',
       status: 'Planning',
@@ -189,6 +192,7 @@ export default function ProjectsPage() {
         ...projectToEdit,
         startDate: projectToEdit.startDate ? format(projectToEdit.startDate.toDate(), 'yyyy-MM-dd') : '',
         description: projectToEdit.description || '',
+        location: projectToEdit.location || '',
         progress: projectToEdit.progress || 0,
       });
     } else {
@@ -307,7 +311,7 @@ export default function ProjectsPage() {
                     name="description"
                     render={({ field }) => (
                         <FormItem>
-                        <FormLabel>Description</FormLabel>
+                        <FormLabel>Description (Optional)</FormLabel>
                         <FormControl>
                             <Textarea
                             placeholder="Describe the project..."
@@ -317,6 +321,22 @@ export default function ProjectsPage() {
                         <FormMessage />
                         </FormItem>
                     )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="location"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Location (Optional)</FormLabel>
+                          <FormControl>
+                            <Input
+                              placeholder="e.g., New Capital, Cairo"
+                              {...field}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
                     />
                     <div className="grid grid-cols-2 gap-4">
                     <FormField

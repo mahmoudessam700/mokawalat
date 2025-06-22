@@ -10,6 +10,7 @@ import { analyzeProjectRisks, ProjectRiskAnalysisInput, ProjectRiskAnalysisOutpu
 const projectFormSchema = z.object({
   name: z.string().min(3, 'Project name must be at least 3 characters long.'),
   description: z.string().optional(),
+  location: z.string().optional(),
   budget: z.coerce.number().positive('Budget must be a positive number.'),
   startDate: z
     .string()
@@ -163,6 +164,7 @@ export async function getProjectRiskAnalysis(projectId: string): Promise<AiAnaly
       name: projectData.name,
       description: projectData.description || 'No description provided.',
       budget: projectData.budget,
+      location: projectData.location || 'Not specified.',
     };
     
     const result = await analyzeProjectRisks(analysisInput);
