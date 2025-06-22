@@ -1,12 +1,19 @@
-
 rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Allow users to create their own user document upon signup,
-    // and read/update their own data.
+    // Rules for the 'users' collection
     match /users/{userId} {
-      allow read, update, create: if request.auth != null && request.auth.uid == userId;
+      // A user can create their own document during sign-up.
+      allow create: if request.auth != null && request.auth.uid == userId;
+
+      // A user can read or update their own document after logging in.
+      allow read, update: if request.auth != null && request.auth.uid == userId;
+      
+      // No one can delete a user document from the client-side application.
+      allow delete: if false;
     }
+    // By default, all other documents in the database are not accessible.
+    // We will add more rules here as we build other features.
   }
 }
