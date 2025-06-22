@@ -2,68 +2,110 @@ rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
-    
-    function isAuth() {
+  
+    // Helper function to check if user is authenticated
+    function isAuthenticated() {
       return request.auth != null;
     }
-
+    
+    // Helper function to check if user is an admin by reading their user document
     function isAdmin() {
-      // Check the user's role from their document in the 'users' collection.
       return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
     }
-
-    // Secure the users collection.
+    
+    // Users collection
     match /users/{userId} {
-      // Admins can read all user profiles. Users can only read their own.
-      allow read: if isAuth() && (request.auth.uid == userId || isAdmin());
-      // Users can create their own profile on signup.
-      allow create: if isAuth() && request.auth.uid == userId;
-      // Admins can update anyone's role. Users can update their own profile, but NOT their role.
-      allow update: if (isAuth() && request.auth.uid == userId && !("role" in request.resource.data)) || (isAdmin());
+      // Users can read their own profile document. Admins can read any user document.
+      allow read: if isAuthenticated() && (request.auth.uid == userId || isAdmin());
+      
+      // Only admins can update user roles.
+      allow update: if isAdmin();
+
+      // Disallow client-side creation or deletion of user documents.
+      allow create, delete: if false;
+    }
+    
+    // Activity Log
+    match /activityLog/{activityId} {
+      // Allow any authenticated user to create activity log entries.
+      allow create: if isAuthenticated();
+      // Allow any authenticated user to read the activity log.
+      allow read: if isAuthenticated();
+      // Log entries are immutable.
+      allow update, delete: if false;
     }
 
-    // Default: Authenticated users can read anything.
-    // This allows all pages to load data for any user role.
-    // Write access is handled on a per-collection basis below.
-    match /{path=**} {
-        allow read: if isAuth();
-        allow write: if false; // Deny writes by default.
-    }
-
-    // Admins have full write access to all business data collections.
-    // Non-admins have already been granted read access by the rule above.
-    match /clients/{docId}/{**=**} {
-      allow write: if isAdmin();
-    }
-    match /employees/{docId}/{**=**} {
-      allow write: if isAdmin();
-    }
-     match /transactions/{docId}/{**=**} {
-      allow write: if isAdmin();
-    }
-    match /inventory/{docId}/{**=**} {
-      allow write: if isAdmin();
-    }
-    match /procurement/{docId}/{**=**} {
-      allow write: if isAdmin();
-    }
-    match /projects/{docId}/{**=**} {
-      allow write: if isAdmin();
-    }
-    match /suppliers/{docId}/{**=**} {
+    // Projects collection
+    match /projects/{projectId} {
+      allow read: if isAuthenticated();
+      // Only admins can create, update, or delete projects.
       allow write: if isAdmin();
     }
     
-    // Log entries can be created by authenticated users (via server actions).
-    match /activityLog/{logId} {
-      allow create: if isAuth();
+    // Employees collection
+    match /employees/{employeeId} {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin();
+    }
+    
+    // Suppliers collection and its subcollections
+    match /suppliers/{supplierId} {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin();
+      
+      // Rules for contracts subcollection within a supplier
+      match /contracts/{contractId} {
+         allow read: if isAuthenticated();
+         allow write: if isAdmin();
+      }
+    }
+    
+    // Inventory collection
+    match /inventory/{itemId} {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin();
     }
 
-    // Material requests can be created by authenticated users.
-    // They can only be updated (approved/rejected) by an admin.
+    // Procurement collection
+    match /procurement/{requestId} {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin();
+    }
+    
+    // Clients collection and its subcollections
+    match /clients/{clientId} {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin();
+      
+      // Rules for interactions subcollection within a client
+      match /interactions/{interactionId} {
+        // Any authenticated user can log an interaction.
+        allow create, read: if isAuthenticated();
+        // Only admins can modify or delete interactions.
+        allow update, delete: if isAdmin();
+      }
+      
+      // Rules for contracts subcollection within a client
+      match /contracts/{contractId} {
+         allow read: if isAuthenticated();
+         allow write: if isAdmin();
+      }
+    }
+    
+    // Transactions collection
+    match /transactions/{transactionId} {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin();
+    }
+    
+    // Material Requests collection
     match /materialRequests/{requestId} {
-      allow create: if isAuth();
-      allow update: if isAdmin();
+       // Any authenticated user can create a material request.
+       allow create: if isAuthenticated();
+       // Any authenticated user can read requests.
+       allow read: if isAuthenticated(); 
+       // Only admins can approve, reject, or delete requests.
+       allow update, delete: if isAdmin();
     }
   }
 }
