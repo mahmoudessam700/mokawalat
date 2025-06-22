@@ -1,6 +1,12 @@
 'use client';
 
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
 import { Briefcase, Users, Warehouse, DollarSign } from 'lucide-react';
 import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from 'recharts';
 import {
@@ -10,21 +16,43 @@ import {
   type ChartConfig,
 } from '@/components/ui/chart';
 import { useState, useEffect } from 'react';
-import { collection, onSnapshot, query, where, type Timestamp } from 'firebase/firestore';
+import {
+  collection,
+  onSnapshot,
+  query,
+  where,
+  type Timestamp,
+} from 'firebase/firestore';
 import { firestore } from '@/lib/firebase';
 import { Skeleton } from '@/components/ui/skeleton';
 import { startOfMonth, endOfMonth } from 'date-fns';
+import { Button } from '@/components/ui/button';
+import Link from 'next/link';
 
 // Simplified types for dashboard calculations
 type Project = { status: 'Planning' | 'In Progress' | 'Completed' | 'On Hold' };
-type Transaction = { type: 'Income' | 'Expense'; amount: number; date: Timestamp };
+type Transaction = {
+  type: 'Income' | 'Expense';
+  amount: number;
+  date: Timestamp;
+};
+type ProcurementRequest = {
+  itemName: string;
+  quantity: number;
+  status: 'Pending' | 'Approved' | 'Rejected' | 'Ordered';
+};
+type PendingTask = {
+  id: string;
+  title: string;
+  type: string;
+};
 
 const formatCurrency = (value: number) => {
-    const formatter = new Intl.NumberFormat('en-US', {
-        notation: 'compact',
-        maximumFractionDigits: 1,
-    });
-    return `LE ${formatter.format(value)}`;
+  const formatter = new Intl.NumberFormat('en-US', {
+    notation: 'compact',
+    maximumFractionDigits: 1,
+  });
+  return `LE ${formatter.format(value)}`;
 };
 
 export default function DashboardPage() {
@@ -33,63 +61,107 @@ export default function DashboardPage() {
   const [inventoryCount, setInventoryCount] = useState(0);
   const [monthlyRevenue, setMonthlyRevenue] = useState(0);
   const [projectStatusData, setProjectStatusData] = useState<any[]>([]);
+  const [pendingTasks, setPendingTasks] = useState<PendingTask[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     const unsubscribes: (() => void)[] = [];
 
     const qProjects = query(collection(firestore, 'projects'));
-    unsubscribes.push(onSnapshot(qProjects, (snapshot) => {
-      setProjectCount(snapshot.docs.filter(doc => (doc.data() as Project).status === 'In Progress').length);
-      const statusCounts = snapshot.docs
-        .map(doc => doc.data() as Project)
-        .reduce((acc, project) => {
-          acc[project.status] = (acc[project.status] || 0) + 1;
-          return acc;
-        }, {} as Record<string, number>);
-      
-      const chartData = [
-        { status: 'Planning', projects: statusCounts['Planning'] || 0 },
-        { status: 'In Progress', projects: statusCounts['In Progress'] || 0 },
-        { status: 'Completed', projects: statusCounts['Completed'] || 0 },
-        { status: 'On Hold', projects: statusCounts['On Hold'] || 0 },
-      ];
-      setProjectStatusData(chartData);
-    }));
+    unsubscribes.push(
+      onSnapshot(qProjects, (snapshot) => {
+        setProjectCount(
+          snapshot.docs.filter(
+            (doc) => (doc.data() as Project).status === 'In Progress'
+          ).length
+        );
+        const statusCounts = snapshot.docs
+          .map((doc) => doc.data() as Project)
+          .reduce(
+            (acc, project) => {
+              acc[project.status] = (acc[project.status] || 0) + 1;
+              return acc;
+            },
+            {} as Record<string, number>
+          );
+
+        const chartData = [
+          { status: 'Planning', projects: statusCounts['Planning'] || 0 },
+          {
+            status: 'In Progress',
+            projects: statusCounts['In Progress'] || 0,
+          },
+          { status: 'Completed', projects: statusCounts['Completed'] || 0 },
+          { status: 'On Hold', projects: statusCounts['On Hold'] || 0 },
+        ];
+        setProjectStatusData(chartData);
+      })
+    );
 
     const qEmployees = query(collection(firestore, 'employees'));
-    unsubscribes.push(onSnapshot(qEmployees, (snapshot) => {
-      setEmployeeCount(snapshot.size);
-    }));
+    unsubscribes.push(
+      onSnapshot(qEmployees, (snapshot) => {
+        setEmployeeCount(snapshot.size);
+      })
+    );
 
     const qInventory = query(collection(firestore, 'inventory'));
-    unsubscribes.push(onSnapshot(qInventory, (snapshot) => {
-      setInventoryCount(snapshot.size);
-    }));
-    
+    unsubscribes.push(
+      onSnapshot(qInventory, (snapshot) => {
+        setInventoryCount(snapshot.size);
+      })
+    );
+
     // Fetch all transactions and filter client-side to avoid composite index requirement
     const qTransactions = query(collection(firestore, 'transactions'));
-    unsubscribes.push(onSnapshot(qTransactions, (snapshot) => {
+    unsubscribes.push(
+      onSnapshot(qTransactions, (snapshot) => {
         const now = new Date();
         const start = startOfMonth(now);
         const end = endOfMonth(now);
         const revenue = snapshot.docs
-            .map(doc => doc.data() as Transaction)
-            .filter(transaction => {
-                if (!transaction.date || typeof transaction.date.toDate !== 'function') {
-                    return false;
-                }
-                const transactionDate = transaction.date.toDate();
-                return transaction.type === 'Income' && transactionDate >= start && transactionDate <= end;
-            })
-            .reduce((sum, transaction) => sum + transaction.amount, 0);
+          .map((doc) => doc.data() as Transaction)
+          .filter((transaction) => {
+            if (
+              !transaction.date ||
+              typeof transaction.date.toDate !== 'function'
+            ) {
+              return false;
+            }
+            const transactionDate = transaction.date.toDate();
+            return (
+              transaction.type === 'Income' &&
+              transactionDate >= start &&
+              transactionDate <= end
+            );
+          })
+          .reduce((sum, transaction) => sum + transaction.amount, 0);
         setMonthlyRevenue(revenue);
-    }));
-    
+      })
+    );
+
+    const qProcurement = query(
+      collection(firestore, 'procurement'),
+      where('status', '==', 'Pending')
+    );
+    unsubscribes.push(
+      onSnapshot(qProcurement, (snapshot) => {
+        const tasks = snapshot.docs.map((doc) => {
+          const data = doc.data() as ProcurementRequest;
+          return {
+            id: doc.id,
+            title: `Request for ${data.quantity}x ${data.itemName}`,
+            type: 'Procurement',
+          };
+        });
+        setPendingTasks(tasks);
+      })
+    );
+
     const timer = setTimeout(() => setIsLoading(false), 1500);
     unsubscribes.push(() => clearTimeout(timer));
 
-    return () => unsubscribes.forEach(unsub => unsub());
+    return () => unsubscribes.forEach((unsub) => unsub());
   }, []);
 
   const kpis = [
@@ -139,7 +211,9 @@ export default function DashboardPage() {
               {kpi.icon}
             </CardHeader>
             <CardContent>
-              {kpi.isLoading ? <Skeleton className="h-8 w-24" /> : (
+              {kpi.isLoading ? (
+                <Skeleton className="h-8 w-24" />
+              ) : (
                 <div className="text-2xl font-bold">{kpi.value}</div>
               )}
             </CardContent>
@@ -152,41 +226,89 @@ export default function DashboardPage() {
             <CardTitle>Project Status Overview</CardTitle>
           </CardHeader>
           <CardContent className="pl-2">
-            {isLoading ? <Skeleton className="h-[250px] w-full" /> : (
-                <ChartContainer config={chartConfig} className="h-[250px] w-full">
+            {isLoading ? (
+              <Skeleton className="h-[250px] w-full" />
+            ) : (
+              <ChartContainer config={chartConfig} className="h-[250px] w-full">
                 <BarChart accessibilityLayer data={projectStatusData}>
-                    <CartesianGrid vertical={false} />
-                    <XAxis
+                  <CartesianGrid vertical={false} />
+                  <XAxis
                     dataKey="status"
                     tickLine={false}
                     tickMargin={10}
                     axisLine={false}
                     stroke="hsl(var(--muted-foreground))"
-                    />
-                    <YAxis
+                  />
+                  <YAxis
                     allowDecimals={false}
                     stroke="hsl(var(--muted-foreground))"
-                    />
-                    <ChartTooltip
+                  />
+                  <ChartTooltip
                     cursor={false}
                     content={<ChartTooltipContent hideLabel />}
-                    />
-                    <Bar
+                  />
+                  <Bar
                     dataKey="projects"
                     fill="var(--color-projects)"
                     radius={4}
-                    />
+                  />
                 </BarChart>
-                </ChartContainer>
+              </ChartContainer>
             )}
           </CardContent>
         </Card>
         <Card>
           <CardHeader>
             <CardTitle>Pending Tasks</CardTitle>
+            <CardDescription>
+              {pendingTasks.length > 0
+                ? `You have ${pendingTasks.length} pending task(s).`
+                : 'Items that require your attention.'}
+            </CardDescription>
           </CardHeader>
           <CardContent>
-            <p className="text-muted-foreground">You have no pending tasks.</p>
+            {isLoading ? (
+              <div className="space-y-4">
+                <Skeleton className="h-10 w-full" />
+                <Skeleton className="h-10 w-full" />
+              </div>
+            ) : pendingTasks.length > 0 ? (
+              <div className="space-y-4">
+                {pendingTasks.slice(0, 3).map((task) => (
+                  <div
+                    key={task.id}
+                    className="flex items-center justify-between"
+                  >
+                    <div>
+                      <p className="font-semibold">{task.title}</p>
+                      <p className="text-sm text-muted-foreground">
+                        {task.type}
+                      </p>
+                    </div>
+                    <Button asChild size="sm" variant="outline">
+                      <Link href="/procurement">View</Link>
+                    </Button>
+                  </div>
+                ))}
+                {pendingTasks.length > 3 && (
+                  <Button
+                    asChild
+                    variant="link"
+                    className="p-0 h-auto w-full justify-start"
+                  >
+                    <Link href="/procurement">
+                      And {pendingTasks.length - 3} more...
+                    </Link>
+                  </Button>
+                )}
+              </div>
+            ) : (
+              <div className="flex h-24 flex-col items-center justify-center text-center">
+                <p className="text-sm text-muted-foreground">
+                  You have no pending tasks.
+                </p>
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>
