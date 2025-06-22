@@ -1,7 +1,8 @@
+
 'use server';
 
 import { firestore } from '@/lib/firebase';
-import { collection, addDoc, doc, deleteDoc, updateDoc } from 'firebase/firestore';
+import { collection, addDoc, doc, deleteDoc, updateDoc, serverTimestamp } from 'firebase/firestore';
 import { z } from 'zod';
 import { revalidatePath } from 'next/cache';
 
@@ -109,5 +110,54 @@ export async function evaluateSupplier(supplierId: string, values: EvaluateSuppl
   } catch (error) {
     console.error('Error evaluating supplier:', error);
     return { message: 'Failed to update evaluation.', errors: { _server: ['An unexpected error occurred.'] } };
+  }
+}
+
+const contractFormSchema = z.object({
+  title: z.string().min(3, 'Contract title must be at least 3 characters long.'),
+  effectiveDate: z.string().refine((date) => !isNaN(Date.parse(date)), {
+    message: 'Please select a valid date.',
+  }),
+});
+
+export type ContractFormValues = z.infer<typeof contractFormSchema>;
+
+export async function addContract(supplierId: string, values: ContractFormValues) {
+  if (!supplierId) {
+    return { message: 'Supplier ID is required.', errors: { _server: ['Supplier ID is missing.'] } };
+  }
+
+  const validatedFields = contractFormSchema.safeParse(values);
+  if (!validatedFields.success) {
+    return { errors: validatedFields.error.flatten().fieldErrors, message: 'Invalid data provided.' };
+  }
+
+  try {
+    const contractsRef = collection(firestore, 'suppliers', supplierId, 'contracts');
+    await addDoc(contractsRef, {
+      ...validatedFields.data,
+      effectiveDate: new Date(validatedFields.data.effectiveDate),
+      createdAt: serverTimestamp(),
+    });
+    revalidatePath(`/suppliers/${supplierId}`);
+    return { message: 'Contract added successfully.', errors: null };
+  } catch (error) {
+    console.error('Error adding contract:', error);
+    return { message: 'Failed to add contract.', errors: { _server: ['An unexpected error occurred.'] } };
+  }
+}
+
+export async function deleteContract(supplierId: string, contractId: string) {
+  if (!supplierId || !contractId) {
+    return { success: false, message: 'Supplier and Contract ID are required.' };
+  }
+
+  try {
+    await deleteDoc(doc(firestore, 'suppliers', supplierId, 'contracts', contractId));
+    revalidatePath(`/suppliers/${supplierId}`);
+    return { success: true, message: 'Contract deleted successfully.' };
+  } catch (error) {
+    console.error('Error deleting contract:', error);
+    return { success: false, message: 'Failed to delete contract.' };
   }
 }

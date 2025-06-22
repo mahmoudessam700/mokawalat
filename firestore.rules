@@ -3,68 +3,69 @@ rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
-    
-    // Helper function to check if the user has an 'admin' role in their user document.
+
     function isAdmin() {
-      return exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
-             get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+      return request.auth != null && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
     }
 
-    // A user can read their own document. Admins can read any user document.
-    // Only admins can change user roles.
     match /users/{userId} {
-      allow read: if request.auth.uid == userId || isAdmin();
+      allow read: if request.auth != null;
       allow write: if isAdmin();
     }
     
-    // Any authenticated user can read/write clients and their sub-collections (e.g., interactions).
-    match /clients/{docId=**} {
-      allow read, write: if request.auth != null;
-    }
-
-    // Activity log can be created and read by any authenticated user, but not modified or deleted.
     match /activityLog/{logId} {
-        allow read, create: if request.auth != null;
-        allow update, delete: if false;
+      allow read, write: if request.auth != null; // Internal service writes
     }
+    
+    match /projects/{projectId} {
+      allow read: if request.auth != null;
+      allow write: if isAdmin();
 
-    // Material requests can be created and read by authenticated users.
-    // They can only be updated or deleted by admins.
-    match /materialRequests/{reqId} {
-        allow read, create: if request.auth != null;
-        allow update, delete: if isAdmin();
+      match /materialRequests/{requestId} {
+        allow read, write: if request.auth != null; // Allow project members to create, admins to update status
+      }
     }
-
-    // Business data collections can be read by any authenticated user.
-    // Write access is restricted to admins. This covers the documents and any sub-collections.
-    match /projects/{docId=**} {
+    
+    match /employees/{employeeId} {
       allow read: if request.auth != null;
       allow write: if isAdmin();
     }
     
-    match /employees/{docId=**} {
+    match /clients/{clientId} {
+      allow read, write: if request.auth != null; // Assuming all users can manage clients for now
+
+      match /interactions/{interactionId} {
+        allow read, write: if request.auth != null;
+      }
+    }
+
+    match /suppliers/{supplierId} {
+      allow read: if request.auth != null;
+      allow write: if isAdmin();
+      
+      match /contracts/{contractId} {
+        allow read: if request.auth != null;
+        allow write: if isAdmin();
+      }
+    }
+    
+    match /inventory/{itemId} {
       allow read: if request.auth != null;
       allow write: if isAdmin();
     }
-
-    match /suppliers/{docId=**} {
-       allow read: if request.auth != null;
-       allow write: if isAdmin();
+    
+    match /procurement/{procurementId} {
+      allow read: if request.auth != null;
+      allow write: if isAdmin();
     }
-
-    match /inventory/{docId=**} {
-       allow read: if request.auth != null;
-       allow write: if isAdmin();
+    
+    match /transactions/{transactionId} {
+      allow read: if request.auth != null;
+      allow write: if isAdmin();
     }
-
-    match /procurement/{docId=**} {
-       allow read: if request.auth != null;
-       allow write: if isAdmin();
-    }
-
-    match /transactions/{docId=**} {
-       allow read: if request.auth != null;
-       allow write: if isAdmin();
+    
+    match /materialRequests/{requestId} {
+       allow read, write: if request.auth != null; 
     }
   }
 }
