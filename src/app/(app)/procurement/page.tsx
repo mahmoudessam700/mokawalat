@@ -1,3 +1,4 @@
+
 'use client';
 
 import {
@@ -71,6 +72,7 @@ import { firestore } from '@/lib/firebase';
 import { Skeleton } from '@/components/ui/skeleton';
 import { format } from 'date-fns';
 import Link from 'next/link';
+import { useAuth } from '@/hooks/use-auth';
 
 type RequestStatus = 'Pending' | 'Approved' | 'Rejected' | 'Ordered';
 
@@ -122,6 +124,7 @@ export default function ProcurementPage() {
   const [requestToDelete, setRequestToDelete] = useState<PurchaseRequest | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
   const { toast } = useToast();
+  const { profile } = useAuth();
 
   useEffect(() => {
     const qRequests = query(collection(firestore, 'procurement'), orderBy('requestedAt', 'desc'));
@@ -233,128 +236,130 @@ export default function ProcurementPage() {
           <h1 className="font-headline text-3xl font-bold tracking-tight">Procurement Management</h1>
           <p className="text-muted-foreground">Create and track all purchase requests.</p>
         </div>
-        <Dialog open={isDialogOpen} onOpenChange={handleFormDialogOpenChange}>
-          <DialogTrigger asChild>
-            <Button onClick={() => setRequestToEdit(null)}>
-              <PlusCircle className="mr-2" />
-              Create Purchase Request
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="sm:max-w-[480px]">
-            <DialogHeader>
-              <DialogTitle>{requestToEdit ? 'Edit Purchase Request' : 'New Purchase Request'}</DialogTitle>
-              <DialogDescription>
-                {requestToEdit ? "Update the details of the purchase request." : "Fill in the details to create a new purchase request."}
-              </DialogDescription>
-            </DialogHeader>
-            <Form {...form}>
-              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 py-4">
-                <FormField
-                  control={form.control}
-                  name="itemName"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Item Name</FormLabel>
-                      <FormControl>
-                        <Input placeholder="e.g., Rebar Steel Ton" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="quantity"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Quantity</FormLabel>
-                      <FormControl>
-                        <Input type="number" placeholder="e.g., 10" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="supplierId"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Supplier</FormLabel>
-                      <Select onValueChange={field.onChange} value={field.value}>
+        {profile?.role === 'admin' && (
+            <Dialog open={isDialogOpen} onOpenChange={handleFormDialogOpenChange}>
+            <DialogTrigger asChild>
+                <Button onClick={() => setRequestToEdit(null)}>
+                <PlusCircle className="mr-2" />
+                Create Purchase Request
+                </Button>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-[480px]">
+                <DialogHeader>
+                <DialogTitle>{requestToEdit ? 'Edit Purchase Request' : 'New Purchase Request'}</DialogTitle>
+                <DialogDescription>
+                    {requestToEdit ? "Update the details of the purchase request." : "Fill in the details to create a new purchase request."}
+                </DialogDescription>
+                </DialogHeader>
+                <Form {...form}>
+                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 py-4">
+                    <FormField
+                    control={form.control}
+                    name="itemName"
+                    render={({ field }) => (
+                        <FormItem>
+                        <FormLabel>Item Name</FormLabel>
                         <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select a supplier" />
-                          </SelectTrigger>
+                            <Input placeholder="e.g., Rebar Steel Ton" {...field} />
                         </FormControl>
-                        <SelectContent>
-                          {suppliers.map(supplier => (
-                            <SelectItem key={supplier.id} value={supplier.id}>{supplier.name}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="projectId"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Project</FormLabel>
-                      <Select onValueChange={field.onChange} value={field.value}>
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select a project" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          {projects.map(project => (
-                            <SelectItem key={project.id} value={project.id}>{project.name}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                 <FormField
-                  control={form.control}
-                  name="status"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Status</FormLabel>
-                      <Select onValueChange={field.onChange} value={field.value}>
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select status" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          <SelectItem value="Pending">Pending</SelectItem>
-                          <SelectItem value="Approved">Approved</SelectItem>
-                          <SelectItem value="Rejected">Rejected</SelectItem>
-                          <SelectItem value="Ordered">Ordered</SelectItem>
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <DialogFooter>
-                  <Button type="submit" disabled={form.formState.isSubmitting}>
-                    {form.formState.isSubmitting ? (
-                      <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Saving...</>
-                    ) : (
-                      requestToEdit ? 'Save Changes' : 'Submit Request'
+                        <FormMessage />
+                        </FormItem>
                     )}
-                  </Button>
-                </DialogFooter>
-              </form>
-            </Form>
-          </DialogContent>
-        </Dialog>
+                    />
+                    <FormField
+                    control={form.control}
+                    name="quantity"
+                    render={({ field }) => (
+                        <FormItem>
+                        <FormLabel>Quantity</FormLabel>
+                        <FormControl>
+                            <Input type="number" placeholder="e.g., 10" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                        </FormItem>
+                    )}
+                    />
+                    <FormField
+                    control={form.control}
+                    name="supplierId"
+                    render={({ field }) => (
+                        <FormItem>
+                        <FormLabel>Supplier</FormLabel>
+                        <Select onValueChange={field.onChange} value={field.value}>
+                            <FormControl>
+                            <SelectTrigger>
+                                <SelectValue placeholder="Select a supplier" />
+                            </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                            {suppliers.map(supplier => (
+                                <SelectItem key={supplier.id} value={supplier.id}>{supplier.name}</SelectItem>
+                            ))}
+                            </SelectContent>
+                        </Select>
+                        <FormMessage />
+                        </FormItem>
+                    )}
+                    />
+                    <FormField
+                    control={form.control}
+                    name="projectId"
+                    render={({ field }) => (
+                        <FormItem>
+                        <FormLabel>Project</FormLabel>
+                        <Select onValueChange={field.onChange} value={field.value}>
+                            <FormControl>
+                            <SelectTrigger>
+                                <SelectValue placeholder="Select a project" />
+                            </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                            {projects.map(project => (
+                                <SelectItem key={project.id} value={project.id}>{project.name}</SelectItem>
+                            ))}
+                            </SelectContent>
+                        </Select>
+                        <FormMessage />
+                        </FormItem>
+                    )}
+                    />
+                    <FormField
+                    control={form.control}
+                    name="status"
+                    render={({ field }) => (
+                        <FormItem>
+                        <FormLabel>Status</FormLabel>
+                        <Select onValueChange={field.onChange} value={field.value}>
+                            <FormControl>
+                            <SelectTrigger>
+                                <SelectValue placeholder="Select status" />
+                            </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                            <SelectItem value="Pending">Pending</SelectItem>
+                            <SelectItem value="Approved">Approved</SelectItem>
+                            <SelectItem value="Rejected">Rejected</SelectItem>
+                            <SelectItem value="Ordered">Ordered</SelectItem>
+                            </SelectContent>
+                        </Select>
+                        <FormMessage />
+                        </FormItem>
+                    )}
+                    />
+                    <DialogFooter>
+                    <Button type="submit" disabled={form.formState.isSubmitting}>
+                        {form.formState.isSubmitting ? (
+                        <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Saving...</>
+                        ) : (
+                        requestToEdit ? 'Save Changes' : 'Submit Request'
+                        )}
+                    </Button>
+                    </DialogFooter>
+                </form>
+                </Form>
+            </DialogContent>
+            </Dialog>
+        )}
       </div>
 
       <Card>
@@ -398,34 +403,36 @@ export default function ProcurementPage() {
                     <TableCell className="hidden md:table-cell">{request.requestedAt ? format(request.requestedAt.toDate(), 'PPP') : 'N/A'}</TableCell>
                     <TableCell><Badge variant={statusVariant[request.status]}>{request.status}</Badge></TableCell>
                     <TableCell>
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button aria-haspopup="true" size="icon" variant="ghost">
-                            <MoreHorizontal className="h-4 w-4" />
-                            <span className="sr-only">Toggle menu</span>
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                           <DropdownMenuItem onSelect={() => {
-                            setRequestToEdit(request);
-                            setIsDialogOpen(true);
-                           }}>Edit</DropdownMenuItem>
-                          <DropdownMenuItem asChild>
-                            <Link href={`/procurement/${request.id}`}>View Details</Link>
-                          </DropdownMenuItem>
-                          <DropdownMenuItem
-                            className="text-destructive"
-                            onSelect={() => {
-                              setRequestToDelete(request);
-                              setIsDeleteDialogOpen(true);
-                            }}
-                          >
-                             <Trash2 className="mr-2 h-4 w-4" />
-                            Delete
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
+                      {profile?.role === 'admin' && (
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button aria-haspopup="true" size="icon" variant="ghost">
+                              <MoreHorizontal className="h-4 w-4" />
+                              <span className="sr-only">Toggle menu</span>
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                            <DropdownMenuItem onSelect={() => {
+                              setRequestToEdit(request);
+                              setIsDialogOpen(true);
+                            }}>Edit</DropdownMenuItem>
+                            <DropdownMenuItem asChild>
+                              <Link href={`/procurement/${request.id}`}>View Details</Link>
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                              className="text-destructive"
+                              onSelect={() => {
+                                setRequestToDelete(request);
+                                setIsDeleteDialogOpen(true);
+                              }}
+                            >
+                               <Trash2 className="mr-2 h-4 w-4" />
+                              Delete
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      )}
                     </TableCell>
                   </TableRow>
                 ))

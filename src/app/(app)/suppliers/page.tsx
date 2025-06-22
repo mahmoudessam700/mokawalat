@@ -58,6 +58,7 @@ import { collection, onSnapshot, query, orderBy } from 'firebase/firestore';
 import { firestore } from '@/lib/firebase';
 import { Skeleton } from '@/components/ui/skeleton';
 import Link from 'next/link';
+import { useAuth } from '@/hooks/use-auth';
 
 // Define the supplier type
 type Supplier = {
@@ -88,6 +89,7 @@ export default function SuppliersPage() {
   const [supplierToDelete, setSupplierToDelete] = useState<Supplier | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
   const { toast } = useToast();
+  const { profile } = useAuth();
 
   useEffect(() => {
     const q = query(collection(firestore, 'suppliers'), orderBy('name', 'asc'));
@@ -194,113 +196,115 @@ export default function SuppliersPage() {
             Manage all your company's suppliers and vendors.
           </p>
         </div>
-        <Dialog open={isFormDialogOpen} onOpenChange={handleFormDialogOpenChange}>
-          <DialogTrigger asChild>
-            <Button onClick={() => setSupplierToEdit(null)}>
-              <PlusCircle className="mr-2" />
-              Add Supplier
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="sm:max-w-[480px]">
-            <DialogHeader>
-              <DialogTitle>{supplierToEdit ? 'Edit Supplier' : 'Add New Supplier'}</DialogTitle>
-              <DialogDescription>
-                 {supplierToEdit ? "Update the supplier's details below." : 'Fill in the details below to add a new supplier.'}
-              </DialogDescription>
-            </DialogHeader>
-            <Form {...form}>
-              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 py-4">
-                <FormField
-                  control={form.control}
-                  name="name"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Supplier Name</FormLabel>
-                      <FormControl>
-                        <Input placeholder="e.g., Al-Foulad Steel Co." {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                 <FormField
-                  control={form.control}
-                  name="contactPerson"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Contact Person</FormLabel>
-                      <FormControl>
-                        <Input placeholder="e.g., Ahmed Saleh" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                 <div className="grid grid-cols-2 gap-4">
-                   <FormField
+        {profile?.role === 'admin' && (
+            <Dialog open={isFormDialogOpen} onOpenChange={handleFormDialogOpenChange}>
+            <DialogTrigger asChild>
+                <Button onClick={() => setSupplierToEdit(null)}>
+                <PlusCircle className="mr-2" />
+                Add Supplier
+                </Button>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-[480px]">
+                <DialogHeader>
+                <DialogTitle>{supplierToEdit ? 'Edit Supplier' : 'Add New Supplier'}</DialogTitle>
+                <DialogDescription>
+                    {supplierToEdit ? "Update the supplier's details below." : 'Fill in the details below to add a new supplier.'}
+                </DialogDescription>
+                </DialogHeader>
+                <Form {...form}>
+                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 py-4">
+                    <FormField
                     control={form.control}
-                    name="email"
+                    name="name"
                     render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Email</FormLabel>
+                        <FormItem>
+                        <FormLabel>Supplier Name</FormLabel>
                         <FormControl>
-                          <Input placeholder="e.g., sales@al-foulad.com" type="email" {...field} />
+                            <Input placeholder="e.g., Al-Foulad Steel Co." {...field} />
                         </FormControl>
                         <FormMessage />
-                      </FormItem>
+                        </FormItem>
                     )}
-                  />
-                   <FormField
+                    />
+                    <FormField
                     control={form.control}
-                    name="phone"
+                    name="contactPerson"
                     render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Phone Number</FormLabel>
+                        <FormItem>
+                        <FormLabel>Contact Person</FormLabel>
                         <FormControl>
-                          <Input placeholder="e.g., +966 11 123 4567" type="tel" {...field} />
+                            <Input placeholder="e.g., Ahmed Saleh" {...field} />
                         </FormControl>
                         <FormMessage />
-                      </FormItem>
+                        </FormItem>
                     )}
-                  />
-                </div>
-                 <FormField
-                  control={form.control}
-                  name="status"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Status</FormLabel>
-                      <Select onValueChange={field.onChange} defaultValue={field.value}>
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select status" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          <SelectItem value="Active">Active</SelectItem>
-                          <SelectItem value="Inactive">Inactive</SelectItem>
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <DialogFooter>
-                  <Button type="submit" disabled={form.formState.isSubmitting}>
-                    {form.formState.isSubmitting ? (
-                      <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        Saving...
-                      </>
-                    ) : (
-                      supplierToEdit ? 'Save Changes' : 'Save Supplier'
+                    />
+                    <div className="grid grid-cols-2 gap-4">
+                    <FormField
+                        control={form.control}
+                        name="email"
+                        render={({ field }) => (
+                        <FormItem>
+                            <FormLabel>Email</FormLabel>
+                            <FormControl>
+                            <Input placeholder="e.g., sales@al-foulad.com" type="email" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                        </FormItem>
+                        )}
+                    />
+                    <FormField
+                        control={form.control}
+                        name="phone"
+                        render={({ field }) => (
+                        <FormItem>
+                            <FormLabel>Phone Number</FormLabel>
+                            <FormControl>
+                            <Input placeholder="e.g., +966 11 123 4567" type="tel" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                        </FormItem>
+                        )}
+                    />
+                    </div>
+                    <FormField
+                    control={form.control}
+                    name="status"
+                    render={({ field }) => (
+                        <FormItem>
+                        <FormLabel>Status</FormLabel>
+                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                            <FormControl>
+                            <SelectTrigger>
+                                <SelectValue placeholder="Select status" />
+                            </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                            <SelectItem value="Active">Active</SelectItem>
+                            <SelectItem value="Inactive">Inactive</SelectItem>
+                            </SelectContent>
+                        </Select>
+                        <FormMessage />
+                        </FormItem>
                     )}
-                  </Button>
-                </DialogFooter>
-              </form>
-            </Form>
-          </DialogContent>
-        </Dialog>
+                    />
+                    <DialogFooter>
+                    <Button type="submit" disabled={form.formState.isSubmitting}>
+                        {form.formState.isSubmitting ? (
+                        <>
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            Saving...
+                        </>
+                        ) : (
+                        supplierToEdit ? 'Save Changes' : 'Save Supplier'
+                        )}
+                    </Button>
+                    </DialogFooter>
+                </form>
+                </Form>
+            </DialogContent>
+            </Dialog>
+        )}
       </div>
 
       <Card>
@@ -361,25 +365,29 @@ export default function SuppliersPage() {
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
                           <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                          <DropdownMenuItem onSelect={() => {
-                              setSupplierToEdit(supplier);
-                              setIsFormDialogOpen(true);
-                          }}>
-                            Edit
-                          </DropdownMenuItem>
+                          {profile?.role === 'admin' && (
+                            <DropdownMenuItem onSelect={() => {
+                                setSupplierToEdit(supplier);
+                                setIsFormDialogOpen(true);
+                            }}>
+                                Edit
+                            </DropdownMenuItem>
+                          )}
                           <DropdownMenuItem asChild>
                             <Link href={`/suppliers/${supplier.id}`}>View Details</Link>
                           </DropdownMenuItem>
-                          <DropdownMenuItem
-                            className="text-destructive"
-                             onSelect={() => {
-                              setSupplierToDelete(supplier);
-                              setIsDeleteDialogOpen(true);
-                            }}
-                          >
-                            <Trash2 className="mr-2 h-4 w-4" />
-                            Delete
-                          </DropdownMenuItem>
+                          {profile?.role === 'admin' && (
+                            <DropdownMenuItem
+                                className="text-destructive"
+                                onSelect={() => {
+                                setSupplierToDelete(supplier);
+                                setIsDeleteDialogOpen(true);
+                                }}
+                            >
+                                <Trash2 className="mr-2 h-4 w-4" />
+                                Delete
+                            </DropdownMenuItem>
+                          )}
                         </DropdownMenuContent>
                       </DropdownMenu>
                     </TableCell>

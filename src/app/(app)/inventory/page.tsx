@@ -1,3 +1,4 @@
+
 'use client';
 
 import {
@@ -70,6 +71,7 @@ import { collection, onSnapshot, query, orderBy } from 'firebase/firestore';
 import { firestore } from '@/lib/firebase';
 import { Skeleton } from '@/components/ui/skeleton';
 import { AdjustStockDialog } from './adjust-stock-dialog';
+import { useAuth } from '@/hooks/use-auth';
 
 // Define the inventory item type
 type InventoryItem = {
@@ -100,6 +102,7 @@ export default function InventoryPage() {
   const [itemToDelete, setItemToDelete] = useState<InventoryItem | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
   const { toast } = useToast();
+  const { profile } = useAuth();
 
   useEffect(() => {
     const q = query(
@@ -212,171 +215,173 @@ export default function InventoryPage() {
             Track and manage materials, tools, and equipment.
           </p>
         </div>
-        <Dialog open={isDialogOpen} onOpenChange={handleFormDialogOpenChange}>
-          <DialogTrigger asChild>
-            <Button onClick={() => setItemToEdit(null)}>
-              <PlusCircle className="mr-2" />
-              Add Item
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="sm:max-w-[480px]">
-            <DialogHeader>
-              <DialogTitle>{itemToEdit ? 'Edit Item' : 'Add New Inventory Item'}</DialogTitle>
-              <DialogDescription>
-                {itemToEdit ? "Update the item's details below." : 'Fill in the details below to add a new item to the inventory.'}
-              </DialogDescription>
-            </DialogHeader>
-            <Form {...form}>
-              <form
-                onSubmit={form.handleSubmit(onSubmit)}
-                className="space-y-4 py-4"
-              >
-                <FormField
-                  control={form.control}
-                  name="name"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Item Name</FormLabel>
-                      <FormControl>
-                        <Input
-                          placeholder="e.g., Cement Bags (50kg)"
-                          {...field}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="category"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Category</FormLabel>
-                      <Select
-                        onValueChange={field.onChange}
-                        value={field.value}
-                      >
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select a category" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          <SelectItem value="Building Materials">
-                            Building Materials
-                          </SelectItem>
-                          <SelectItem value="Structural Steel">
-                            Structural Steel
-                          </SelectItem>
-                          <SelectItem value="Aggregates">Aggregates</SelectItem>
-                          <SelectItem value="Safety Gear">
-                            Safety Gear
-                          </SelectItem>
-                          <SelectItem value="Plumbing">Plumbing</SelectItem>
-                          <SelectItem value="Electrical">Electrical</SelectItem>
-                          <SelectItem value="Tools">Tools</SelectItem>
-                          <SelectItem value="Equipment">Equipment</SelectItem>
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <div className="grid grid-cols-2 gap-4">
-                  <FormField
+        {profile?.role === 'admin' && (
+            <Dialog open={isDialogOpen} onOpenChange={handleFormDialogOpenChange}>
+            <DialogTrigger asChild>
+                <Button onClick={() => setItemToEdit(null)}>
+                <PlusCircle className="mr-2" />
+                Add Item
+                </Button>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-[480px]">
+                <DialogHeader>
+                <DialogTitle>{itemToEdit ? 'Edit Item' : 'Add New Inventory Item'}</DialogTitle>
+                <DialogDescription>
+                    {itemToEdit ? "Update the item's details below." : 'Fill in the details below to add a new item to the inventory.'}
+                </DialogDescription>
+                </DialogHeader>
+                <Form {...form}>
+                <form
+                    onSubmit={form.handleSubmit(onSubmit)}
+                    className="space-y-4 py-4"
+                >
+                    <FormField
                     control={form.control}
-                    name="quantity"
+                    name="name"
                     render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Quantity</FormLabel>
+                        <FormItem>
+                        <FormLabel>Item Name</FormLabel>
                         <FormControl>
-                          <Input
-                            type="number"
-                            placeholder="e.g., 500"
+                            <Input
+                            placeholder="e.g., Cement Bags (50kg)"
                             {...field}
-                          />
+                            />
                         </FormControl>
                         <FormMessage />
-                      </FormItem>
+                        </FormItem>
                     )}
-                  />
-                  <FormField
+                    />
+                    <FormField
                     control={form.control}
-                    name="warehouse"
+                    name="category"
                     render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Warehouse</FormLabel>
+                        <FormItem>
+                        <FormLabel>Category</FormLabel>
                         <Select
-                          onValueChange={field.onChange}
-                          value={field.value}
+                            onValueChange={field.onChange}
+                            value={field.value}
                         >
-                          <FormControl>
+                            <FormControl>
                             <SelectTrigger>
-                              <SelectValue placeholder="Select a warehouse" />
+                                <SelectValue placeholder="Select a category" />
                             </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            <SelectItem value="Main Warehouse">
-                              Main Warehouse
+                            </FormControl>
+                            <SelectContent>
+                            <SelectItem value="Building Materials">
+                                Building Materials
                             </SelectItem>
-                            <SelectItem value="Warehouse B">
-                              Warehouse B
+                            <SelectItem value="Structural Steel">
+                                Structural Steel
                             </SelectItem>
-                            <SelectItem value="Yard A">Yard A</SelectItem>
-                            <SelectItem value="Site Office">
-                              Site Office
+                            <SelectItem value="Aggregates">Aggregates</SelectItem>
+                            <SelectItem value="Safety Gear">
+                                Safety Gear
                             </SelectItem>
-                          </SelectContent>
+                            <SelectItem value="Plumbing">Plumbing</SelectItem>
+                            <SelectItem value="Electrical">Electrical</SelectItem>
+                            <SelectItem value="Tools">Tools</SelectItem>
+                            <SelectItem value="Equipment">Equipment</SelectItem>
+                            </SelectContent>
                         </Select>
                         <FormMessage />
-                      </FormItem>
+                        </FormItem>
                     )}
-                  />
-                </div>
-                <FormField
-                  control={form.control}
-                  name="status"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Status</FormLabel>
-                      <Select
-                        onValueChange={field.onChange}
-                        value={field.value}
-                      >
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select status" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          <SelectItem value="In Stock">In Stock</SelectItem>
-                          <SelectItem value="Low Stock">Low Stock</SelectItem>
-                          <SelectItem value="Out of Stock">
-                            Out of Stock
-                          </SelectItem>
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <DialogFooter>
-                  <Button type="submit" disabled={form.formState.isSubmitting}>
-                    {form.formState.isSubmitting ? (
-                      <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        Saving...
-                      </>
-                    ) : (
-                      itemToEdit ? 'Save Changes' : 'Save Item'
+                    />
+                    <div className="grid grid-cols-2 gap-4">
+                    <FormField
+                        control={form.control}
+                        name="quantity"
+                        render={({ field }) => (
+                        <FormItem>
+                            <FormLabel>Quantity</FormLabel>
+                            <FormControl>
+                            <Input
+                                type="number"
+                                placeholder="e.g., 500"
+                                {...field}
+                            />
+                            </FormControl>
+                            <FormMessage />
+                        </FormItem>
+                        )}
+                    />
+                    <FormField
+                        control={form.control}
+                        name="warehouse"
+                        render={({ field }) => (
+                        <FormItem>
+                            <FormLabel>Warehouse</FormLabel>
+                            <Select
+                            onValueChange={field.onChange}
+                            value={field.value}
+                            >
+                            <FormControl>
+                                <SelectTrigger>
+                                <SelectValue placeholder="Select a warehouse" />
+                                </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                                <SelectItem value="Main Warehouse">
+                                Main Warehouse
+                                </SelectItem>
+                                <SelectItem value="Warehouse B">
+                                Warehouse B
+                                </SelectItem>
+                                <SelectItem value="Yard A">Yard A</SelectItem>
+                                <SelectItem value="Site Office">
+                                Site Office
+                                </SelectItem>
+                            </SelectContent>
+                            </Select>
+                            <FormMessage />
+                        </FormItem>
+                        )}
+                    />
+                    </div>
+                    <FormField
+                    control={form.control}
+                    name="status"
+                    render={({ field }) => (
+                        <FormItem>
+                        <FormLabel>Status</FormLabel>
+                        <Select
+                            onValueChange={field.onChange}
+                            value={field.value}
+                        >
+                            <FormControl>
+                            <SelectTrigger>
+                                <SelectValue placeholder="Select status" />
+                            </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                            <SelectItem value="In Stock">In Stock</SelectItem>
+                            <SelectItem value="Low Stock">Low Stock</SelectItem>
+                            <SelectItem value="Out of Stock">
+                                Out of Stock
+                            </SelectItem>
+                            </SelectContent>
+                        </Select>
+                        <FormMessage />
+                        </FormItem>
                     )}
-                  </Button>
-                </DialogFooter>
-              </form>
-            </Form>
-          </DialogContent>
-        </Dialog>
+                    />
+                    <DialogFooter>
+                    <Button type="submit" disabled={form.formState.isSubmitting}>
+                        {form.formState.isSubmitting ? (
+                        <>
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            Saving...
+                        </>
+                        ) : (
+                        itemToEdit ? 'Save Changes' : 'Save Item'
+                        )}
+                    </Button>
+                    </DialogFooter>
+                </form>
+                </Form>
+            </DialogContent>
+            </Dialog>
+        )}
       </div>
 
       <Card>
@@ -459,40 +464,42 @@ export default function InventoryPage() {
                       </Badge>
                     </TableCell>
                     <TableCell>
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button
-                            aria-haspopup="true"
-                            size="icon"
-                            variant="ghost"
-                          >
-                            <MoreHorizontal className="h-4 w-4" />
-                            <span className="sr-only">Toggle menu</span>
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                          <DropdownMenuItem onSelect={() => {
-                            setItemToEdit(item);
-                            setIsDialogOpen(true);
-                          }}>Edit</DropdownMenuItem>
-                          <AdjustStockDialog item={item}>
-                            <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
-                                Adjust Stock
+                      {profile?.role === 'admin' && (
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button
+                              aria-haspopup="true"
+                              size="icon"
+                              variant="ghost"
+                            >
+                              <MoreHorizontal className="h-4 w-4" />
+                              <span className="sr-only">Toggle menu</span>
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                            <DropdownMenuItem onSelect={() => {
+                              setItemToEdit(item);
+                              setIsDialogOpen(true);
+                            }}>Edit</DropdownMenuItem>
+                            <AdjustStockDialog item={item}>
+                              <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
+                                  Adjust Stock
+                              </DropdownMenuItem>
+                            </AdjustStockDialog>
+                            <DropdownMenuItem
+                              className="text-destructive"
+                              onSelect={() => {
+                                setItemToDelete(item);
+                                setIsDeleteDialogOpen(true);
+                              }}
+                            >
+                              <Trash2 className="mr-2 h-4 w-4" />
+                              Delete
                             </DropdownMenuItem>
-                          </AdjustStockDialog>
-                          <DropdownMenuItem
-                            className="text-destructive"
-                            onSelect={() => {
-                              setItemToDelete(item);
-                              setIsDeleteDialogOpen(true);
-                            }}
-                          >
-                            <Trash2 className="mr-2 h-4 w-4" />
-                            Delete
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      )}
                     </TableCell>
                   </TableRow>
                 ))

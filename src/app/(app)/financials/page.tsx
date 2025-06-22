@@ -1,3 +1,4 @@
+
 'use client';
 
 import {
@@ -57,6 +58,7 @@ import { collection, onSnapshot, query, orderBy, type Timestamp } from 'firebase
 import { firestore } from '@/lib/firebase';
 import { Skeleton } from '@/components/ui/skeleton';
 import { format } from 'date-fns';
+import { useAuth } from '@/hooks/use-auth';
 
 type TransactionType = 'Income' | 'Expense';
 
@@ -104,6 +106,7 @@ export default function FinancialsPage() {
   const [transactionToDelete, setTransactionToDelete] = useState<Transaction | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
   const { toast } = useToast();
+  const { profile } = useAuth();
 
   useEffect(() => {
     const qTransactions = query(collection(firestore, 'transactions'), orderBy('date', 'desc'));
@@ -266,6 +269,7 @@ export default function FinancialsPage() {
             <CardTitle>Transaction History</CardTitle>
             <CardDescription>A list of all income and expense records.</CardDescription>
           </div>
+          {profile?.role === 'admin' && (
             <Dialog open={isFormDialogOpen} onOpenChange={handleFormDialogOpenChange}>
             <DialogTrigger asChild>
                 <Button onClick={() => setTransactionToEdit(null)}>
@@ -385,6 +389,7 @@ export default function FinancialsPage() {
                 </Form>
             </DialogContent>
             </Dialog>
+          )}
         </CardHeader>
         <CardContent>
           <Table>
@@ -429,31 +434,33 @@ export default function FinancialsPage() {
                     </TableCell>
                     <TableCell className={`text-right font-semibold ${transaction.type === 'Income' ? 'text-success' : ''}`}>{formatCurrency(transaction.amount)}</TableCell>
                     <TableCell>
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button aria-haspopup="true" size="icon" variant="ghost">
-                            <MoreHorizontal className="h-4 w-4" />
-                            <span className="sr-only">Toggle menu</span>
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                          <DropdownMenuItem onSelect={() => {
-                            setTransactionToEdit(transaction);
-                            setIsFormDialogOpen(true);
-                          }}>Edit</DropdownMenuItem>
-                          <DropdownMenuItem
-                            className="text-destructive"
-                             onSelect={() => {
-                              setTransactionToDelete(transaction);
-                              setIsDeleteDialogOpen(true);
-                            }}
-                          >
-                             <Trash2 className="mr-2 h-4 w-4" />
-                            Delete
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
+                      {profile?.role === 'admin' && (
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button aria-haspopup="true" size="icon" variant="ghost">
+                              <MoreHorizontal className="h-4 w-4" />
+                              <span className="sr-only">Toggle menu</span>
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                            <DropdownMenuItem onSelect={() => {
+                              setTransactionToEdit(transaction);
+                              setIsFormDialogOpen(true);
+                            }}>Edit</DropdownMenuItem>
+                            <DropdownMenuItem
+                              className="text-destructive"
+                               onSelect={() => {
+                                setTransactionToDelete(transaction);
+                                setIsDeleteDialogOpen(true);
+                              }}
+                            >
+                               <Trash2 className="mr-2 h-4 w-4" />
+                              Delete
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      )}
                     </TableCell>
                   </TableRow>
                 ))
