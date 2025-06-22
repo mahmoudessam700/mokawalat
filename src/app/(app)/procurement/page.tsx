@@ -70,6 +70,7 @@ import { collection, onSnapshot, query, orderBy, Timestamp } from 'firebase/fire
 import { firestore } from '@/lib/firebase';
 import { Skeleton } from '@/components/ui/skeleton';
 import { format } from 'date-fns';
+import Link from 'next/link';
 
 type RequestStatus = 'Pending' | 'Approved' | 'Rejected' | 'Ordered';
 
@@ -410,7 +411,9 @@ export default function ProcurementPage() {
                             setRequestToEdit(request);
                             setIsDialogOpen(true);
                            }}>Edit</DropdownMenuItem>
-                          <DropdownMenuItem>View Details</DropdownMenuItem>
+                          <DropdownMenuItem asChild>
+                            <Link href={`/procurement/${request.id}`}>View Details</Link>
+                          </DropdownMenuItem>
                           <DropdownMenuItem
                             className="text-destructive"
                             onSelect={() => {
