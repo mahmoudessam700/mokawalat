@@ -1,29 +1,26 @@
 rules_version = '2';
+
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Users can read their own user document
+    // Users can only manage their own user document
     match /users/{userId} {
-      allow read, update: if request.auth != null && request.auth.uid == userId;
+      allow read, write: if request.auth != null && request.auth.uid == userId;
       allow create: if request.auth != null;
     }
 
     // Authenticated users can manage employees
     match /employees/{employeeId} {
-      allow read, create: if request.auth != null;
-      // Allow update and delete for potential future admin roles
-      allow update, delete: if request.auth != null;
+      allow read, write: if request.auth != null;
     }
 
     // Authenticated users can manage projects
     match /projects/{projectId} {
-      allow read, create: if request.auth != null;
-      allow update, delete: if request.auth != null;
+      allow read, write: if request.auth != null;
     }
 
     // Authenticated users can manage suppliers
     match /suppliers/{supplierId} {
-      allow read, create: if request.auth != null;
-      allow update, delete: if request.auth != null;
+      allow read, write: if request.auth != null;
     }
   }
 }
