@@ -1,3 +1,4 @@
+
 'use client';
 
 import {
@@ -17,7 +18,7 @@ import { useToast } from '@/hooks/use-toast';
 import { firestore } from '@/lib/firebase';
 import { collection, onSnapshot, query, type Timestamp } from 'firebase/firestore';
 import { useEffect, useMemo, useState } from 'react';
-import { Bar, BarChart, CartesianGrid, Pie, PieChart, XAxis, YAxis, Cell } from 'recharts';
+import { Bar, BarChart, CartesianGrid, Pie, PieChart, XAxis, YAxis, Legend } from 'recharts';
 import { Skeleton } from '@/components/ui/skeleton';
 
 // Types from other modules
@@ -31,6 +32,15 @@ type InventoryItem = {
   id:string;
   status: 'In Stock' | 'Low Stock' | 'Out of Stock';
 };
+type Employee = {
+  id: string;
+  department: string;
+};
+type Client = {
+  id: string;
+  status: 'Lead' | 'Active' | 'Inactive';
+};
+
 
 const chartConfig = {
   income: {
@@ -58,36 +68,56 @@ const chartConfig = {
 export default function ReportsPage() {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [inventory, setInventory] = useState<InventoryItem[]>([]);
+  const [employees, setEmployees] = useState<Employee[]>([]);
+  const [clients, setClients] = useState<Client[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
 
   useEffect(() => {
+    const unsubscribes: (() => void)[] = [];
+    
     const qTransactions = query(collection(firestore, 'transactions'));
-    const unsubscribeTransactions = onSnapshot(qTransactions, (snapshot) => {
+    unsubscribes.push(onSnapshot(qTransactions, (snapshot) => {
       const data: Transaction[] = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Transaction));
       setTransactions(data);
     }, (error) => {
       console.error("Error fetching transactions: ", error);
       toast({ variant: 'destructive', title: 'Error', description: 'Failed to fetch financial data.' });
-    });
+    }));
 
     const qInventory = query(collection(firestore, 'inventory'));
-    const unsubscribeInventory = onSnapshot(qInventory, (snapshot) => {
+    unsubscribes.push(onSnapshot(qInventory, (snapshot) => {
       const data: InventoryItem[] = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as InventoryItem));
       setInventory(data);
     }, (error) => {
       console.error("Error fetching inventory: ", error);
       toast({ variant: 'destructive', title: 'Error', description: 'Failed to fetch inventory data.' });
-    });
+    }));
+
+    const qEmployees = query(collection(firestore, 'employees'));
+    unsubscribes.push(onSnapshot(qEmployees, (snapshot) => {
+        const data: Employee[] = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Employee));
+        setEmployees(data);
+    }, (error) => {
+        console.error("Error fetching employees: ", error);
+        toast({ variant: 'destructive', title: 'Error', description: 'Failed to fetch employee data.' });
+    }));
+
+    const qClients = query(collection(firestore, 'clients'));
+    unsubscribes.push(onSnapshot(qClients, (snapshot) => {
+        const data: Client[] = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Client));
+        setClients(data);
+    }, (error) => {
+        console.error("Error fetching clients: ", error);
+        toast({ variant: 'destructive', title: 'Error', description: 'Failed to fetch client data.' });
+    }));
+
 
     // We can set loading to false after a short delay, assuming fetches will be quick
     const timer = setTimeout(() => setIsLoading(false), 1500);
+    unsubscribes.push(() => clearTimeout(timer));
 
-    return () => {
-      unsubscribeTransactions();
-      unsubscribeInventory();
-      clearTimeout(timer);
-    };
+    return () => unsubscribes.forEach(unsub => unsub());
   }, [toast]);
 
   const financialData = useMemo(() => {
@@ -118,12 +148,47 @@ export default function ReportsPage() {
     ].filter(d => d.value > 0);
   }, [inventory]);
 
+  const employeeDepartmentData = useMemo(() => {
+    const departmentCounts = employees.reduce((acc, employee) => {
+        const department = employee.department || 'Unassigned';
+        acc[department] = (acc[department] || 0) + 1;
+        return acc;
+    }, {} as Record<string, number>);
+
+    return Object.entries(departmentCounts).map(([name, value], index) => ({
+        name,
+        value,
+        fill: `hsl(var(--chart-${(index % 5) + 1}))`,
+    })).filter(d => d.value > 0);
+  }, [employees]);
+
+  const clientStatusData = useMemo(() => {
+    const statusCounts = clients.reduce((acc, client) => {
+        const status = client.status || 'Unknown';
+        acc[status] = (acc[status] || 0) + 1;
+        return acc;
+    }, {} as Record<string, number>);
+
+    const colors: {[key: string]: string} = {
+        Lead: 'hsl(var(--chart-1))',
+        Active: 'hsl(var(--chart-2))',
+        Inactive: 'hsl(var(--chart-5))',
+        Unknown: 'hsl(var(--chart-3))'
+    };
+
+    return Object.entries(statusCounts).map(([name, value]) => ({
+        name,
+        value,
+        fill: colors[name],
+    })).filter(d => d.value > 0);
+}, [clients]);
+
 
   return (
     <div className="space-y-6">
       <div>
         <h1 className="font-headline text-3xl font-bold tracking-tight">
-          Reporting & Analytics
+          Reporting &amp; Analytics
         </h1>
         <p className="text-muted-foreground">
           Generate and view detailed reports on all business activities.
@@ -175,8 +240,57 @@ export default function ReportsPage() {
                       nameKey="name"
                       cx="50%"
                       cy="50%"
-                      outerRadius={100}
+                      outerRadius={80}
                     />
+                    <Legend/>
+                  </PieChart>
+                </ChartContainer>
+             )}
+           </CardContent>
+         </Card>
+          <Card>
+           <CardHeader>
+             <CardTitle>Employee Distribution</CardTitle>
+             <CardDescription>Breakdown of employees by department.</CardDescription>
+           </CardHeader>
+           <CardContent className="flex items-center justify-center pl-2">
+             {isLoading ? <Skeleton className="h-[250px] w-[250px] rounded-full" /> : (
+                <ChartContainer config={{}} className="h-[250px] w-full">
+                  <PieChart>
+                    <ChartTooltip content={<ChartTooltipContent nameKey="name" hideLabel />} />
+                    <Pie
+                      data={employeeDepartmentData}
+                      dataKey="value"
+                      nameKey="name"
+                      cx="50%"
+                      cy="50%"
+                      outerRadius={80}
+                    />
+                    <Legend/>
+                  </PieChart>
+                </ChartContainer>
+             )}
+           </CardContent>
+         </Card>
+          <Card>
+           <CardHeader>
+             <CardTitle>Client Status</CardTitle>
+             <CardDescription>A breakdown of clients by their status.</CardDescription>
+           </CardHeader>
+           <CardContent className="flex items-center justify-center pl-2">
+             {isLoading ? <Skeleton className="h-[250px] w-[250px] rounded-full" /> : (
+                <ChartContainer config={{}} className="h-[250px] w-full">
+                  <PieChart>
+                    <ChartTooltip content={<ChartTooltipContent nameKey="name" hideLabel />} />
+                    <Pie
+                      data={clientStatusData}
+                      dataKey="value"
+                      nameKey="name"
+                      cx="50%"
+                      cy="50%"
+                      outerRadius={80}
+                    />
+                    <Legend/>
                   </PieChart>
                 </ChartContainer>
              )}
