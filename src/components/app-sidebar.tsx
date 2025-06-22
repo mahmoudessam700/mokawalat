@@ -167,7 +167,7 @@ export function AppSidebar() {
                       <Skeleton className="h-3 w-32" />
                   </div>
               </>
-            ) : profile ? (
+            ) : profile && profile.email ? (
               <>
                   <Avatar>
                       <AvatarImage src={`https://placehold.co/40x40.png`} alt={profile.email} data-ai-hint="profile picture" />
