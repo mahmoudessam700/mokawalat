@@ -18,7 +18,7 @@ import {
   DropdownMenuLabel,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Loader2, MoreHorizontal, PlusCircle, Trash2 } from 'lucide-react';
+import { Loader2, MoreHorizontal, PlusCircle, Search, Trash2 } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   Dialog,
@@ -51,7 +51,7 @@ import {
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { addEmployee, deleteEmployee, updateEmployee } from './actions';
 import { useToast } from '@/hooks/use-toast';
 import { collection, onSnapshot, query, orderBy } from 'firebase/firestore';
@@ -81,6 +81,7 @@ type EmployeeFormValues = z.infer<typeof employeeFormSchema>;
 
 export default function EmployeesPage() {
   const [employees, setEmployees] = useState<Employee[]>([]);
+  const [searchTerm, setSearchTerm] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [isFormDialogOpen, setIsFormDialogOpen] = useState(false);
   const [employeeToEdit, setEmployeeToEdit] = useState<Employee | null>(null);
@@ -103,6 +104,17 @@ export default function EmployeesPage() {
     // Cleanup subscription on unmount
     return () => unsubscribe();
   }, []);
+
+  const filteredEmployees = useMemo(() => {
+    const lowercasedFilter = searchTerm.toLowerCase();
+    return employees.filter((employee) => {
+      return (
+        employee.name.toLowerCase().includes(lowercasedFilter) ||
+        employee.email.toLowerCase().includes(lowercasedFilter)
+      );
+    });
+  }, [employees, searchTerm]);
+
 
   const form = useForm<EmployeeFormValues>({
     resolver: zodResolver(employeeFormSchema),
@@ -320,7 +332,19 @@ export default function EmployeesPage() {
       <Card>
         <CardHeader>
           <CardTitle>Employee List</CardTitle>
-          <CardDescription>A list of all employees in the system.</CardDescription>
+           <div className="flex justify-between items-center">
+            <CardDescription>A list of all employees in the system.</CardDescription>
+            <div className="relative w-full max-w-sm">
+                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                <Input
+                    type="search"
+                    placeholder="Search by name or email..."
+                    className="pl-8"
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                />
+            </div>
+          </div>
         </CardHeader>
         <CardContent>
           <Table>
@@ -353,8 +377,8 @@ export default function EmployeesPage() {
                     </TableCell>
                   </TableRow>
                 ))
-              ) : employees.length > 0 ? (
-                employees.map((employee) => (
+              ) : filteredEmployees.length > 0 ? (
+                filteredEmployees.map((employee) => (
                   <TableRow key={employee.id}>
                     <TableCell className="font-medium">{employee.name}</TableCell>
                     <TableCell className="hidden md:table-cell">{employee.email}</TableCell>
@@ -404,7 +428,7 @@ export default function EmployeesPage() {
               ) : (
                  <TableRow>
                   <TableCell colSpan={6} className="h-24 text-center">
-                    No employees found. Add one to get started.
+                    {searchTerm ? `No employees found for "${searchTerm}".` : 'No employees found. Add one to get started.'}
                   </TableCell>
                 </TableRow>
               )}
@@ -437,3 +461,5 @@ export default function EmployeesPage() {
     </>
   );
 }
+
+    
