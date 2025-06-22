@@ -5,7 +5,7 @@ import { firestore } from '@/lib/firebase';
 import { collection, addDoc, serverTimestamp, doc, deleteDoc, updateDoc, getDoc } from 'firebase/firestore';
 import { z } from 'zod';
 import { revalidatePath } from 'next/cache';
-import { analyzeProjectRisks, ProjectRiskAnalysisInput, ProjectRiskAnalysisOutput } from '@/ai/flows/project-risk-analysis';
+import { analyzeProjectRisks, ProjectRiskAnalysisInput, type ProjectRiskAnalysisOutput } from '@/ai/flows/project-risk-analysis';
 
 const projectFormSchema = z.object({
   name: z.string().min(3, 'Project name must be at least 3 characters long.'),
@@ -27,7 +27,6 @@ const assignTeamFormSchema = z.object({
 
 export type ProjectFormValues = z.infer<typeof projectFormSchema>;
 export type AssignTeamFormValues = z.infer<typeof assignTeamFormSchema>;
-export type ProjectRiskAnalysisOutput = z.infer<typeof ProjectRiskAnalysisOutput>;
 
 export interface AiAnalysisState {
     message: string | null;
