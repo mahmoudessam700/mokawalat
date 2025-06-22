@@ -81,7 +81,7 @@ export function AppSidebar() {
          <Separator className="my-2" />
          <div className="flex items-center gap-3 p-2">
             <Avatar>
-                <AvatarImage src="https://placehold.co/40x40" alt="@shadcn" />
+                <AvatarImage src="https://placehold.co/40x40" alt="@shadcn" data-ai-hint="profile picture" />
                 <AvatarFallback>JD</AvatarFallback>
             </Avatar>
             <div className="flex flex-col">
