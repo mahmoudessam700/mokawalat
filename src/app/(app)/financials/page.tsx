@@ -67,6 +67,12 @@ type Transaction = {
   type: TransactionType;
   date: Timestamp;
   createdAt: Timestamp;
+  projectId?: string;
+};
+
+type Project = {
+  id: string;
+  name: string;
 };
 
 const transactionFormSchema = z.object({
@@ -76,6 +82,7 @@ const transactionFormSchema = z.object({
   date: z.string().refine((date) => !isNaN(Date.parse(date)), {
     message: 'Please select a valid date.',
   }),
+  projectId: z.string().optional(),
 });
 
 type TransactionFormValues = z.infer<typeof transactionFormSchema>;
@@ -89,6 +96,7 @@ const formatCurrency = (value: number) => {
 
 export default function FinancialsPage() {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [projects, setProjects] = useState<Project[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isFormDialogOpen, setIsFormDialogOpen] = useState(false);
   const [transactionToEdit, setTransactionToEdit] = useState<Transaction | null>(null);
@@ -98,8 +106,8 @@ export default function FinancialsPage() {
   const { toast } = useToast();
 
   useEffect(() => {
-    const q = query(collection(firestore, 'transactions'), orderBy('date', 'desc'));
-    const unsubscribe = onSnapshot(q, (snapshot) => {
+    const qTransactions = query(collection(firestore, 'transactions'), orderBy('date', 'desc'));
+    const unsubscribeTransactions = onSnapshot(qTransactions, (snapshot) => {
       const data: Transaction[] = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Transaction));
       setTransactions(data);
       setIsLoading(false);
@@ -113,7 +121,17 @@ export default function FinancialsPage() {
       setIsLoading(false);
     });
 
-    return () => unsubscribe();
+    const qProjects = query(collection(firestore, 'projects'), orderBy('name', 'asc'));
+    const unsubscribeProjects = onSnapshot(qProjects, (snapshot) => {
+        const data: Project[] = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Project));
+        setProjects(data);
+    });
+
+
+    return () => {
+        unsubscribeTransactions();
+        unsubscribeProjects();
+    };
   }, [toast]);
 
   const { totalIncome, totalExpenses, netBalance } = useMemo(() => {
@@ -127,6 +145,10 @@ export default function FinancialsPage() {
       return acc;
     }, { totalIncome: 0, totalExpenses: 0, netBalance: 0 });
   }, [transactions]);
+  
+  const projectMap = useMemo(() => {
+    return new Map(projects.map(p => [p.id, p.name]));
+  }, [projects]);
 
 
   const form = useForm<TransactionFormValues>({
@@ -136,6 +158,7 @@ export default function FinancialsPage() {
       amount: 0,
       type: 'Expense',
       date: new Date().toISOString().split('T')[0],
+      projectId: '',
     },
   });
 
@@ -144,6 +167,7 @@ export default function FinancialsPage() {
       form.reset({
         ...transactionToEdit,
         date: transactionToEdit.date ? format(transactionToEdit.date.toDate(), 'yyyy-MM-dd') : '',
+        projectId: transactionToEdit.projectId || '',
       });
     } else {
       form.reset(form.formState.defaultValues);
@@ -320,6 +344,31 @@ export default function FinancialsPage() {
                         </FormItem>
                     )}
                     />
+                    <FormField
+                      control={form.control}
+                      name="projectId"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Project (Optional)</FormLabel>
+                           <Select onValueChange={field.onChange} value={field.value}>
+                            <FormControl>
+                              <SelectTrigger>
+                                <SelectValue placeholder="Link to a project" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              <SelectItem value="">None</SelectItem>
+                              {projects.map(project => (
+                                <SelectItem key={project.id} value={project.id}>
+                                  {project.name}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
                     <DialogFooter>
                     <Button type="submit" disabled={form.formState.isSubmitting}>
                         {form.formState.isSubmitting ? (
@@ -343,6 +392,7 @@ export default function FinancialsPage() {
               <TableRow>
                 <TableHead>Date</TableHead>
                 <TableHead>Description</TableHead>
+                <TableHead className="hidden md:table-cell">Project</TableHead>
                 <TableHead>Type</TableHead>
                 <TableHead className="text-right">Amount</TableHead>
                 <TableHead>
@@ -356,6 +406,7 @@ export default function FinancialsPage() {
                   <TableRow key={index}>
                     <TableCell><Skeleton className="h-4 w-[100px]" /></TableCell>
                     <TableCell><Skeleton className="h-4 w-[250px]" /></TableCell>
+                    <TableCell className="hidden md:table-cell"><Skeleton className="h-4 w-[150px]" /></TableCell>
                     <TableCell><Skeleton className="h-6 w-[80px] rounded-full" /></TableCell>
                     <TableCell className="text-right"><Skeleton className="h-4 w-[100px] ml-auto" /></TableCell>
                     <TableCell>
@@ -370,6 +421,7 @@ export default function FinancialsPage() {
                   <TableRow key={transaction.id}>
                     <TableCell>{transaction.date ? format(transaction.date.toDate(), 'PPP') : 'N/A'}</TableCell>
                     <TableCell className="font-medium">{transaction.description}</TableCell>
+                    <TableCell className="hidden md:table-cell">{projectMap.get(transaction.projectId || '') || 'N/A'}</TableCell>
                     <TableCell>
                       <Badge variant={transaction.type === 'Income' ? 'secondary' : 'destructive'}>
                         {transaction.type}
@@ -407,7 +459,7 @@ export default function FinancialsPage() {
                 ))
               ) : (
                 <TableRow>
-                  <TableCell colSpan={5} className="h-24 text-center">
+                  <TableCell colSpan={6} className="h-24 text-center">
                     No transactions found. Add one to get started.
                   </TableCell>
                 </TableRow>

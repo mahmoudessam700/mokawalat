@@ -12,6 +12,7 @@ const transactionFormSchema = z.object({
   date: z.string().refine((date) => !isNaN(Date.parse(date)), {
     message: 'Please select a valid date.',
   }),
+  projectId: z.string().optional(),
 });
 
 export type TransactionFormValues = z.infer<typeof transactionFormSchema>;
