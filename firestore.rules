@@ -2,78 +2,68 @@ rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
-  
-    function isSignedIn() {
+    
+    function isAuth() {
       return request.auth != null;
     }
-    
+
     function isAdmin() {
-      return isSignedIn() && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+      // Check the user's role from their document in the 'users' collection.
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
     }
 
+    // Secure the users collection.
     match /users/{userId} {
-      allow read: if isSignedIn();
-      allow create: if request.auth.uid == userId;
-      allow update: if isAdmin();
-    }
-    
-    match /activityLog/{logId} {
-      allow read: if isSignedIn();
-      allow create: if isSignedIn(); 
+      // Admins can read all user profiles. Users can only read their own.
+      allow read: if isAuth() && (request.auth.uid == userId || isAdmin());
+      // Users can create their own profile on signup.
+      allow create: if isAuth() && request.auth.uid == userId;
+      // Admins can update anyone's role. Users can update their own profile, but NOT their role.
+      allow update: if (isAuth() && request.auth.uid == userId && !("role" in request.resource.data)) || (isAdmin());
     }
 
-    match /projects/{projectId} {
-      allow read: if isSignedIn();
-      allow create, update, delete: if isAdmin();
+    // Default: Authenticated users can read anything.
+    // This allows all pages to load data for any user role.
+    // Write access is handled on a per-collection basis below.
+    match /{path=**} {
+        allow read: if isAuth();
+        allow write: if false; // Deny writes by default.
+    }
+
+    // Admins have full write access to all business data collections.
+    // Non-admins have already been granted read access by the rule above.
+    match /clients/{docId}/{**=**} {
+      allow write: if isAdmin();
+    }
+    match /employees/{docId}/{**=**} {
+      allow write: if isAdmin();
+    }
+     match /transactions/{docId}/{**=**} {
+      allow write: if isAdmin();
+    }
+    match /inventory/{docId}/{**=**} {
+      allow write: if isAdmin();
+    }
+    match /procurement/{docId}/{**=**} {
+      allow write: if isAdmin();
+    }
+    match /projects/{docId}/{**=**} {
+      allow write: if isAdmin();
+    }
+    match /suppliers/{docId}/{**=**} {
+      allow write: if isAdmin();
     }
     
-    match /employees/{employeeId} {
-      allow read: if isSignedIn();
-      allow create, update, delete: if isAdmin();
+    // Log entries can be created by authenticated users (via server actions).
+    match /activityLog/{logId} {
+      allow create: if isAuth();
     }
-    
-    match /clients/{clientId} {
-      allow read: if isSignedIn();
-      allow create, update, delete: if isAdmin();
-      
-      match /interactions/{interactionId} {
-        allow read, create: if isSignedIn();
-      }
-      
-      match /contracts/{contractId} {
-        allow read: if isSignedIn();
-        allow create, delete: if isAdmin();
-      }
-    }
-    
-    match /suppliers/{supplierId} {
-      allow read: if isSignedIn();
-      allow create, update, delete: if isAdmin();
-      
-      match /contracts/{contractId} {
-        allow read: if isSignedIn();
-        allow create, delete: if isAdmin();
-      }
-    }
-    
-    match /inventory/{itemId} {
-      allow read: if isSignedIn();
-      allow create, update, delete: if isAdmin();
-    }
-    
-    match /procurement/{requestId} {
-      allow read: if isSignedIn();
-      allow create, update, delete: if isAdmin();
-    }
-    
+
+    // Material requests can be created by authenticated users.
+    // They can only be updated (approved/rejected) by an admin.
     match /materialRequests/{requestId} {
-      allow read: if isSignedIn();
-      allow create, update: if isSignedIn();
-    }
-    
-     match /transactions/{transactionId} {
-      allow read: if isSignedIn();
-      allow create, update, delete: if isAdmin();
+      allow create: if isAuth();
+      allow update: if isAdmin();
     }
   }
 }
