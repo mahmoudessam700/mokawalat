@@ -1,5 +1,6 @@
 import { SidebarTrigger } from '@/components/ui/sidebar';
 import { GlobalSearch } from './global-search';
+import { ThemeToggle } from './theme-toggle';
 
 export function Header() {
   return (
@@ -11,7 +12,7 @@ export function Header() {
         <GlobalSearch />
       </div>
       <div className="ml-auto">
-        {/* User actions can go here */}
+        <ThemeToggle />
       </div>
     </header>
   );
