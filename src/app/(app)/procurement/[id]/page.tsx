@@ -12,11 +12,11 @@ import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { format } from 'date-fns';
 
-type RequestStatus = 'Pending' | 'Approved' | 'Rejected' | 'Ordered';
+type RequestStatus = 'Pending' | 'Approved' | 'Rejected' | 'Ordered' | 'Received';
 type ProjectStatus = 'In Progress' | 'Planning' | 'Completed' | 'On Hold';
 type SupplierStatus = 'Active' | 'Inactive';
 
-type PurchaseRequest = {
+type PurchaseOrder = {
   id: string;
   itemName: string;
   quantity: number;
@@ -43,11 +43,12 @@ const requestStatusVariant: { [key in RequestStatus]: 'default' | 'secondary' | 
   Pending: 'default',
   Approved: 'secondary',
   Ordered: 'outline',
+  Received: 'secondary',
   Rejected: 'destructive',
 };
 
 export default function ProcurementDetailPage({ params }: { params: { id: string } }) {
-  const [request, setRequest] = useState<PurchaseRequest | null>(null);
+  const [request, setRequest] = useState<PurchaseOrder | null>(null);
   const [project, setProject] = useState<Project | null>(null);
   const [supplier, setSupplier] = useState<Supplier | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -64,7 +65,7 @@ export default function ProcurementDetailPage({ params }: { params: { id: string
     const requestRef = doc(firestore, 'procurement', requestId);
     const unsubRequest = onSnapshot(requestRef, (doc) => {
         if (doc.exists()) {
-            const requestData = { id: doc.id, ...doc.data() } as PurchaseRequest;
+            const requestData = { id: doc.id, ...doc.data() } as PurchaseOrder;
             setRequest(requestData);
 
             if (requestData.projectId) {
@@ -88,12 +89,12 @@ export default function ProcurementDetailPage({ params }: { params: { id: string
             }
 
         } else {
-            setError('Purchase Request not found.');
+            setError('Purchase Order not found.');
         }
         setIsLoading(false);
     }, (err) => {
-        console.error('Error fetching purchase request:', err);
-        setError('Failed to fetch purchase request details.');
+        console.error('Error fetching purchase order:', err);
+        setError('Failed to fetch purchase order details.');
         setIsLoading(false);
     });
 
@@ -130,7 +131,7 @@ export default function ProcurementDetailPage({ params }: { params: { id: string
          <Button asChild variant="outline" className="mt-4">
           <Link href="/procurement">
             <ArrowLeft className="mr-2" />
-            Back to Procurement
+            Back to Purchase Orders
           </Link>
         </Button>
       </div>
@@ -145,15 +146,15 @@ export default function ProcurementDetailPage({ params }: { params: { id: string
             <Button asChild variant="outline" size="icon">
                 <Link href="/procurement">
                     <ArrowLeft />
-                    <span className="sr-only">Back to Procurement</span>
+                    <span className="sr-only">Back to Purchase Orders</span>
                 </Link>
             </Button>
             <div>
                 <h1 className="font-headline text-3xl font-bold tracking-tight">
-                    Request for: {request.itemName}
+                    PO for: {request.itemName}
                 </h1>
                 <p className="text-muted-foreground">
-                    Detailed view of the purchase request.
+                    Detailed view of the purchase order.
                 </p>
             </div>
         </div>
@@ -161,7 +162,7 @@ export default function ProcurementDetailPage({ params }: { params: { id: string
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
             <Card>
                 <CardHeader>
-                    <CardTitle>Request Details</CardTitle>
+                    <CardTitle>Order Details</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
                     <div className="flex items-center gap-4">

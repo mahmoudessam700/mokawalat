@@ -54,7 +54,7 @@ type Transaction = {
 type ProcurementRequest = {
   itemName: string;
   quantity: number;
-  status: 'Pending' | 'Approved' | 'Rejected' | 'Ordered';
+  status: 'Pending' | 'Approved' | 'Rejected' | 'Ordered' | 'Received';
 };
 type InventoryItem = {
   id: string;
@@ -223,8 +223,8 @@ export default function DashboardPage() {
           const data = doc.data() as ProcurementRequest;
           return {
             id: doc.id,
-            title: `Request for ${data.quantity}x ${data.itemName}`,
-            type: 'Procurement',
+            title: `PO for ${data.quantity}x ${data.itemName}`,
+            type: 'Purchase Order',
             link: '/procurement',
           };
         });

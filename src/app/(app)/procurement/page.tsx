@@ -18,7 +18,7 @@ import {
   DropdownMenuLabel,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Loader2, MoreHorizontal, PlusCircle, Trash2 } from 'lucide-react';
+import { ClipboardCheck, Loader2, MoreHorizontal, PlusCircle, Trash2 } from 'lucide-react';
 import {
   Card,
   CardContent,
@@ -65,7 +65,7 @@ import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useState, useEffect, useMemo } from 'react';
-import { addPurchaseRequest, deletePurchaseRequest, updatePurchaseRequest } from './actions';
+import { addPurchaseRequest, deletePurchaseRequest, updatePurchaseRequest, markPOAsReceived } from './actions';
 import { useToast } from '@/hooks/use-toast';
 import { collection, onSnapshot, query, orderBy, Timestamp } from 'firebase/firestore';
 import { firestore } from '@/lib/firebase';
@@ -74,11 +74,12 @@ import { format } from 'date-fns';
 import Link from 'next/link';
 import { useAuth } from '@/hooks/use-auth';
 
-type RequestStatus = 'Pending' | 'Approved' | 'Rejected' | 'Ordered';
+type RequestStatus = 'Pending' | 'Approved' | 'Rejected' | 'Ordered' | 'Received';
 
-type PurchaseRequest = {
+type PurchaseOrder = {
   id: string;
   itemName: string;
+  itemId: string;
   quantity: number;
   supplierId: string;
   projectId: string;
@@ -86,42 +87,38 @@ type PurchaseRequest = {
   requestedAt: Timestamp;
 };
 
-type Project = {
-  id: string;
-  name: string;
-};
-
-type Supplier = {
-  id: string;
-  name: string;
-};
+type Project = { id: string; name: string; };
+type Supplier = { id: string; name: string; };
+type InventoryItem = { id: string; name: string };
 
 const statusVariant: { [key in RequestStatus]: 'default' | 'secondary' | 'destructive' | 'outline' } = {
   Pending: 'default',
   Approved: 'secondary',
   Ordered: 'outline',
+  Received: 'secondary',
   Rejected: 'destructive',
 };
 
 const procurementFormSchema = z.object({
-  itemName: z.string().min(2, "Item name must be at least 2 characters long."),
+  itemId: z.string().min(1, "Item is required."),
   quantity: z.coerce.number().min(1, "Quantity must be at least 1."),
   supplierId: z.string().min(1, "Supplier is required."),
   projectId: z.string().min(1, "Project is required."),
-  status: z.enum(["Pending", "Approved", "Rejected", "Ordered"]),
+  status: z.enum(["Pending", "Approved", "Rejected", "Ordered", "Received"]),
 });
 
 type ProcurementFormValues = z.infer<typeof procurementFormSchema>;
 
 export default function ProcurementPage() {
-  const [requests, setRequests] = useState<PurchaseRequest[]>([]);
+  const [requests, setRequests] = useState<PurchaseOrder[]>([]);
   const [projects, setProjects] = useState<Project[]>([]);
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
+  const [inventoryItems, setInventoryItems] = useState<InventoryItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [requestToEdit, setRequestToEdit] = useState<PurchaseRequest | null>(null);
+  const [requestToEdit, setRequestToEdit] = useState<PurchaseOrder | null>(null);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
-  const [requestToDelete, setRequestToDelete] = useState<PurchaseRequest | null>(null);
+  const [requestToDelete, setRequestToDelete] = useState<PurchaseOrder | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
   const { toast } = useToast();
   const { profile } = useAuth();
@@ -129,9 +126,9 @@ export default function ProcurementPage() {
   useEffect(() => {
     const qRequests = query(collection(firestore, 'procurement'), orderBy('requestedAt', 'desc'));
     const unsubscribeRequests = onSnapshot(qRequests, (snapshot) => {
-      const data: PurchaseRequest[] = [];
+      const data: PurchaseOrder[] = [];
       snapshot.forEach((doc) => {
-        data.push({ id: doc.id, ...doc.data() } as PurchaseRequest);
+        data.push({ id: doc.id, ...doc.data() } as PurchaseOrder);
       });
       setRequests(data);
       setIsLoading(false);
@@ -139,26 +136,24 @@ export default function ProcurementPage() {
 
     const qProjects = query(collection(firestore, 'projects'), orderBy('name', 'asc'));
     const unsubscribeProjects = onSnapshot(qProjects, (snapshot) => {
-      const data: Project[] = [];
-      snapshot.forEach((doc) => {
-        data.push({ id: doc.id, ...doc.data() } as Project);
-      });
-      setProjects(data);
+      setProjects(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Project)));
     });
 
     const qSuppliers = query(collection(firestore, 'suppliers'), orderBy('name', 'asc'));
     const unsubscribeSuppliers = onSnapshot(qSuppliers, (snapshot) => {
-      const data: Supplier[] = [];
-      snapshot.forEach((doc) => {
-        data.push({ id: doc.id, ...doc.data() } as Supplier);
-      });
-      setSuppliers(data);
+      setSuppliers(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Supplier)));
+    });
+
+    const qInventory = query(collection(firestore, 'inventory'), orderBy('name', 'asc'));
+    const unsubscribeInventory = onSnapshot(qInventory, (snapshot) => {
+        setInventoryItems(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as InventoryItem)));
     });
 
     return () => {
       unsubscribeRequests();
       unsubscribeProjects();
       unsubscribeSuppliers();
+      unsubscribeInventory();
     };
   }, []);
 
@@ -168,7 +163,7 @@ export default function ProcurementPage() {
   const form = useForm<ProcurementFormValues>({
     resolver: zodResolver(procurementFormSchema),
     defaultValues: {
-      itemName: '',
+      itemId: '',
       quantity: 1,
       supplierId: '',
       projectId: '',
@@ -206,19 +201,21 @@ export default function ProcurementPage() {
     setIsDeleting(false);
 
     if (result.success) {
-      toast({
-        title: 'Success',
-        description: result.message,
-      });
+      toast({ title: 'Success', description: result.message });
     } else {
-      toast({
-        variant: 'destructive',
-        title: 'Error',
-        description: result.message,
-      });
+      toast({ variant: 'destructive', title: 'Error', description: result.message });
     }
     setIsDeleteDialogOpen(false);
     setRequestToDelete(null);
+  }
+
+  async function handleMarkAsReceived(id: string) {
+    const result = await markPOAsReceived(id);
+    if (result.success) {
+        toast({ title: 'Success', description: result.message });
+    } else {
+        toast({ variant: 'destructive', title: 'Error', description: result.message });
+    }
   }
 
   const handleFormDialogOpenChange = (open: boolean) => {
@@ -233,38 +230,47 @@ export default function ProcurementPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="font-headline text-3xl font-bold tracking-tight">Procurement Management</h1>
-          <p className="text-muted-foreground">Create and track all purchase requests.</p>
+          <h1 className="font-headline text-3xl font-bold tracking-tight">Purchase Order Management</h1>
+          <p className="text-muted-foreground">Create and track all purchase orders for materials.</p>
         </div>
         {profile?.role === 'admin' && (
             <Dialog open={isDialogOpen} onOpenChange={handleFormDialogOpenChange}>
             <DialogTrigger asChild>
                 <Button onClick={() => setRequestToEdit(null)}>
                 <PlusCircle className="mr-2" />
-                Create Purchase Request
+                Create Purchase Order
                 </Button>
             </DialogTrigger>
             <DialogContent className="sm:max-w-[480px]">
                 <DialogHeader>
-                <DialogTitle>{requestToEdit ? 'Edit Purchase Request' : 'New Purchase Request'}</DialogTitle>
+                <DialogTitle>{requestToEdit ? 'Edit Purchase Order' : 'New Purchase Order'}</DialogTitle>
                 <DialogDescription>
-                    {requestToEdit ? "Update the details of the purchase request." : "Fill in the details to create a new purchase request."}
+                    {requestToEdit ? "Update the details of the purchase order." : "Fill in the details to create a new purchase order."}
                 </DialogDescription>
                 </DialogHeader>
                 <Form {...form}>
                 <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 py-4">
                     <FormField
-                    control={form.control}
-                    name="itemName"
-                    render={({ field }) => (
+                      control={form.control}
+                      name="itemId"
+                      render={({ field }) => (
                         <FormItem>
-                        <FormLabel>Item Name</FormLabel>
-                        <FormControl>
-                            <Input placeholder="e.g., Rebar Steel Ton" {...field} />
-                        </FormControl>
-                        <FormMessage />
+                          <FormLabel>Item</FormLabel>
+                          <Select onValueChange={field.onChange} value={field.value}>
+                            <FormControl>
+                              <SelectTrigger>
+                                <SelectValue placeholder="Select an inventory item" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              {inventoryItems.map(item => (
+                                <SelectItem key={item.id} value={item.id}>{item.name}</SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                          <FormMessage />
                         </FormItem>
-                    )}
+                      )}
                     />
                     <FormField
                     control={form.control}
@@ -340,6 +346,7 @@ export default function ProcurementPage() {
                             <SelectItem value="Approved">Approved</SelectItem>
                             <SelectItem value="Rejected">Rejected</SelectItem>
                             <SelectItem value="Ordered">Ordered</SelectItem>
+                            <SelectItem value="Received">Received</SelectItem>
                             </SelectContent>
                         </Select>
                         <FormMessage />
@@ -351,7 +358,7 @@ export default function ProcurementPage() {
                         {form.formState.isSubmitting ? (
                         <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Saving...</>
                         ) : (
-                        requestToEdit ? 'Save Changes' : 'Submit Request'
+                        requestToEdit ? 'Save Changes' : 'Submit Order'
                         )}
                     </Button>
                     </DialogFooter>
@@ -364,8 +371,8 @@ export default function ProcurementPage() {
 
       <Card>
         <CardHeader>
-          <CardTitle>Purchase Requests</CardTitle>
-          <CardDescription>A list of all purchase requests in the system.</CardDescription>
+          <CardTitle>Purchase Orders</CardTitle>
+          <CardDescription>A list of all purchase orders in the system.</CardDescription>
         </CardHeader>
         <CardContent>
           <Table>
@@ -417,6 +424,12 @@ export default function ProcurementPage() {
                             </DropdownMenuItem>
                           {profile?.role === 'admin' && (
                             <>
+                              {request.status === 'Ordered' && (
+                                <DropdownMenuItem onSelect={() => handleMarkAsReceived(request.id)}>
+                                    <ClipboardCheck className="mr-2 h-4 w-4" />
+                                    Mark as Received
+                                </DropdownMenuItem>
+                              )}
                               <DropdownMenuItem onSelect={() => {
                                 setRequestToEdit(request);
                                 setIsDialogOpen(true);
@@ -441,7 +454,7 @@ export default function ProcurementPage() {
               ) : (
                 <TableRow>
                   <TableCell colSpan={7} className="h-24 text-center">
-                    No purchase requests found. Create one to get started.
+                    No purchase orders found. Create one to get started.
                   </TableCell>
                 </TableRow>
               )}
@@ -455,7 +468,7 @@ export default function ProcurementPage() {
             <AlertDialogHeader>
                 <AlertDialogTitle>Are you sure?</AlertDialogTitle>
                 <AlertDialogDescription>
-                    This action cannot be undone. This will permanently delete the purchase request for "{requestToDelete?.itemName}".
+                    This action cannot be undone. This will permanently delete the purchase order for "{requestToDelete?.itemName}".
                 </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>

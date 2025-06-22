@@ -56,7 +56,7 @@ const menuItems = [
   { href: '/employees', label: 'Employees', icon: Users },
   { href: '/suppliers', label: 'Suppliers', icon: Truck },
   { href: '/inventory', label: 'Inventory', icon: Warehouse },
-  { href: '/procurement', label: 'Procurement', icon: ShoppingCart },
+  { href: '/procurement', label: 'Purchase Orders', icon: ShoppingCart },
   { href: '/material-requests', label: 'Material Requests', icon: ClipboardList },
   { href: '/clients', label: 'Clients & Sales', icon: Contact },
   { href: '/financials', label: 'Financials', icon: DollarSign },
