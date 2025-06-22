@@ -18,8 +18,15 @@ import { useToast } from '@/hooks/use-toast';
 import { firestore } from '@/lib/firebase';
 import { collection, onSnapshot, query, type Timestamp } from 'firebase/firestore';
 import { useEffect, useMemo, useState } from 'react';
-import { Bar, BarChart, CartesianGrid, Pie, PieChart, XAxis, YAxis, Legend } from 'recharts';
+import { Bar, BarChart, CartesianGrid, Pie, PieChart, XAxis, YAxis, Legend, Label } from 'recharts';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Button } from '@/components/ui/button';
+import { Calendar as CalendarIcon } from 'lucide-react';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Calendar } from '@/components/ui/calendar';
+import { subDays, format } from 'date-fns';
+import type { DateRange } from 'react-day-picker';
+import { cn } from '@/lib/utils';
 
 // Types from other modules
 type TransactionType = 'Income' | 'Expense';
@@ -27,6 +34,7 @@ type Transaction = {
   id: string;
   amount: number;
   type: TransactionType;
+  date: Timestamp;
 };
 type InventoryItem = {
   id:string;
@@ -72,6 +80,11 @@ export default function ReportsPage() {
   const [clients, setClients] = useState<Client[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
+  
+  const [date, setDate] = useState<DateRange | undefined>({
+    from: subDays(new Date(), 29),
+    to: new Date(),
+  });
 
   useEffect(() => {
     const unsubscribes: (() => void)[] = [];
@@ -121,7 +134,26 @@ export default function ReportsPage() {
   }, [toast]);
 
   const financialData = useMemo(() => {
-    const totals = transactions.reduce((acc, t) => {
+    const filteredTransactions = transactions.filter(t => {
+        if (!date || !t.date) return false; // if no date range or transaction date, exclude
+        const transactionDate = t.date.toDate();
+        // Set time to 00:00:00 for the 'from' date and 23:59:59 for the 'to' date for inclusive range
+        const from = date.from ? new Date(new Date(date.from).setHours(0, 0, 0, 0)) : null;
+        const to = date.to ? new Date(new Date(date.to).setHours(23, 59, 59, 999)) : null;
+        
+        if (from && to) {
+            return transactionDate >= from && transactionDate <= to;
+        }
+        if (from) {
+            return transactionDate >= from;
+        }
+        if (to) {
+            return transactionDate <= to;
+        }
+        return false; // No date range selected
+    });
+
+    const totals = filteredTransactions.reduce((acc, t) => {
       if (t.type === 'Income') acc.income += t.amount;
       else if (t.type === 'Expense') acc.expense += t.amount;
       return acc;
@@ -131,7 +163,7 @@ export default function ReportsPage() {
       { type: 'Income', total: totals.income, fill: 'var(--color-income)' },
       { type: 'Expense', total: totals.expense, fill: 'var(--color-expense)' },
     ];
-  }, [transactions]);
+  }, [transactions, date]);
   
   const inventoryStatusData = useMemo(() => {
     const statusCounts = inventory.reduce((acc, item) => {
@@ -186,20 +218,60 @@ export default function ReportsPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="font-headline text-3xl font-bold tracking-tight">
-          Reporting &amp; Analytics
-        </h1>
-        <p className="text-muted-foreground">
-          Generate and view detailed reports on all business activities.
-        </p>
+       <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+        <div>
+            <h1 className="font-headline text-3xl font-bold tracking-tight">
+            Reporting &amp; Analytics
+            </h1>
+            <p className="text-muted-foreground">
+            Generate and view detailed reports on all business activities.
+            </p>
+        </div>
+        <div className="flex items-center gap-2">
+            <Popover>
+                <PopoverTrigger asChild>
+                    <Button
+                    id="date"
+                    variant={"outline"}
+                    className={cn(
+                        "w-full justify-start text-left font-normal md:w-[300px]",
+                        !date && "text-muted-foreground"
+                    )}
+                    >
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {date?.from ? (
+                        date.to ? (
+                        <>
+                            {format(date.from, "LLL dd, y")} -{" "}
+                            {format(date.to, "LLL dd, y")}
+                        </>
+                        ) : (
+                        format(date.from, "LLL dd, y")
+                        )
+                    ) : (
+                        <span>Pick a date</span>
+                    )}
+                    </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="end">
+                    <Calendar
+                    initialFocus
+                    mode="range"
+                    defaultMonth={date?.from}
+                    selected={date}
+                    onSelect={setDate}
+                    numberOfMonths={2}
+                    />
+                </PopoverContent>
+            </Popover>
+        </div>
       </div>
 
        <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
          <Card>
            <CardHeader>
              <CardTitle>Financial Overview</CardTitle>
-             <CardDescription>A summary of total income and expenses.</CardDescription>
+             <CardDescription>A summary of total income and expenses for the selected period.</CardDescription>
            </CardHeader>
            <CardContent className="pl-2">
              {isLoading ? <Skeleton className="h-[250px] w-full" /> : (
