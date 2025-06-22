@@ -1,6 +1,7 @@
 import { SidebarTrigger } from '@/components/ui/sidebar';
 import { GlobalSearch } from './global-search';
 import { ThemeToggle } from './theme-toggle';
+import { NotificationsPopover } from './notifications-popover';
 
 export function Header() {
   return (
@@ -11,7 +12,8 @@ export function Header() {
       <div className="flex-1">
         <GlobalSearch />
       </div>
-      <div className="ml-auto">
+      <div className="ml-auto flex items-center gap-2">
+        <NotificationsPopover />
         <ThemeToggle />
       </div>
     </header>
