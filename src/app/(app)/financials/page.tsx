@@ -59,6 +59,7 @@ import { firestore } from '@/lib/firebase';
 import { Skeleton } from '@/components/ui/skeleton';
 import { format } from 'date-fns';
 import { useAuth } from '@/hooks/use-auth';
+import Link from 'next/link';
 
 type TransactionType = 'Income' | 'Expense';
 
@@ -70,12 +71,13 @@ type Transaction = {
   date: Timestamp;
   createdAt: Timestamp;
   projectId?: string;
+  clientId?: string;
+  supplierId?: string;
 };
 
-type Project = {
-  id: string;
-  name: string;
-};
+type Project = { id: string; name: string; };
+type Client = { id: string; name: string; };
+type Supplier = { id: string; name: string; };
 
 const transactionFormSchema = z.object({
   description: z.string().min(2, "Description must be at least 2 characters long."),
@@ -85,6 +87,8 @@ const transactionFormSchema = z.object({
     message: 'Please select a valid date.',
   }),
   projectId: z.string().optional(),
+  clientId: z.string().optional(),
+  supplierId: z.string().optional(),
 });
 
 type TransactionFormValues = z.infer<typeof transactionFormSchema>;
@@ -99,6 +103,8 @@ const formatCurrency = (value: number) => {
 export default function FinancialsPage() {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [projects, setProjects] = useState<Project[]>([]);
+  const [clients, setClients] = useState<Client[]>([]);
+  const [suppliers, setSuppliers] = useState<Supplier[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isFormDialogOpen, setIsFormDialogOpen] = useState(false);
   const [transactionToEdit, setTransactionToEdit] = useState<Transaction | null>(null);
@@ -109,32 +115,36 @@ export default function FinancialsPage() {
   const { profile } = useAuth();
 
   useEffect(() => {
+    const unsubscribes: (() => void)[] = [];
+
     const qTransactions = query(collection(firestore, 'transactions'), orderBy('date', 'desc'));
-    const unsubscribeTransactions = onSnapshot(qTransactions, (snapshot) => {
+    unsubscribes.push(onSnapshot(qTransactions, (snapshot) => {
       const data: Transaction[] = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Transaction));
       setTransactions(data);
       setIsLoading(false);
     }, (error) => {
       console.error("Error fetching transactions: ", error);
-      toast({
-        variant: 'destructive',
-        title: 'Error',
-        description: 'Failed to fetch financial data. Check security rules.',
-      });
+      toast({ variant: 'destructive', title: 'Error', description: 'Failed to fetch financial data.' });
       setIsLoading(false);
-    });
+    }));
 
     const qProjects = query(collection(firestore, 'projects'), orderBy('name', 'asc'));
-    const unsubscribeProjects = onSnapshot(qProjects, (snapshot) => {
-        const data: Project[] = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Project));
-        setProjects(data);
-    });
+    unsubscribes.push(onSnapshot(qProjects, (snapshot) => {
+        setProjects(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Project)));
+    }));
+
+    const qClients = query(collection(firestore, 'clients'), orderBy('name', 'asc'));
+    unsubscribes.push(onSnapshot(qClients, (snapshot) => {
+        setClients(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Client)));
+    }));
+
+    const qSuppliers = query(collection(firestore, 'suppliers'), orderBy('name', 'asc'));
+    unsubscribes.push(onSnapshot(qSuppliers, (snapshot) => {
+        setSuppliers(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Supplier)));
+    }));
 
 
-    return () => {
-        unsubscribeTransactions();
-        unsubscribeProjects();
-    };
+    return () => unsubscribes.forEach(unsub => unsub());
   }, [toast]);
 
   const { totalIncome, totalExpenses, netBalance } = useMemo(() => {
@@ -149,9 +159,13 @@ export default function FinancialsPage() {
     }, { totalIncome: 0, totalExpenses: 0, netBalance: 0 });
   }, [transactions]);
   
-  const projectMap = useMemo(() => {
-    return new Map(projects.map(p => [p.id, p.name]));
-  }, [projects]);
+  const nameMaps = useMemo(() => {
+    return {
+      projects: new Map(projects.map(p => [p.id, p.name])),
+      clients: new Map(clients.map(c => [c.id, c.name])),
+      suppliers: new Map(suppliers.map(s => [s.id, s.name])),
+    }
+  }, [projects, clients, suppliers]);
 
 
   const form = useForm<TransactionFormValues>({
@@ -162,6 +176,8 @@ export default function FinancialsPage() {
       type: 'Expense',
       date: new Date().toISOString().split('T')[0],
       projectId: '',
+      clientId: '',
+      supplierId: '',
     },
   });
 
@@ -171,6 +187,8 @@ export default function FinancialsPage() {
         ...transactionToEdit,
         date: transactionToEdit.date ? format(transactionToEdit.date.toDate(), 'yyyy-MM-dd') : '',
         projectId: transactionToEdit.projectId || '',
+        clientId: transactionToEdit.clientId || '',
+        supplierId: transactionToEdit.supplierId || '',
       });
     } else {
       form.reset(form.formState.defaultValues);
@@ -220,6 +238,19 @@ export default function FinancialsPage() {
     }
     setIsFormDialogOpen(open);
   }
+
+  const getLinkedEntity = (transaction: Transaction) => {
+    if (transaction.clientId) {
+      return { name: nameMaps.clients.get(transaction.clientId) || 'N/A', url: `/clients/${transaction.clientId}`, type: 'Client' };
+    }
+    if (transaction.supplierId) {
+      return { name: nameMaps.suppliers.get(transaction.supplierId) || 'N/A', url: `/suppliers/${transaction.supplierId}`, type: 'Supplier' };
+    }
+    if (transaction.projectId) {
+      return { name: nameMaps.projects.get(transaction.projectId) || 'N/A', url: `/projects/${transaction.projectId}`, type: 'Project' };
+    }
+    return null;
+  };
 
   return (
     <>
@@ -286,104 +317,19 @@ export default function FinancialsPage() {
                 </DialogHeader>
                 <Form {...form}>
                 <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 py-4">
-                    <FormField
-                    control={form.control}
-                    name="description"
-                    render={({ field }) => (
-                        <FormItem>
-                        <FormLabel>Description</FormLabel>
-                        <FormControl>
-                            <Input placeholder="e.g., Payment from Client X" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                        </FormItem>
-                    )}
-                    />
+                    <FormField control={form.control} name="description" render={({ field }) => (<FormItem><FormLabel>Description</FormLabel><FormControl><Input placeholder="e.g., Payment from Client X" {...field} /></FormControl><FormMessage /></FormItem>)} />
                     <div className="grid grid-cols-2 gap-4">
-                      <FormField
-                      control={form.control}
-                      name="amount"
-                      render={({ field }) => (
-                          <FormItem>
-                          <FormLabel>Amount (LE)</FormLabel>
-                          <FormControl>
-                              <Input type="number" placeholder="e.g., 1500.00" {...field} />
-                          </FormControl>
-                          <FormMessage />
-                          </FormItem>
-                      )}
-                      />
-                      <FormField
-                      control={form.control}
-                      name="type"
-                      render={({ field }) => (
-                          <FormItem>
-                              <FormLabel>Type</FormLabel>
-                              <Select onValueChange={field.onChange} defaultValue={field.value}>
-                                  <FormControl>
-                                  <SelectTrigger>
-                                      <SelectValue placeholder="Select type" />
-                                  </SelectTrigger>
-                                  </FormControl>
-                                  <SelectContent>
-                                  <SelectItem value="Income">Income</SelectItem>
-                                  <SelectItem value="Expense">Expense</SelectItem>
-                                  </SelectContent>
-                              </Select>
-                              <FormMessage />
-                          </FormItem>
-                      )}
-                      />
+                      <FormField control={form.control} name="amount" render={({ field }) => (<FormItem><FormLabel>Amount (LE)</FormLabel><FormControl><Input type="number" placeholder="e.g., 1500.00" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                      <FormField control={form.control} name="type" render={({ field }) => (<FormItem><FormLabel>Type</FormLabel><Select onValueChange={field.onChange} defaultValue={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Select type" /></SelectTrigger></FormControl><SelectContent><SelectItem value="Income">Income</SelectItem><SelectItem value="Expense">Expense</SelectItem></SelectContent></Select><FormMessage /></FormItem>)} />
                     </div>
-                    <FormField
-                    control={form.control}
-                    name="date"
-                    render={({ field }) => (
-                        <FormItem>
-                        <FormLabel>Transaction Date</FormLabel>
-                        <FormControl>
-                            <Input type="date" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                        </FormItem>
-                    )}
-                    />
-                    <FormField
-                      control={form.control}
-                      name="projectId"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Project (Optional)</FormLabel>
-                           <Select onValueChange={field.onChange} value={field.value}>
-                            <FormControl>
-                              <SelectTrigger>
-                                <SelectValue placeholder="Link to a project" />
-                              </SelectTrigger>
-                            </FormControl>
-                            <SelectContent>
-                              <SelectItem value="">None</SelectItem>
-                              {projects.map(project => (
-                                <SelectItem key={project.id} value={project.id}>
-                                  {project.name}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
+                    <FormField control={form.control} name="date" render={({ field }) => (<FormItem><FormLabel>Transaction Date</FormLabel><FormControl><Input type="date" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                        <FormField control={form.control} name="clientId" render={({ field }) => (<FormItem><FormLabel>Client (Optional)</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Link to a client" /></SelectTrigger></FormControl><SelectContent><SelectItem value="">None</SelectItem>{clients.map(client => (<SelectItem key={client.id} value={client.id}>{client.name}</SelectItem>))}</SelectContent></Select><FormMessage /></FormItem>)} />
+                        <FormField control={form.control} name="supplierId" render={({ field }) => (<FormItem><FormLabel>Supplier (Optional)</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Link to a supplier" /></SelectTrigger></FormControl><SelectContent><SelectItem value="">None</SelectItem>{suppliers.map(supplier => (<SelectItem key={supplier.id} value={supplier.id}>{supplier.name}</SelectItem>))}</SelectContent></Select><FormMessage /></FormItem>)} />
+                    </div>
+                    <FormField control={form.control} name="projectId" render={({ field }) => (<FormItem><FormLabel>Project (Optional)</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Link to a project" /></SelectTrigger></FormControl><SelectContent><SelectItem value="">None</SelectItem>{projects.map(project => (<SelectItem key={project.id} value={project.id}>{project.name}</SelectItem>))}</SelectContent></Select><FormMessage /></FormItem>)} />
                     <DialogFooter>
-                    <Button type="submit" disabled={form.formState.isSubmitting}>
-                        {form.formState.isSubmitting ? (
-                        <>
-                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                            Saving...
-                        </>
-                        ) : (
-                          transactionToEdit ? 'Save Changes' : 'Save Transaction'
-                        )}
-                    </Button>
+                        <Button type="submit" disabled={form.formState.isSubmitting}>{form.formState.isSubmitting ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Saving...</> : (transactionToEdit ? 'Save Changes' : 'Save Transaction')}</Button>
                     </DialogFooter>
                 </form>
                 </Form>
@@ -397,12 +343,10 @@ export default function FinancialsPage() {
               <TableRow>
                 <TableHead>Date</TableHead>
                 <TableHead>Description</TableHead>
-                <TableHead className="hidden md:table-cell">Project</TableHead>
+                <TableHead className="hidden md:table-cell">Linked To</TableHead>
                 <TableHead>Type</TableHead>
                 <TableHead className="text-right">Amount</TableHead>
-                <TableHead>
-                  <span className="sr-only">Actions</span>
-                </TableHead>
+                <TableHead><span className="sr-only">Actions</span></TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -414,61 +358,38 @@ export default function FinancialsPage() {
                     <TableCell className="hidden md:table-cell"><Skeleton className="h-4 w-[150px]" /></TableCell>
                     <TableCell><Skeleton className="h-6 w-[80px] rounded-full" /></TableCell>
                     <TableCell className="text-right"><Skeleton className="h-4 w-[100px] ml-auto" /></TableCell>
-                    <TableCell>
-                      <Button aria-haspopup="true" size="icon" variant="ghost" disabled>
-                        <MoreHorizontal className="h-4 w-4" />
-                      </Button>
-                    </TableCell>
+                    <TableCell><Button aria-haspopup="true" size="icon" variant="ghost" disabled><MoreHorizontal className="h-4 w-4" /></Button></TableCell>
                   </TableRow>
                 ))
               ) : transactions.length > 0 ? (
-                transactions.map((transaction) => (
-                  <TableRow key={transaction.id}>
-                    <TableCell>{transaction.date ? format(transaction.date.toDate(), 'PPP') : 'N/A'}</TableCell>
-                    <TableCell className="font-medium">{transaction.description}</TableCell>
-                    <TableCell className="hidden md:table-cell">{projectMap.get(transaction.projectId || '') || 'N/A'}</TableCell>
-                    <TableCell>
-                      <Badge variant={transaction.type === 'Income' ? 'secondary' : 'destructive'}>
-                        {transaction.type}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className={`text-right font-semibold ${transaction.type === 'Income' ? 'text-success' : ''}`}>{formatCurrency(transaction.amount)}</TableCell>
-                    <TableCell>
-                      {profile?.role === 'admin' && (
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button aria-haspopup="true" size="icon" variant="ghost">
-                              <MoreHorizontal className="h-4 w-4" />
-                              <span className="sr-only">Toggle menu</span>
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                            <DropdownMenuItem onSelect={() => {
-                              setTransactionToEdit(transaction);
-                              setIsFormDialogOpen(true);
-                            }}>Edit</DropdownMenuItem>
-                            <DropdownMenuItem
-                              className="text-destructive"
-                               onSelect={() => {
-                                setTransactionToDelete(transaction);
-                                setIsDeleteDialogOpen(true);
-                              }}
-                            >
-                               <Trash2 className="mr-2 h-4 w-4" />
-                              Delete
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      )}
-                    </TableCell>
-                  </TableRow>
-                ))
+                transactions.map((transaction) => {
+                  const linkedEntity = getLinkedEntity(transaction);
+                  return (
+                    <TableRow key={transaction.id}>
+                        <TableCell>{transaction.date ? format(transaction.date.toDate(), 'PPP') : 'N/A'}</TableCell>
+                        <TableCell className="font-medium">{transaction.description}</TableCell>
+                        <TableCell className="hidden md:table-cell">
+                            {linkedEntity ? <Link href={linkedEntity.url} className="hover:underline">{linkedEntity.name} <span className="text-muted-foreground text-xs">({linkedEntity.type})</span></Link> : 'N/A'}
+                        </TableCell>
+                        <TableCell><Badge variant={transaction.type === 'Income' ? 'secondary' : 'destructive'}>{transaction.type}</Badge></TableCell>
+                        <TableCell className={`text-right font-semibold ${transaction.type === 'Income' ? 'text-success' : ''}`}>{formatCurrency(transaction.amount)}</TableCell>
+                        <TableCell>
+                        {profile?.role === 'admin' && (
+                            <DropdownMenu>
+                            <DropdownMenuTrigger asChild><Button aria-haspopup="true" size="icon" variant="ghost"><MoreHorizontal className="h-4 w-4" /><span className="sr-only">Toggle menu</span></Button></DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                                <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                                <DropdownMenuItem onSelect={() => { setTransactionToEdit(transaction); setIsFormDialogOpen(true); }}>Edit</DropdownMenuItem>
+                                <DropdownMenuItem className="text-destructive" onSelect={() => { setTransactionToDelete(transaction); setIsDeleteDialogOpen(true); }}><Trash2 className="mr-2 h-4 w-4" />Delete</DropdownMenuItem>
+                            </DropdownMenuContent>
+                            </DropdownMenu>
+                        )}
+                        </TableCell>
+                    </TableRow>
+                )})
               ) : (
                 <TableRow>
-                  <TableCell colSpan={6} className="h-24 text-center">
-                    No transactions found. Add one to get started.
-                  </TableCell>
+                  <TableCell colSpan={6} className="h-24 text-center">No transactions found. Add one to get started.</TableCell>
                 </TableRow>
               )}
             </TableBody>
@@ -480,20 +401,11 @@ export default function FinancialsPage() {
         <AlertDialogContent>
             <AlertDialogHeader>
                 <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-                <AlertDialogDescription>
-                    This action cannot be undone. This will permanently delete the transaction: "{transactionToDelete?.description}".
-                </AlertDialogDescription>
+                <AlertDialogDescription>This action cannot be undone. This will permanently delete the transaction: "{transactionToDelete?.description}".</AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
                 <AlertDialogCancel onClick={() => setTransactionToDelete(null)}>Cancel</AlertDialogCancel>
-                <AlertDialogAction
-                    onClick={handleDeleteTransaction}
-                    disabled={isDeleting}
-                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                >
-                    {isDeleting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Trash2 className="mr-2 h-4 w-4" />}
-                    Delete
-                </AlertDialogAction>
+                <AlertDialogAction onClick={handleDeleteTransaction} disabled={isDeleting} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">{isDeleting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Trash2 className="mr-2 h-4 w-4" />}Delete</AlertDialogAction>
             </AlertDialogFooter>
         </AlertDialogContent>
     </AlertDialog>

@@ -1,3 +1,4 @@
+
 'use server';
 
 import { firestore } from '@/lib/firebase';
@@ -13,6 +14,8 @@ const transactionFormSchema = z.object({
     message: 'Please select a valid date.',
   }),
   projectId: z.string().optional(),
+  clientId: z.string().optional(),
+  supplierId: z.string().optional(),
 });
 
 export type TransactionFormValues = z.infer<typeof transactionFormSchema>;
@@ -42,6 +45,8 @@ export async function addTransaction(values: TransactionFormValues) {
     });
 
     revalidatePath('/financials');
+    if (validatedFields.data.clientId) revalidatePath(`/clients/${validatedFields.data.clientId}`);
+    if (validatedFields.data.supplierId) revalidatePath(`/suppliers/${validatedFields.data.supplierId}`);
     return { message: 'Transaction added successfully.', errors: null };
   } catch (error) {
     console.error('Error adding transaction:', error);
@@ -70,6 +75,8 @@ export async function updateTransaction(transactionId: string, values: Transacti
       date: new Date(validatedFields.data.date),
     });
     revalidatePath('/financials');
+    if (validatedFields.data.clientId) revalidatePath(`/clients/${validatedFields.data.clientId}`);
+    if (validatedFields.data.supplierId) revalidatePath(`/suppliers/${validatedFields.data.supplierId}`);
     return { message: 'Transaction updated successfully.', errors: null };
   } catch (error) {
     console.error('Error updating transaction:', error);
@@ -85,6 +92,8 @@ export async function deleteTransaction(transactionId: string) {
   try {
     await deleteDoc(doc(firestore, 'transactions', transactionId));
     revalidatePath('/financials');
+    revalidatePath('/clients');
+    revalidatePath('/suppliers');
     return { success: true, message: 'Transaction deleted successfully.' };
   } catch (error) {
     console.error('Error deleting transaction:', error);

@@ -1,7 +1,8 @@
+
 'use client';
 
 import { useEffect, useState } from 'react';
-import { doc, onSnapshot, collection, query, orderBy, Timestamp } from 'firebase/firestore';
+import { doc, onSnapshot, collection, query, orderBy, Timestamp, where } from 'firebase/firestore';
 import { firestore } from '@/lib/firebase';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -59,6 +60,15 @@ type Contract = {
   effectiveDate: Timestamp;
   value?: number;
 };
+
+type Transaction = {
+  id: string;
+  description: string;
+  amount: number;
+  type: 'Income' | 'Expense';
+  date: Timestamp;
+};
+
 
 const statusVariant: { [key in ClientStatus]: 'default' | 'secondary' | 'destructive' } = {
   Lead: 'default',
@@ -182,6 +192,7 @@ export default function ClientDetailPage({ params }: { params: { id: string } })
   const [client, setClient] = useState<Client | null>(null);
   const [interactions, setInteractions] = useState<Interaction[]>([]);
   const [contracts, setContracts] = useState<Contract[]>([]);
+  const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isInteractionFormOpen, setIsInteractionFormOpen] = useState(false);
@@ -215,7 +226,6 @@ export default function ClientDetailPage({ params }: { params: { id: string } })
       setInteractions(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Interaction)));
     }, (err) => {
        console.error('Error fetching interactions:', err);
-       setError('Failed to fetch interactions.');
     }));
     
     const contractsQuery = query(collection(firestore, 'clients', clientId, 'contracts'), orderBy('effectiveDate', 'desc'));
@@ -223,7 +233,13 @@ export default function ClientDetailPage({ params }: { params: { id: string } })
       setContracts(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Contract)));
     }, (err) => {
       console.error('Error fetching contracts:', err);
-      setError('Failed to fetch contracts.');
+    }));
+
+    const transactionsQuery = query(collection(firestore, 'transactions'), where('clientId', '==', clientId), orderBy('date', 'desc'));
+    unsubscribes.push(onSnapshot(transactionsQuery, (snapshot) => {
+        setTransactions(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Transaction)));
+    }, (err) => {
+        console.error('Error fetching transactions:', err);
     }));
 
 
@@ -337,6 +353,7 @@ export default function ClientDetailPage({ params }: { params: { id: string } })
                 <TabsTrigger value="overview">Overview</TabsTrigger>
                 <TabsTrigger value="interactions">Interactions</TabsTrigger>
                 <TabsTrigger value="contracts">Contracts</TabsTrigger>
+                <TabsTrigger value="financials">Financials</TabsTrigger>
             </TabsList>
             <TabsContent value="overview" className="pt-4">
                  <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
@@ -424,6 +441,49 @@ export default function ClientDetailPage({ params }: { params: { id: string } })
                         )}
                     </CardContent>
                 </Card>
+            </TabsContent>
+            <TabsContent value="financials" className="pt-4">
+                 <Card>
+                    <CardHeader>
+                        <CardTitle>Financial History</CardTitle>
+                        <CardDescription>A list of all income and expense records for this client.</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        {transactions.length > 0 ? (
+                           <Table>
+                               <TableHeader>
+                                   <TableRow>
+                                       <TableHead>Date</TableHead>
+                                       <TableHead>Description</TableHead>
+                                       <TableHead>Type</TableHead>
+                                       <TableHead className="text-right">Amount</TableHead>
+                                   </TableRow>
+                               </TableHeader>
+                               <TableBody>
+                                   {transactions.map(transaction => (
+                                       <TableRow key={transaction.id}>
+                                           <TableCell>{transaction.date ? format(transaction.date.toDate(), 'PPP') : 'N/A'}</TableCell>
+                                           <TableCell className="font-medium">{transaction.description}</TableCell>
+                                           <TableCell>
+                                                <Badge variant={transaction.type === 'Income' ? 'secondary' : 'destructive'}>
+                                                    {transaction.type}
+                                                </Badge>
+                                           </TableCell>
+                                            <TableCell className={`text-right font-semibold ${transaction.type === 'Income' ? 'text-success' : ''}`}>
+                                                {formatCurrency(transaction.amount)}
+                                            </TableCell>
+                                       </TableRow>
+                                   ))}
+                               </TableBody>
+                           </Table>
+                        ) : (
+                             <div className="flex flex-col items-center justify-center gap-2 py-8 text-center text-muted-foreground">
+                                <DollarSign className="size-12" />
+                                <p>No financial records found for this client.</p>
+                            </div>
+                        )}
+                    </CardContent>
+                 </Card>
             </TabsContent>
         </Tabs>
     </div>

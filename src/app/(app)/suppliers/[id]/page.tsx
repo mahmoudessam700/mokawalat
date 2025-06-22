@@ -7,7 +7,7 @@ import { firestore } from '@/lib/firebase';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
-import { ArrowLeft, User, Mail, Phone, Building, ShoppingCart, Truck, Star, FileText, PlusCircle, Trash2, Loader2 } from 'lucide-react';
+import { ArrowLeft, User, Mail, Phone, Building, ShoppingCart, Truck, Star, FileText, PlusCircle, Trash2, Loader2, DollarSign } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import {
@@ -64,6 +64,14 @@ type Contract = {
   fileUrl?: string;
 };
 
+type Transaction = {
+  id: string;
+  description: string;
+  amount: number;
+  type: 'Income' | 'Expense';
+  date: Timestamp;
+};
+
 type Project = {
     id: string;
     name: string;
@@ -89,6 +97,13 @@ const contractFormSchema = z.object({
 });
 type ContractFormValues = z.infer<typeof contractFormSchema>;
 
+const formatCurrency = (value: number) => {
+  const formatter = new Intl.NumberFormat('en-US', {
+    minimumFractionDigits: 2,
+  });
+  return `LE ${formatter.format(value)}`;
+};
+
 
 function StarRatingDisplay({ rating = 0 }: { rating?: number }) {
     return (
@@ -110,6 +125,7 @@ export default function SupplierDetailPage({ params }: { params: { id: string } 
   const [supplier, setSupplier] = useState<Supplier | null>(null);
   const [requests, setRequests] = useState<PurchaseRequest[]>([]);
   const [contracts, setContracts] = useState<Contract[]>([]);
+  const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [projects, setProjects] = useState<Map<string, string>>(new Map());
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -163,6 +179,13 @@ export default function SupplierDetailPage({ params }: { params: { id: string } 
         setProjects(projectMap);
     }));
     
+    const transactionsQuery = query(collection(firestore, 'transactions'), where('supplierId', '==', supplierId), orderBy('date', 'desc'));
+    unsubscribes.push(onSnapshot(transactionsQuery, (snapshot) => {
+        setTransactions(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Transaction)));
+    }, (err) => {
+        console.error('Error fetching transactions:', err);
+    }));
+
     return () => unsubscribes.forEach(unsub => unsub());
   }, [supplierId]);
 
@@ -259,6 +282,7 @@ export default function SupplierDetailPage({ params }: { params: { id: string } 
                 <TabsTrigger value="overview">Overview</TabsTrigger>
                 <TabsTrigger value="contracts">Contracts</TabsTrigger>
                 <TabsTrigger value="procurement">Procurement History</TabsTrigger>
+                <TabsTrigger value="financials">Financials</TabsTrigger>
             </TabsList>
             <TabsContent value="overview" className="pt-4">
                  <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
@@ -441,6 +465,49 @@ export default function SupplierDetailPage({ params }: { params: { id: string } 
                             <div className="flex flex-col items-center justify-center gap-2 py-8 text-center text-muted-foreground">
                                 <ShoppingCart className="size-12" />
                                 <p>No purchase requests found for this supplier.</p>
+                            </div>
+                        )}
+                    </CardContent>
+                </Card>
+            </TabsContent>
+            <TabsContent value="financials" className="pt-4">
+                <Card>
+                    <CardHeader>
+                        <CardTitle>Financial History</CardTitle>
+                        <CardDescription>A list of all payments made to this supplier.</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                       {transactions.length > 0 ? (
+                           <Table>
+                               <TableHeader>
+                                   <TableRow>
+                                       <TableHead>Date</TableHead>
+                                       <TableHead>Description</TableHead>
+                                       <TableHead>Type</TableHead>
+                                       <TableHead className="text-right">Amount</TableHead>
+                                   </TableRow>
+                               </TableHeader>
+                               <TableBody>
+                                   {transactions.map(transaction => (
+                                       <TableRow key={transaction.id}>
+                                           <TableCell>{transaction.date ? format(transaction.date.toDate(), 'PPP') : 'N/A'}</TableCell>
+                                           <TableCell className="font-medium">{transaction.description}</TableCell>
+                                           <TableCell>
+                                                <Badge variant={transaction.type === 'Income' ? 'secondary' : 'destructive'}>
+                                                    {transaction.type}
+                                                </Badge>
+                                           </TableCell>
+                                            <TableCell className={`text-right font-semibold ${transaction.type === 'Income' ? 'text-success' : ''}`}>
+                                                {formatCurrency(transaction.amount)}
+                                            </TableCell>
+                                       </TableRow>
+                                   ))}
+                               </TableBody>
+                           </Table>
+                        ) : (
+                             <div className="flex flex-col items-center justify-center gap-2 py-8 text-center text-muted-foreground">
+                                <DollarSign className="size-12" />
+                                <p>No financial records found for this supplier.</p>
                             </div>
                         )}
                     </CardContent>
