@@ -1,7 +1,7 @@
 'use server';
 
 import { firestore } from '@/lib/firebase';
-import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
+import { collection, addDoc, serverTimestamp, doc, deleteDoc } from 'firebase/firestore';
 import { z } from 'zod';
 import { revalidatePath } from 'next/cache';
 
@@ -48,5 +48,20 @@ export async function addProject(values: ProjectFormValues) {
       message: 'Failed to add project.',
       errors: { _server: ['An unexpected error occurred.'] },
     };
+  }
+}
+
+export async function deleteProject(projectId: string) {
+  if (!projectId) {
+    return { success: false, message: 'Project ID is required.' };
+  }
+
+  try {
+    await deleteDoc(doc(firestore, 'projects', projectId));
+    revalidatePath('/projects');
+    return { success: true, message: 'Project deleted successfully.' };
+  } catch (error) {
+    console.error('Error deleting project:', error);
+    return { success: false, message: 'Failed to delete project.' };
   }
 }
