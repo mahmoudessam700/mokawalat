@@ -258,7 +258,7 @@ export default function InventoryPage() {
                           <FormControl>
                             <SelectTrigger>
                               <SelectValue placeholder="Select a warehouse" />
-                            </Trigger>
+                            </SelectTrigger>
                           </FormControl>
                           <SelectContent>
                             <SelectItem value="Main Warehouse">
