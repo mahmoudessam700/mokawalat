@@ -1,7 +1,7 @@
 'use server';
 
 import { firestore } from '@/lib/firebase';
-import { collection, addDoc } from 'firebase/firestore';
+import { collection, addDoc, doc, deleteDoc } from 'firebase/firestore';
 import { z } from 'zod';
 import { revalidatePath } from 'next/cache';
 
@@ -32,5 +32,20 @@ export async function addEmployee(values: EmployeeFormValues) {
   } catch (error) {
     console.error('Error adding employee:', error);
     return { message: 'Failed to add employee.', errors: { _server: ['An unexpected error occurred.'] } };
+  }
+}
+
+export async function deleteEmployee(employeeId: string) {
+  if (!employeeId) {
+    return { success: false, message: 'Employee ID is required.' };
+  }
+
+  try {
+    await deleteDoc(doc(firestore, 'employees', employeeId));
+    revalidatePath('/employees');
+    return { success: true, message: 'Employee deleted successfully.' };
+  } catch (error) {
+    console.error('Error deleting employee:', error);
+    return { success: false, message: 'Failed to delete employee.' };
   }
 }
