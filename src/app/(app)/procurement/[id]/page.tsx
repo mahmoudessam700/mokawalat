@@ -67,21 +67,25 @@ export default function ProcurementDetailPage({ params }: { params: { id: string
             const requestData = { id: doc.id, ...doc.data() } as PurchaseRequest;
             setRequest(requestData);
 
-            // Fetch related project
-            const projectRef = doc(firestore, 'projects', requestData.projectId);
-            unsubscribes.push(onSnapshot(projectRef, (projectDoc) => {
-                if (projectDoc.exists()) {
-                    setProject({ id: projectDoc.id, ...projectDoc.data() } as Project);
-                }
-            }));
+            if (requestData.projectId) {
+                // Fetch related project
+                const projectRef = doc(firestore, 'projects', requestData.projectId);
+                unsubscribes.push(onSnapshot(projectRef, (projectDoc) => {
+                    if (projectDoc.exists()) {
+                        setProject({ id: projectDoc.id, ...projectDoc.data() } as Project);
+                    }
+                }));
+            }
             
-            // Fetch related supplier
-            const supplierRef = doc(firestore, 'suppliers', requestData.supplierId);
-            unsubscribes.push(onSnapshot(supplierRef, (supplierDoc) => {
-                 if (supplierDoc.exists()) {
-                    setSupplier({ id: supplierDoc.id, ...supplierDoc.data() } as Supplier);
-                }
-            }));
+            if (requestData.supplierId) {
+                // Fetch related supplier
+                const supplierRef = doc(firestore, 'suppliers', requestData.supplierId);
+                unsubscribes.push(onSnapshot(supplierRef, (supplierDoc) => {
+                     if (supplierDoc.exists()) {
+                        setSupplier({ id: supplierDoc.id, ...supplierDoc.data() } as Supplier);
+                    }
+                }));
+            }
 
         } else {
             setError('Purchase Request not found.');
@@ -192,7 +196,7 @@ export default function ProcurementDetailPage({ params }: { params: { id: string
                              </div>
                         </div>
                     ) : (
-                        <Skeleton className="h-16 w-full" />
+                        <p className="text-sm text-muted-foreground">No project linked.</p>
                     )}
                  </CardContent>
             </Card>
@@ -214,7 +218,7 @@ export default function ProcurementDetailPage({ params }: { params: { id: string
                              </div>
                         </div>
                     ) : (
-                        <Skeleton className="h-16 w-full" />
+                         <p className="text-sm text-muted-foreground">No supplier linked.</p>
                     )}
                  </CardContent>
             </Card>

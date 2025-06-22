@@ -1,3 +1,4 @@
+
 'use server';
 
 import { firestore } from '@/lib/firebase';
@@ -56,6 +57,7 @@ export async function updatePurchaseRequest(requestId: string, values: Procureme
         const requestRef = doc(firestore, 'procurement', requestId);
         await updateDoc(requestRef, validatedFields.data);
         revalidatePath('/procurement');
+        revalidatePath(`/procurement/${requestId}`);
         return { message: 'Purchase request updated successfully.', errors: null };
     } catch (error) {
         console.error('Error updating purchase request:', error);

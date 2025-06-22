@@ -403,36 +403,38 @@ export default function ProcurementPage() {
                     <TableCell className="hidden md:table-cell">{request.requestedAt ? format(request.requestedAt.toDate(), 'PPP') : 'N/A'}</TableCell>
                     <TableCell><Badge variant={statusVariant[request.status]}>{request.status}</Badge></TableCell>
                     <TableCell>
-                      {profile?.role === 'admin' && (
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button aria-haspopup="true" size="icon" variant="ghost">
-                              <MoreHorizontal className="h-4 w-4" />
-                              <span className="sr-only">Toggle menu</span>
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                            <DropdownMenuItem onSelect={() => {
-                              setRequestToEdit(request);
-                              setIsDialogOpen(true);
-                            }}>Edit</DropdownMenuItem>
-                            <DropdownMenuItem asChild>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button aria-haspopup="true" size="icon" variant="ghost">
+                            <MoreHorizontal className="h-4 w-4" />
+                            <span className="sr-only">Toggle menu</span>
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                           <DropdownMenuItem asChild>
                               <Link href={`/procurement/${request.id}`}>View Details</Link>
                             </DropdownMenuItem>
-                            <DropdownMenuItem
-                              className="text-destructive"
-                              onSelect={() => {
-                                setRequestToDelete(request);
-                                setIsDeleteDialogOpen(true);
-                              }}
-                            >
-                               <Trash2 className="mr-2 h-4 w-4" />
-                              Delete
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      )}
+                          {profile?.role === 'admin' && (
+                            <>
+                              <DropdownMenuItem onSelect={() => {
+                                setRequestToEdit(request);
+                                setIsDialogOpen(true);
+                              }}>Edit</DropdownMenuItem>
+                              <DropdownMenuItem
+                                className="text-destructive"
+                                onSelect={() => {
+                                  setRequestToDelete(request);
+                                  setIsDeleteDialogOpen(true);
+                                }}
+                              >
+                                 <Trash2 className="mr-2 h-4 w-4" />
+                                Delete
+                              </DropdownMenuItem>
+                            </>
+                          )}
+                        </DropdownMenuContent>
+                      </DropdownMenu>
                     </TableCell>
                   </TableRow>
                 ))
