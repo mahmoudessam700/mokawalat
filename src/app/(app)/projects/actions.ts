@@ -18,7 +18,12 @@ const projectFormSchema = z.object({
   status: z.enum(['Planning', 'In Progress', 'Completed', 'On Hold']),
 });
 
+const assignTeamFormSchema = z.object({
+  employeeIds: z.array(z.string()).default([]),
+});
+
 export type ProjectFormValues = z.infer<typeof projectFormSchema>;
+export type AssignTeamFormValues = z.infer<typeof assignTeamFormSchema>;
 
 export async function addProject(values: ProjectFormValues) {
   const validatedFields = projectFormSchema.safeParse(values);
@@ -73,6 +78,7 @@ export async function updateProject(projectId: string, values: ProjectFormValues
             startDate: new Date(validatedFields.data.startDate),
         });
         revalidatePath('/projects');
+        revalidatePath(`/projects/${projectId}`);
         return { message: 'Project updated successfully.', errors: null };
     } catch (error) {
         console.error('Error updating project:', error);
@@ -94,4 +100,31 @@ export async function deleteProject(projectId: string) {
     console.error('Error deleting project:', error);
     return { success: false, message: 'Failed to delete project.' };
   }
+}
+
+export async function assignTeamToProject(projectId: string, values: AssignTeamFormValues) {
+    if (!projectId) {
+        return { message: 'Project ID is required.', errors: { _server: ['Project ID not provided.'] } };
+    }
+
+    const validatedFields = assignTeamFormSchema.safeParse(values);
+
+    if (!validatedFields.success) {
+        return {
+            errors: validatedFields.error.flatten().fieldErrors,
+            message: 'Invalid data provided.',
+        };
+    }
+
+    try {
+        const projectRef = doc(firestore, 'projects', projectId);
+        await updateDoc(projectRef, {
+            teamMemberIds: validatedFields.data.employeeIds,
+        });
+        revalidatePath(`/projects/${projectId}`);
+        return { message: 'Team updated successfully.', errors: null };
+    } catch (error) {
+        console.error('Error assigning team to project:', error);
+        return { message: 'Failed to assign team.', errors: { _server: ['An unexpected error occurred.'] } };
+    }
 }

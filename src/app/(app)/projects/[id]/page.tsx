@@ -1,15 +1,17 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { doc, getDoc, type Timestamp } from 'firebase/firestore';
+import { useEffect, useState, useMemo } from 'react';
+import { doc, getDoc, type Timestamp, collection, query, getDocs } from 'firebase/firestore';
 import { firestore } from '@/lib/firebase';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
-import { ArrowLeft, Briefcase, Calendar, DollarSign, Activity } from 'lucide-react';
+import { ArrowLeft, Briefcase, Calendar, DollarSign, Activity, Users } from 'lucide-react';
 import { format } from 'date-fns';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
+import { AssignTeamDialog } from './assign-team-dialog';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 
 type ProjectStatus = 'In Progress' | 'Planning' | 'Completed' | 'On Hold';
 
@@ -20,6 +22,14 @@ type Project = {
   budget: number;
   startDate: Timestamp;
   status: ProjectStatus;
+  teamMemberIds?: string[];
+};
+
+type Employee = {
+    id: string;
+    name: string;
+    email: string;
+    role: string;
 };
 
 const statusVariant: {
@@ -40,6 +50,7 @@ const formatCurrency = (value: number) => {
 
 export default function ProjectDetailPage({ params }: { params: { id: string } }) {
   const [project, setProject] = useState<Project | null>(null);
+  const [employees, setEmployees] = useState<Employee[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   
@@ -48,27 +59,46 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
   useEffect(() => {
     if (!projectId) return;
 
-    const fetchProject = async () => {
+    const fetchData = async () => {
       setIsLoading(true);
       try {
         const projectRef = doc(firestore, 'projects', projectId);
-        const docSnap = await getDoc(projectRef);
+        const employeesQuery = query(collection(firestore, 'employees'));
 
-        if (docSnap.exists()) {
-          setProject({ id: docSnap.id, ...docSnap.data() } as Project);
+        const [projectDoc, employeesSnapshot] = await Promise.all([
+            getDoc(projectRef),
+            getDocs(employeesQuery)
+        ]);
+
+        if (projectDoc.exists()) {
+          setProject({ id: projectDoc.id, ...projectDoc.data() } as Project);
         } else {
           setError('Project not found.');
         }
+
+        const employeesData: Employee[] = [];
+        employeesSnapshot.forEach((doc) => {
+            employeesData.push({ id: doc.id, ...doc.data()} as Employee);
+        });
+        setEmployees(employeesData);
+
       } catch (err) {
-        console.error('Error fetching project:', err);
+        console.error('Error fetching project data:', err);
         setError('Failed to fetch project details.');
       } finally {
         setIsLoading(false);
       }
     };
 
-    fetchProject();
+    fetchData();
   }, [projectId]);
+  
+  const assignedTeam = useMemo(() => {
+    if (!project?.teamMemberIds || !employees.length) {
+      return [];
+    }
+    return employees.filter(employee => project.teamMemberIds!.includes(employee.id));
+  }, [project, employees]);
 
   if (isLoading) {
     return (
@@ -92,7 +122,15 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
           </CardContent>
         </Card>
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-            <Skeleton className="h-48 w-full" />
+            <Card>
+                <CardHeader>
+                    <Skeleton className="h-6 w-32" />
+                    <Skeleton className="h-4 w-48" />
+                </CardHeader>
+                <CardContent>
+                     <Skeleton className="h-24 w-full" />
+                </CardContent>
+            </Card>
             <Skeleton className="h-48 w-full" />
         </div>
       </div>
@@ -180,12 +218,40 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
         
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
             <Card>
-                <CardHeader>
-                    <CardTitle>Assigned Team</CardTitle>
-                    <CardDescription>Team members assigned to this project.</CardDescription>
+                <CardHeader className="flex flex-row items-center justify-between">
+                    <div>
+                        <CardTitle>Assigned Team</CardTitle>
+                        <CardDescription>Team members assigned to this project.</CardDescription>
+                    </div>
+                     <AssignTeamDialog
+                        projectId={project.id}
+                        employees={employees}
+                        assignedEmployeeIds={project.teamMemberIds || []}
+                    />
                 </CardHeader>
                 <CardContent>
-                    <p className="text-sm text-muted-foreground">Feature coming soon.</p>
+                     {assignedTeam.length > 0 ? (
+                        <ul className="space-y-4">
+                            {assignedTeam.map(member => (
+                                <li key={member.id} className="flex items-center gap-4">
+                                    <Avatar>
+                                        <AvatarImage src={`https://placehold.co/40x40.png`} data-ai-hint="profile picture" />
+                                        <AvatarFallback>{member.name.split(' ').map(n => n[0]).join('')}</AvatarFallback>
+                                    </Avatar>
+                                    <div>
+                                        <p className="font-semibold">{member.name}</p>
+                                        <p className="text-sm text-muted-foreground">{member.role}</p>
+                                    </div>
+                                </li>
+                            ))}
+                        </ul>
+                    ) : (
+                        <div className="flex flex-col items-center justify-center gap-2 p-4 text-center text-muted-foreground">
+                            <Users className="size-12" />
+                            <p>No team members assigned yet.</p>
+                            <p className="text-xs">Use the "Assign Team" button to add members.</p>
+                        </div>
+                    )}
                 </CardContent>
             </Card>
              <Card>
@@ -194,7 +260,10 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
                     <CardDescription>Purchase requests linked to this project.</CardDescription>
                 </CardHeader>
                 <CardContent>
-                    <p className="text-sm text-muted-foreground">Feature coming soon.</p>
+                     <div className="flex flex-col items-center justify-center gap-2 p-4 text-center text-muted-foreground">
+                        <Briefcase className="size-12" />
+                        <p>Feature coming soon.</p>
+                     </div>
                 </CardContent>
             </Card>
         </div>
