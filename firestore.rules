@@ -1,24 +1,41 @@
 rules_version = '2';
+
 service cloud.firestore {
   match /databases/{database}/documents {
+  
+    // Helper functions
+    function isSignedIn() {
+      return request.auth != null;
+    }
+    
+    // Users: Allow users to read their own data
     match /users/{userId} {
-      allow read, write: if request.auth != null && request.auth.uid == userId;
+      allow read: if isSignedIn() && request.auth.uid == userId;
+      allow create: if isSignedIn();
     }
-
+    
+    // Employees: Allow authenticated users to manage employee data
     match /employees/{employeeId} {
-      allow read, create: if request.auth != null;
+        allow read, create: if isSignedIn();
+        // Add update, delete rules later as needed
     }
-
+    
+    // Projects: Allow authenticated users to manage project data
     match /projects/{projectId} {
-      allow read, create: if request.auth != null;
+        allow read, create: if isSignedIn();
+        // Add update, delete rules later as needed
     }
 
+    // Suppliers: Allow authenticated users to manage supplier data
     match /suppliers/{supplierId} {
-      allow read, create: if request.auth != null;
+        allow read, create: if isSignedIn();
+        // Add update, delete rules later as needed
     }
 
+    // Inventory: Allow authenticated users to manage inventory data
     match /inventory/{itemId} {
-      allow read, create: if request.auth != null;
+        allow read, create: if isSignedIn();
+        // Add update, delete rules later as needed
     }
   }
 }

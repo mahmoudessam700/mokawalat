@@ -73,12 +73,6 @@ export default function InventoryPage() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const { toast } = useToast();
 
-  const statusVariant: { [key in InventoryItem['status']]: 'secondary' | 'outline' | 'destructive' } = {
-    'In Stock': 'secondary',
-    'Low Stock': 'outline',
-    'Out of Stock': 'destructive',
-  };
-
   useEffect(() => {
     const q = query(collection(firestore, 'inventory'), orderBy('name', 'asc'));
     const unsubscribe = onSnapshot(q, (querySnapshot) => {
@@ -129,6 +123,12 @@ export default function InventoryPage() {
       form.reset();
       setIsDialogOpen(false);
     }
+  }
+
+  const getStatusVariant = (status: InventoryItem['status']): 'secondary' | 'outline' | 'destructive' => {
+    if (status === 'Low Stock') return 'outline';
+    if (status === 'Out of Stock') return 'destructive';
+    return 'secondary';
   }
 
   return (
@@ -319,7 +319,7 @@ export default function InventoryPage() {
                     <TableCell>{item.quantity}</TableCell>
                     <TableCell className="hidden md:table-cell">{item.warehouse}</TableCell>
                     <TableCell>
-                      <Badge variant={statusVariant[item.status]}>
+                      <Badge variant={getStatusVariant(item.status)}>
                         {item.status}
                       </Badge>
                     </TableCell>
