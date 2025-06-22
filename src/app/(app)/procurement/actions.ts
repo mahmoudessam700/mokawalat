@@ -1,7 +1,7 @@
 'use server';
 
 import { firestore } from '@/lib/firebase';
-import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
+import { collection, addDoc, serverTimestamp, doc, deleteDoc } from 'firebase/firestore';
 import { z } from 'zod';
 import { revalidatePath } from 'next/cache';
 
@@ -36,4 +36,19 @@ export async function addPurchaseRequest(values: ProcurementFormValues) {
     console.error('Error creating purchase request:', error);
     return { message: 'Failed to create purchase request.', errors: { _server: ['An unexpected error occurred.'] } };
   }
+}
+
+export async function deletePurchaseRequest(requestId: string) {
+    if (!requestId) {
+        return { success: false, message: 'Request ID is required.' };
+    }
+
+    try {
+        await deleteDoc(doc(firestore, 'procurement', requestId));
+        revalidatePath('/procurement');
+        return { success: true, message: 'Purchase request deleted successfully.' };
+    } catch (error) {
+        console.error('Error deleting purchase request:', error);
+        return { success: false, message: 'Failed to delete purchase request.' };
+    }
 }

@@ -17,7 +17,7 @@ import {
   DropdownMenuLabel,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Loader2, MoreHorizontal, PlusCircle } from 'lucide-react';
+import { Loader2, MoreHorizontal, PlusCircle, Trash2 } from 'lucide-react';
 import {
   Card,
   CardContent,
@@ -34,6 +34,16 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog';
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import {
   Form,
   FormControl,
@@ -54,7 +64,7 @@ import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useState, useEffect, useMemo } from 'react';
-import { addPurchaseRequest } from './actions';
+import { addPurchaseRequest, deletePurchaseRequest } from './actions';
 import { useToast } from '@/hooks/use-toast';
 import { collection, onSnapshot, query, orderBy, Timestamp } from 'firebase/firestore';
 import { firestore } from '@/lib/firebase';
@@ -106,6 +116,9 @@ export default function ProcurementPage() {
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [requestToDelete, setRequestToDelete] = useState<PurchaseRequest | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -170,7 +183,31 @@ export default function ProcurementPage() {
     }
   }
 
+  async function handleDeleteRequest() {
+    if (!requestToDelete) return;
+
+    setIsDeleting(true);
+    const result = await deletePurchaseRequest(requestToDelete.id);
+    setIsDeleting(false);
+
+    if (result.success) {
+      toast({
+        title: 'Success',
+        description: result.message,
+      });
+    } else {
+      toast({
+        variant: 'destructive',
+        title: 'Error',
+        description: result.message,
+      });
+    }
+    setIsDeleteDialogOpen(false);
+    setRequestToDelete(null);
+  }
+
   return (
+    <>
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
@@ -328,7 +365,16 @@ export default function ProcurementPage() {
                           <DropdownMenuLabel>Actions</DropdownMenuLabel>
                           <DropdownMenuItem>View Details</DropdownMenuItem>
                           <DropdownMenuItem>Approve</DropdownMenuItem>
-                          <DropdownMenuItem className="text-destructive">Reject</DropdownMenuItem>
+                          <DropdownMenuItem
+                            className="text-destructive"
+                            onSelect={() => {
+                              setRequestToDelete(request);
+                              setIsDeleteDialogOpen(true);
+                            }}
+                          >
+                             <Trash2 className="mr-2 h-4 w-4" />
+                            Delete
+                          </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
                     </TableCell>
@@ -346,5 +392,27 @@ export default function ProcurementPage() {
         </CardContent>
       </Card>
     </div>
+     <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <AlertDialogContent>
+            <AlertDialogHeader>
+                <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                <AlertDialogDescription>
+                    This action cannot be undone. This will permanently delete the purchase request for "{requestToDelete?.itemName}".
+                </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+                <AlertDialogCancel onClick={() => setRequestToDelete(null)}>Cancel</AlertDialogCancel>
+                <AlertDialogAction
+                    onClick={handleDeleteRequest}
+                    disabled={isDeleting}
+                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                >
+                    {isDeleting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Trash2 className="mr-2 h-4 w-4" />}
+                    Delete
+                </AlertDialogAction>
+            </AlertDialogFooter>
+        </AlertDialogContent>
+    </AlertDialog>
+    </>
   );
 }
