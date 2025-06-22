@@ -1,58 +1,74 @@
 
 rules_version = '2';
-
 service cloud.firestore {
   match /databases/{database}/documents {
-    
-    function isSignedIn() {
-      return request.auth != null;
-    }
-
-    function isOwner(userId) {
-      return request.auth.uid == userId;
-    }
-    
+    // Helper function to check if the user is an admin
     function isAdmin() {
       return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
     }
 
-    match /users/{userId} {
-      allow read: if isSignedIn();
-      allow write: if isOwner(userId) || isAdmin();
-    }
-
+    // Projects: Only admins can write, any authenticated user can read
     match /projects/{projectId} {
-      allow read: if isSignedIn();
+      allow read: if request.auth != null;
       allow write: if isAdmin();
     }
-    
+
+    // Employees: Only admins can write, any authenticated user can read
     match /employees/{employeeId} {
-      allow read: if isSignedIn();
+      allow read: if request.auth != null;
       allow write: if isAdmin();
     }
     
+    // Suppliers: Only admins can write, any authenticated user can read
     match /suppliers/{supplierId} {
-      allow read: if isSignedIn();
+      allow read: if request.auth != null;
       allow write: if isAdmin();
-    }
-
-    match /inventory/{itemId} {
-      allow read: if isSignedIn();
-      allow write: if isAdmin();
+      
+      match /{document=**} {
+        allow read: if request.auth != null;
+        allow write: if isAdmin();
+      }
     }
     
-    match /procurement/{requestId} {
-      allow read: if isSignedIn();
+    // Inventory: Only admins can write, any authenticated user can read
+    match /inventory/{itemId} {
+      allow read: if request.auth != null;
       allow write: if isAdmin();
     }
 
-    match /clients/{clientId}/{document=**} {
-        allow read, write: if isSignedIn();
+    // Procurement: Only admins can write, any authenticated user can read
+    match /procurement/{requestId} {
+      allow read: if request.auth != null;
+      allow write: if isAdmin();
     }
 
+    // Financials: Only admins can write, any authenticated user can read
     match /transactions/{transactionId} {
-        allow read: if isSignedIn();
-        allow write: if isAdmin();
+      allow read: if request.auth != null;
+      allow write: if isAdmin();
+    }
+
+    // Clients & Interactions can be written by any authenticated user
+    match /clients/{clientId} {
+       match /{document=**} {
+        allow read, write: if request.auth != null;
+       }
+       allow read, write: if request.auth != null;
+    }
+    
+    // Users collection for role management
+    match /users/{userId} {
+      // Any authenticated user can create their own user document during signup.
+      allow create: if request.auth.uid == userId;
+
+      // An admin can update any user document (e.g., to change a role).
+      allow update: if isAdmin();
+
+      // A user can read their own document, and an admin can read any document.
+      allow read: if request.auth.uid == userId || isAdmin();
+      
+      // Only admins can list all users.
+      allow list: if isAdmin();
     }
   }
 }
