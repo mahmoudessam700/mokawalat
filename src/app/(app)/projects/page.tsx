@@ -18,7 +18,7 @@ import {
   DropdownMenuLabel,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Loader2, MoreHorizontal, PlusCircle, Search, Trash2 } from 'lucide-react';
+import { Loader2, MoreHorizontal, PlusCircle, Search, Trash2, Users } from 'lucide-react';
 import {
   Card,
   CardContent,
@@ -90,6 +90,7 @@ type Project = {
   budget: number;
   startDate: Timestamp;
   status: ProjectStatus;
+  teamMemberIds?: string[];
 };
 
 const statusVariant: {
@@ -434,6 +435,7 @@ export default function ProjectsPage() {
                   Start Date
                 </TableHead>
                 <TableHead>Budget</TableHead>
+                <TableHead className="hidden sm:table-cell">Team</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead>
                   <span className="sr-only">Actions</span>
@@ -452,6 +454,9 @@ export default function ProjectsPage() {
                     </TableCell>
                     <TableCell>
                       <Skeleton className="h-4 w-[120px]" />
+                    </TableCell>
+                     <TableCell className="hidden sm:table-cell">
+                      <Skeleton className="h-4 w-[50px]" />
                     </TableCell>
                     <TableCell>
                       <Skeleton className="h-6 w-[100px] rounded-full" />
@@ -480,6 +485,12 @@ export default function ProjectsPage() {
                         : 'N/A'}
                     </TableCell>
                     <TableCell>{formatCurrency(project.budget)}</TableCell>
+                    <TableCell className="hidden sm:table-cell">
+                      <div className="flex items-center gap-2">
+                        <Users className="size-4 text-muted-foreground" />
+                        <span>{project.teamMemberIds?.length || 0}</span>
+                      </div>
+                    </TableCell>
                     <TableCell>
                       <Badge variant={statusVariant[project.status]}>
                         {project.status}
@@ -529,7 +540,7 @@ export default function ProjectsPage() {
                 ))
               ) : (
                 <TableRow>
-                  <TableCell colSpan={5} className="h-24 text-center">
+                  <TableCell colSpan={6} className="h-24 text-center">
                     No projects found for the current filter.
                   </TableCell>
                 </TableRow>
