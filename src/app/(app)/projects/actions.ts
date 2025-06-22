@@ -1,7 +1,8 @@
+
 'use server';
 
 import { firestore } from '@/lib/firebase';
-import { collection, addDoc, serverTimestamp, doc, deleteDoc } from 'firebase/firestore';
+import { collection, addDoc, serverTimestamp, doc, deleteDoc, updateDoc } from 'firebase/firestore';
 import { z } from 'zod';
 import { revalidatePath } from 'next/cache';
 
@@ -50,6 +51,35 @@ export async function addProject(values: ProjectFormValues) {
     };
   }
 }
+
+export async function updateProject(projectId: string, values: ProjectFormValues) {
+    if (!projectId) {
+        return { message: 'Project ID is required.', errors: { _server: ['Project ID not provided.'] } };
+    }
+
+    const validatedFields = projectFormSchema.safeParse(values);
+
+    if (!validatedFields.success) {
+        return {
+            errors: validatedFields.error.flatten().fieldErrors,
+            message: 'Invalid data provided. Please check the form.',
+        };
+    }
+
+    try {
+        const projectRef = doc(firestore, 'projects', projectId);
+        await updateDoc(projectRef, {
+            ...validatedFields.data,
+            startDate: new Date(validatedFields.data.startDate),
+        });
+        revalidatePath('/projects');
+        return { message: 'Project updated successfully.', errors: null };
+    } catch (error) {
+        console.error('Error updating project:', error);
+        return { message: 'Failed to update project.', errors: { _server: ['An unexpected error occurred.'] } };
+    }
+}
+
 
 export async function deleteProject(projectId: string) {
   if (!projectId) {

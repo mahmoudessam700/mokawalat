@@ -1,3 +1,4 @@
+
 'use client';
 
 import {
@@ -65,7 +66,7 @@ import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useState, useEffect } from 'react';
-import { addProject, deleteProject } from './actions';
+import { addProject, deleteProject, updateProject } from './actions';
 import { useToast } from '@/hooks/use-toast';
 import {
   collection,
@@ -117,6 +118,7 @@ export default function ProjectsPage() {
   const [projects, setProjects] = useState<Project[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [projectToEdit, setProjectToEdit] = useState<Project | null>(null);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [projectToDelete, setProjectToDelete] = useState<Project | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -162,8 +164,22 @@ export default function ProjectsPage() {
     },
   });
 
+  useEffect(() => {
+    if (projectToEdit) {
+      form.reset({
+        ...projectToEdit,
+        startDate: projectToEdit.startDate ? format(projectToEdit.startDate.toDate(), 'yyyy-MM-dd') : '',
+        description: projectToEdit.description || '',
+      });
+    } else {
+      form.reset(form.formState.defaultValues);
+    }
+  }, [projectToEdit, form]);
+
   async function onSubmit(values: ProjectFormValues) {
-    const result = await addProject(values);
+    const result = projectToEdit
+      ? await updateProject(projectToEdit.id, values)
+      : await addProject(values);
 
     if (result.errors) {
       toast({
@@ -176,8 +192,8 @@ export default function ProjectsPage() {
         title: 'Success',
         description: result.message,
       });
-      form.reset();
       setIsDialogOpen(false);
+      setProjectToEdit(null);
     }
   }
 
@@ -210,6 +226,13 @@ export default function ProjectsPage() {
     });
     return `LE ${formatter.format(value)}`;
   };
+  
+  const handleFormDialog_onOpenChange = (open: boolean) => {
+    if (!open) {
+      setProjectToEdit(null);
+    }
+    setIsDialogOpen(open);
+  }
 
   return (
     <>
@@ -223,18 +246,18 @@ export default function ProjectsPage() {
             Track and manage all construction projects.
           </p>
         </div>
-        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+        <Dialog open={isDialogOpen} onOpenChange={handleFormDialog_onOpenChange}>
           <DialogTrigger asChild>
-            <Button>
+            <Button onClick={() => setProjectToEdit(null)}>
               <PlusCircle className="mr-2" />
               Add Project
             </Button>
           </DialogTrigger>
           <DialogContent className="sm:max-w-[480px]">
             <DialogHeader>
-              <DialogTitle>Add New Project</DialogTitle>
+              <DialogTitle>{projectToEdit ? 'Edit Project' : 'Add New Project'}</DialogTitle>
               <DialogDescription>
-                Fill in the details below to add a new project.
+                {projectToEdit ? 'Update the details of the project.' : 'Fill in the details below to add a new project.'}
               </DialogDescription>
             </DialogHeader>
             <Form {...form}>
@@ -314,7 +337,7 @@ export default function ProjectsPage() {
                       <FormLabel>Status</FormLabel>
                       <Select
                         onValueChange={field.onChange}
-                        defaultValue={field.value}
+                        value={field.value}
                       >
                         <FormControl>
                           <SelectTrigger>
@@ -342,7 +365,7 @@ export default function ProjectsPage() {
                         Saving...
                       </>
                     ) : (
-                      'Save Project'
+                      projectToEdit ? 'Save Changes' : 'Save Project'
                     )}
                   </Button>
                 </DialogFooter>
@@ -433,7 +456,12 @@ export default function ProjectsPage() {
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
                           <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                          <DropdownMenuItem>Edit</DropdownMenuItem>
+                          <DropdownMenuItem onSelect={() => {
+                              setProjectToEdit(project);
+                              setIsDialogOpen(true);
+                          }}>
+                            Edit
+                          </DropdownMenuItem>
                           <DropdownMenuItem asChild>
                             <Link href={`/projects/${project.id}`}>View Details</Link>
                           </DropdownMenuItem>
