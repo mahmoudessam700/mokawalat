@@ -1,3 +1,4 @@
+
 'use client';
 
 import {
@@ -56,6 +57,7 @@ import { useToast } from '@/hooks/use-toast';
 import { collection, onSnapshot, query, orderBy } from 'firebase/firestore';
 import { firestore } from '@/lib/firebase';
 import { Skeleton } from '@/components/ui/skeleton';
+import Link from 'next/link';
 
 // Define the employee type based on the schema and database structure
 type Employee = {
@@ -381,7 +383,9 @@ export default function EmployeesPage() {
                           >
                             Edit
                           </DropdownMenuItem>
-                          <DropdownMenuItem>View Details</DropdownMenuItem>
+                          <DropdownMenuItem asChild>
+                            <Link href={`/employees/${employee.id}`}>View Details</Link>
+                          </DropdownMenuItem>
                           <DropdownMenuItem
                             className="text-destructive"
                              onSelect={() => {
