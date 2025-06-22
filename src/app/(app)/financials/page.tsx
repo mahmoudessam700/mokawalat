@@ -81,11 +81,10 @@ const transactionFormSchema = z.object({
 type TransactionFormValues = z.infer<typeof transactionFormSchema>;
 
 const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat('en-US', {
-    style: 'currency',
-    currency: 'USD',
-    minimumFractionDigits: 2,
-    }).format(value);
+    const formatter = new Intl.NumberFormat('en-US', {
+        minimumFractionDigits: 2,
+    });
+    return `LE ${formatter.format(value)}`;
 };
 
 export default function FinancialsPage() {
@@ -257,7 +256,7 @@ export default function FinancialsPage() {
                       name="amount"
                       render={({ field }) => (
                           <FormItem>
-                          <FormLabel>Amount (USD)</FormLabel>
+                          <FormLabel>Amount (LE)</FormLabel>
                           <FormControl>
                               <Input type="number" placeholder="e.g., 1500.00" {...field} />
                           </FormControl>

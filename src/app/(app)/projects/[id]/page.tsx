@@ -32,11 +32,10 @@ const statusVariant: {
 };
 
 const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
+    const formatter = new Intl.NumberFormat('en-US', {
       minimumFractionDigits: 0,
-    }).format(value);
+    });
+    return `LE ${formatter.format(value)}`;
 };
 
 export default function ProjectDetailPage({ params }: { params: { id: string } }) {

@@ -20,12 +20,11 @@ type Project = { status: 'Planning' | 'In Progress' | 'Completed' | 'On Hold' };
 type Transaction = { type: 'Income' | 'Expense'; amount: number; date: Timestamp };
 
 const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat('en-US', {
-    style: 'currency',
-    currency: 'USD',
-    notation: 'compact',
-    maximumFractionDigits: 1,
-    }).format(value);
+    const formatter = new Intl.NumberFormat('en-US', {
+        notation: 'compact',
+        maximumFractionDigits: 1,
+    });
+    return `LE ${formatter.format(value)}`;
 };
 
 export default function DashboardPage() {

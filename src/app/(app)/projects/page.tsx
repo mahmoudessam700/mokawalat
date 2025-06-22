@@ -205,11 +205,10 @@ export default function ProjectsPage() {
   }
 
   const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
+    const formatter = new Intl.NumberFormat('en-US', {
       minimumFractionDigits: 0,
-    }).format(value);
+    });
+    return `LE ${formatter.format(value)}`;
   };
 
   return (
@@ -281,7 +280,7 @@ export default function ProjectsPage() {
                     name="budget"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Budget (USD)</FormLabel>
+                        <FormLabel>Budget (LE)</FormLabel>
                         <FormControl>
                           <Input
                             type="number"
