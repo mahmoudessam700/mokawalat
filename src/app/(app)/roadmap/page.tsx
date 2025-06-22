@@ -241,6 +241,52 @@ const roadmapPhases = [
         ]
       }
     ]
+  },
+  {
+    title: "Phase 6: Documentation",
+    objective: "Provide comprehensive and up-to-date documentation for the application, including code, database design, and user manual, to facilitate future maintenance, development, and compliance with ISO 9001 standards.",
+    subTasks: [
+        {
+            title: "6.1. Code Documentation:",
+            details: [
+                "Write clear inline comments in the code to explain functions and complex logic.",
+                "Create detailed README files for each part of the project (Frontend, Backend, Database Rules).",
+            ]
+        },
+        {
+            title: "6.2. Database Design Documentation:",
+            details: [
+                "Create a detailed document for the Firebase Firestore and Realtime Database structure, describing each collection, document, and field, as well as the relationships between them.",
+                "Document Firebase Security Rules.",
+            ]
+        },
+        {
+            title: "6.3. User Manual:",
+            details: [
+                "Create a comprehensive and clear user manual that explains how to use each section of the application, step-by-step.",
+                "Include screenshots to illustrate the steps.",
+                "Include a Frequently Asked Questions (FAQ) and troubleshooting section.",
+            ]
+        },
+        {
+            title: "6.4. API Documentation (if any):",
+            details: [
+                "If any external or internal APIs are developed, document the endpoints, request methods, parameters, and responses.",
+            ]
+        },
+        {
+            title: "6.5. Deployment Documentation:",
+            details: [
+                "Document the steps required to deploy and update the application on production servers.",
+            ]
+        },
+        {
+            title: "6.6. ISO 9001 Compliance Documentation:",
+            details: [
+                "Create a separate document that explains how the application's design and processes comply with ISO 9001 requirements, referencing specific features that support each clause of the standard (e.g., how documents are controlled, how processes are tracked).",
+            ]
+        }
+    ]
   }
 ];
 
