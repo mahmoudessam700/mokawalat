@@ -67,6 +67,7 @@ import {
 import { firestore } from '@/lib/firebase';
 import { Skeleton } from '@/components/ui/skeleton';
 import { format } from 'date-fns';
+import Link from 'next/link';
 
 type ProjectStatus = 'In Progress' | 'Planning' | 'Completed' | 'On Hold';
 
@@ -397,7 +398,9 @@ export default function ProjectsPage() {
                         <DropdownMenuContent align="end">
                           <DropdownMenuLabel>Actions</DropdownMenuLabel>
                           <DropdownMenuItem>Edit</DropdownMenuItem>
-                          <DropdownMenuItem>View Details</DropdownMenuItem>
+                          <DropdownMenuItem asChild>
+                            <Link href={`/projects/${project.id}`}>View Details</Link>
+                          </DropdownMenuItem>
                           <DropdownMenuItem>Assign Team</DropdownMenuItem>
                           <DropdownMenuItem className="text-destructive">
                             Delete
