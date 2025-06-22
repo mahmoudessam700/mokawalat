@@ -1,7 +1,7 @@
 'use server';
 
 import { firestore } from '@/lib/firebase';
-import { collection, addDoc, doc, deleteDoc, updateDoc } from 'firebase/firestore';
+import { collection, addDoc, doc, deleteDoc, updateDoc, runTransaction } from 'firebase/firestore';
 import { z } from 'zod';
 import { revalidatePath } from 'next/cache';
 
@@ -72,5 +72,64 @@ export async function deleteInventoryItem(itemId: string) {
   } catch (error) {
     console.error('Error deleting item:', error);
     return { success: false, message: 'Failed to delete item.' };
+  }
+}
+
+
+const adjustStockFormSchema = z.object({
+  adjustment: z.coerce.number().int().refine(val => val !== 0, { message: "Adjustment cannot be zero." }),
+});
+
+export type AdjustStockFormValues = z.infer<typeof adjustStockFormSchema>;
+
+export async function adjustStock(itemId: string, values: AdjustStockFormValues) {
+  if (!itemId) {
+    return { message: 'Item ID is required.', errors: { _server: ['Item ID not provided.'] } };
+  }
+
+  const validatedFields = adjustStockFormSchema.safeParse(values);
+
+  if (!validatedFields.success) {
+    return {
+      errors: validatedFields.error.flatten().fieldErrors,
+      message: 'Invalid data provided.',
+    };
+  }
+
+  const { adjustment } = validatedFields.data;
+
+  try {
+    const itemRef = doc(firestore, 'inventory', itemId);
+    
+    await runTransaction(firestore, async (transaction) => {
+      const itemDoc = await transaction.get(itemRef);
+      if (!itemDoc.exists()) {
+        throw new Error("Item not found.");
+      }
+
+      const currentQuantity = itemDoc.data().quantity;
+      const newQuantity = currentQuantity + adjustment;
+
+      if (newQuantity < 0) {
+        throw new Error("Stock quantity cannot be negative.");
+      }
+
+      let newStatus: 'In Stock' | 'Low Stock' | 'Out of Stock';
+      if (newQuantity <= 0) {
+        newStatus = 'Out of Stock';
+      } else if (newQuantity <= 10) {
+        newStatus = 'Low Stock';
+      } else {
+        newStatus = 'In Stock';
+      }
+
+      transaction.update(itemRef, { quantity: newQuantity, status: newStatus });
+    });
+
+    revalidatePath('/inventory');
+    return { message: 'Stock adjusted successfully.', errors: null };
+  } catch (error: any) {
+    console.error('Error adjusting stock:', error);
+    return { message: error.message || 'Failed to adjust stock.', errors: { _server: [error.message || 'An unexpected error occurred.'] } };
   }
 }

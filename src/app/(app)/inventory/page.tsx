@@ -69,6 +69,7 @@ import { useToast } from '@/hooks/use-toast';
 import { collection, onSnapshot, query, orderBy } from 'firebase/firestore';
 import { firestore } from '@/lib/firebase';
 import { Skeleton } from '@/components/ui/skeleton';
+import { AdjustStockDialog } from './adjust-stock-dialog';
 
 // Define the inventory item type
 type InventoryItem = {
@@ -475,7 +476,11 @@ export default function InventoryPage() {
                             setItemToEdit(item);
                             setIsDialogOpen(true);
                           }}>Edit</DropdownMenuItem>
-                          <DropdownMenuItem>Adjust Stock</DropdownMenuItem>
+                          <AdjustStockDialog item={item}>
+                            <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
+                                Adjust Stock
+                            </DropdownMenuItem>
+                          </AdjustStockDialog>
                           <DropdownMenuItem
                             className="text-destructive"
                             onSelect={() => {
