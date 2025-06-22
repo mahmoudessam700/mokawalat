@@ -7,7 +7,7 @@ import { firestore } from '@/lib/firebase';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
-import { ArrowLeft, User, Mail, Phone, Building, ShoppingCart, Truck, Star, FileText, PlusCircle, Trash2, Loader2, DollarSign } from 'lucide-react';
+import { ArrowLeft, User, Mail, Phone, Building, ShoppingCart, Truck, Star, FileText, PlusCircle, Trash2, Loader2, DollarSign, ExternalLink } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import {
@@ -94,6 +94,7 @@ const contractFormSchema = z.object({
   effectiveDate: z.string().refine((date) => !isNaN(Date.parse(date)), {
     message: 'Please select a valid date.',
   }),
+  fileUrl: z.string().url({ message: "Please enter a valid URL." }).optional().or(z.literal('')),
 });
 type ContractFormValues = z.infer<typeof contractFormSchema>;
 
@@ -194,6 +195,7 @@ export default function SupplierDetailPage({ params }: { params: { id: string } 
     defaultValues: {
       title: '',
       effectiveDate: new Date().toISOString().split('T')[0],
+      fileUrl: '',
     },
   });
 
@@ -379,6 +381,19 @@ export default function SupplierDetailPage({ params }: { params: { id: string } 
                                                     </FormItem>
                                                 )}
                                             />
+                                             <FormField
+                                                control={contractForm.control}
+                                                name="fileUrl"
+                                                render={({ field }) => (
+                                                    <FormItem>
+                                                    <FormLabel>Document URL (Optional)</FormLabel>
+                                                    <FormControl>
+                                                        <Input type="url" placeholder="https://..." {...field} />
+                                                    </FormControl>
+                                                    <FormMessage />
+                                                    </FormItem>
+                                                )}
+                                            />
                                             <DialogFooter>
                                                 <Button type="submit" disabled={contractForm.formState.isSubmitting}>
                                                     {contractForm.formState.isSubmitting ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Saving...</> : 'Save Contract'}
@@ -397,7 +412,7 @@ export default function SupplierDetailPage({ params }: { params: { id: string } 
                                     <TableRow>
                                         <TableHead>Title</TableHead>
                                         <TableHead>Effective Date</TableHead>
-                                        {profile?.role === 'admin' && <TableHead className="text-right">Actions</TableHead>}
+                                        <TableHead className="text-right">Actions</TableHead>
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>
@@ -405,13 +420,23 @@ export default function SupplierDetailPage({ params }: { params: { id: string } 
                                         <TableRow key={contract.id}>
                                             <TableCell className="font-medium">{contract.title}</TableCell>
                                             <TableCell>{contract.effectiveDate ? format(contract.effectiveDate.toDate(), 'PPP') : 'N/A'}</TableCell>
-                                            {profile?.role === 'admin' && (
-                                                <TableCell className="text-right">
-                                                    <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive" onClick={() => setContractToDelete(contract)}>
-                                                        <Trash2 className="size-4" />
-                                                    </Button>
-                                                </TableCell>
-                                            )}
+                                            <TableCell className="text-right">
+                                                <div className="flex items-center justify-end gap-2">
+                                                    {contract.fileUrl && (
+                                                        <Button asChild variant="outline" size="icon" className="h-8 w-8">
+                                                            <Link href={contract.fileUrl} target="_blank" rel="noopener noreferrer">
+                                                                <ExternalLink className="size-4" />
+                                                                <span className="sr-only">View Contract</span>
+                                                            </Link>
+                                                        </Button>
+                                                    )}
+                                                    {profile?.role === 'admin' && (
+                                                        <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive h-8 w-8" onClick={() => setContractToDelete(contract)}>
+                                                            <Trash2 className="size-4" />
+                                                        </Button>
+                                                    )}
+                                                </div>
+                                            </TableCell>
                                         </TableRow>
                                     ))}
                                 </TableBody>

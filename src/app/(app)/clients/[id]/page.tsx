@@ -7,7 +7,7 @@ import { firestore } from '@/lib/firebase';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
-import { ArrowLeft, User, Phone, Mail, PlusCircle, Loader2, MessageSquare, Briefcase, PhoneCall, MailIcon, Users, NotepadText, Lightbulb, Sparkles, AlertCircle, FileText, Trash2, DollarSign } from 'lucide-react';
+import { ArrowLeft, User, Phone, Mail, PlusCircle, Loader2, MessageSquare, Briefcase, PhoneCall, MailIcon, Users, NotepadText, Lightbulb, Sparkles, AlertCircle, FileText, Trash2, DollarSign, ExternalLink } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import {
@@ -60,6 +60,7 @@ type Contract = {
   title: string;
   effectiveDate: Timestamp;
   value?: number;
+  fileUrl?: string;
 };
 
 type Transaction = {
@@ -99,6 +100,7 @@ const contractFormSchema = z.object({
     message: 'Please select a valid date.',
   }),
   value: z.coerce.number().optional(),
+  fileUrl: z.string().url({ message: "Please enter a valid URL." }).optional().or(z.literal('')),
 });
 type ContractFormValues = z.infer<typeof contractFormSchema>;
 
@@ -255,7 +257,7 @@ export default function ClientDetailPage({ params }: { params: { id: string } })
 
   const contractForm = useForm<ContractFormValues>({
     resolver: zodResolver(contractFormSchema),
-    defaultValues: { title: '', effectiveDate: new Date().toISOString().split('T')[0], value: 0 },
+    defaultValues: { title: '', effectiveDate: new Date().toISOString().split('T')[0], value: 0, fileUrl: '' },
   });
 
   async function onInteractionSubmit(values: InteractionFormValues) {
@@ -425,6 +427,7 @@ export default function ClientDetailPage({ params }: { params: { id: string } })
                                                 <FormField control={contractForm.control} name="effectiveDate" render={({ field }) => (<FormItem><FormLabel>Effective Date</FormLabel><FormControl><Input type="date" {...field} /></FormControl><FormMessage /></FormItem>)} />
                                                 <FormField control={contractForm.control} name="value" render={({ field }) => (<FormItem><FormLabel>Value (LE) (Optional)</FormLabel><FormControl><Input type="number" placeholder="e.g., 500000" {...field} /></FormControl><FormMessage /></FormItem>)} />
                                             </div>
+                                            <FormField control={contractForm.control} name="fileUrl" render={({ field }) => (<FormItem><FormLabel>Document URL (Optional)</FormLabel><FormControl><Input type="url" placeholder="https://..." {...field} /></FormControl><FormMessage /></FormItem>)} />
                                             <DialogFooter><Button type="submit" disabled={contractForm.formState.isSubmitting}>{contractForm.formState.isSubmitting ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Saving...</> : 'Save Contract'}</Button></DialogFooter>
                                         </form>
                                     </Form>
@@ -434,7 +437,7 @@ export default function ClientDetailPage({ params }: { params: { id: string } })
                     </CardHeader>
                     <CardContent>
                         {contracts.length > 0 ? (
-                            <Table><TableHeader><TableRow><TableHead>Title</TableHead><TableHead>Value</TableHead><TableHead>Effective Date</TableHead>{profile?.role === 'admin' && <TableHead className="text-right">Actions</TableHead>}</TableRow></TableHeader><TableBody>{contracts.map(contract => (<TableRow key={contract.id}><TableCell className="font-medium">{contract.title}</TableCell><TableCell>{contract.value ? formatCurrency(contract.value) : 'N/A'}</TableCell><TableCell>{contract.effectiveDate ? format(contract.effectiveDate.toDate(), 'PPP') : 'N/A'}</TableCell>{profile?.role === 'admin' && (<TableCell className="text-right"><Button variant="ghost" size="icon" className="text-destructive hover:text-destructive" onClick={() => setContractToDelete(contract)}><Trash2 className="size-4" /></Button></TableCell>)}</TableRow>))}</TableBody></Table>
+                            <Table><TableHeader><TableRow><TableHead>Title</TableHead><TableHead>Value</TableHead><TableHead>Effective Date</TableHead><TableHead className="text-right">Actions</TableHead></TableRow></TableHeader><TableBody>{contracts.map(contract => (<TableRow key={contract.id}><TableCell className="font-medium">{contract.title}</TableCell><TableCell>{contract.value ? formatCurrency(contract.value) : 'N/A'}</TableCell><TableCell>{contract.effectiveDate ? format(contract.effectiveDate.toDate(), 'PPP') : 'N/A'}</TableCell><TableCell className="text-right"><div className="flex items-center justify-end gap-2">{contract.fileUrl && (<Button asChild variant="outline" size="icon" className="h-8 w-8"><Link href={contract.fileUrl} target="_blank" rel="noopener noreferrer"><ExternalLink className="size-4" /><span className="sr-only">View Contract</span></Link></Button>)}{profile?.role === 'admin' && (<Button variant="ghost" size="icon" className="text-destructive hover:text-destructive h-8 w-8" onClick={() => setContractToDelete(contract)}><Trash2 className="size-4" /></Button>)}</div></TableCell></TableRow>))}</TableBody></Table>
                         ) : (
                             <div className="flex flex-col items-center justify-center gap-2 py-8 text-center text-muted-foreground"><FileText className="size-12" /><p>No contracts found for this client.</p></div>
                         )}

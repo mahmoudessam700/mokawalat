@@ -118,6 +118,7 @@ const contractFormSchema = z.object({
   effectiveDate: z.string().refine((date) => !isNaN(Date.parse(date)), {
     message: 'Please select a valid date.',
   }),
+  fileUrl: z.string().url({ message: "Please enter a valid URL." }).optional().or(z.literal('')),
 });
 
 export type ContractFormValues = z.infer<typeof contractFormSchema>;

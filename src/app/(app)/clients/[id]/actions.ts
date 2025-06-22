@@ -1,3 +1,4 @@
+
 'use server';
 
 import { firestore } from '@/lib/firebase';
@@ -94,6 +95,7 @@ const contractFormSchema = z.object({
     message: 'Please select a valid date.',
   }),
   value: z.coerce.number().optional(),
+  fileUrl: z.string().url({ message: "Please enter a valid URL." }).optional().or(z.literal('')),
 });
 
 export type ContractFormValues = z.infer<typeof contractFormSchema>;
