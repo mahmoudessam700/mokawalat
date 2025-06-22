@@ -51,7 +51,7 @@ import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useState, useEffect } from 'react';
-import { addClient, deleteClient } from './actions';
+import { addClient, deleteClient, updateClient } from './actions';
 import { useToast } from '@/hooks/use-toast';
 import { collection, onSnapshot, query, orderBy, type Timestamp } from 'firebase/firestore';
 import { firestore } from '@/lib/firebase';
@@ -88,7 +88,8 @@ type ClientFormValues = z.infer<typeof clientFormSchema>;
 export default function ClientsPage() {
   const [clients, setClients] = useState<Client[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+  const [isFormDialogOpen, setIsFormDialogOpen] = useState(false);
+  const [clientToEdit, setClientToEdit] = useState<Client | null>(null);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [clientToDelete, setClientToDelete] = useState<Client | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -127,8 +128,19 @@ export default function ClientsPage() {
     },
   });
 
+  useEffect(() => {
+    if (clientToEdit) {
+      form.reset(clientToEdit);
+    } else {
+      form.reset(form.formState.defaultValues);
+    }
+  }, [clientToEdit, form]);
+
+
   async function onSubmit(values: ClientFormValues) {
-    const result = await addClient(values);
+    const result = clientToEdit
+        ? await updateClient(clientToEdit.id, values)
+        : await addClient(values);
 
     if (result.errors) {
       toast({
@@ -141,8 +153,8 @@ export default function ClientsPage() {
         title: 'Success',
         description: result.message,
       });
-      form.reset();
-      setIsAddDialogOpen(false);
+      setIsFormDialogOpen(false);
+      setClientToEdit(null);
     }
   }
 
@@ -169,6 +181,13 @@ export default function ClientsPage() {
     setClientToDelete(null);
   }
 
+  const handleFormDialogOpenChange = (open: boolean) => {
+    if (!open) {
+      setClientToEdit(null);
+    }
+    setIsFormDialogOpen(open);
+  }
+
 
   return (
     <>
@@ -182,18 +201,18 @@ export default function ClientsPage() {
             Manage your current and potential clients.
           </p>
         </div>
-        <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
+        <Dialog open={isFormDialogOpen} onOpenChange={handleFormDialogOpenChange}>
           <DialogTrigger asChild>
-            <Button>
+            <Button onClick={() => setClientToEdit(null)}>
               <PlusCircle className="mr-2" />
               Add Client
             </Button>
           </DialogTrigger>
           <DialogContent className="sm:max-w-[480px]">
             <DialogHeader>
-              <DialogTitle>Add New Client</DialogTitle>
+              <DialogTitle>{clientToEdit ? 'Edit Client' : 'Add New Client'}</DialogTitle>
               <DialogDescription>
-                Fill in the details below to add a new client.
+                {clientToEdit ? "Update the client's details below." : 'Fill in the details below to add a new client.'}
               </DialogDescription>
             </DialogHeader>
             <Form {...form}>
@@ -284,7 +303,7 @@ export default function ClientsPage() {
                         Saving...
                       </>
                     ) : (
-                      'Save Client'
+                      clientToEdit ? 'Save Changes' : 'Save Client'
                     )}
                   </Button>
                 </DialogFooter>
@@ -351,7 +370,10 @@ export default function ClientsPage() {
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
                           <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                          <DropdownMenuItem>Edit</DropdownMenuItem>
+                          <DropdownMenuItem onSelect={() => {
+                            setClientToEdit(client);
+                            setIsFormDialogOpen(true);
+                          }}>Edit</DropdownMenuItem>
                           <DropdownMenuItem>View Interactions</DropdownMenuItem>
                           <DropdownMenuItem
                             className="text-destructive"

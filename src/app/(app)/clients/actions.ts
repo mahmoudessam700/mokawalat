@@ -1,7 +1,7 @@
 'use server';
 
 import { firestore } from '@/lib/firebase';
-import { collection, addDoc, serverTimestamp, doc, deleteDoc } from 'firebase/firestore';
+import { collection, addDoc, serverTimestamp, doc, deleteDoc, updateDoc } from 'firebase/firestore';
 import { z } from 'zod';
 import { revalidatePath } from 'next/cache';
 
@@ -35,6 +35,31 @@ export async function addClient(values: ClientFormValues) {
   } catch (error) {
     console.error('Error adding client:', error);
     return { message: 'Failed to add client.', errors: { _server: ['An unexpected error occurred.'] } };
+  }
+}
+
+export async function updateClient(clientId: string, values: ClientFormValues) {
+  if (!clientId) {
+    return { message: 'Client ID is required.', errors: { _server: ['Client ID not provided.'] } };
+  }
+
+  const validatedFields = clientFormSchema.safeParse(values);
+
+  if (!validatedFields.success) {
+    return {
+      errors: validatedFields.error.flatten().fieldErrors,
+      message: 'Invalid data provided. Please check the form.',
+    };
+  }
+
+  try {
+    const clientRef = doc(firestore, 'clients', clientId);
+    await updateDoc(clientRef, validatedFields.data);
+    revalidatePath('/clients');
+    return { message: 'Client updated successfully.', errors: null };
+  } catch (error) {
+    console.error('Error updating client:', error);
+    return { message: 'Failed to update client.', errors: { _server: ['An unexpected error occurred.'] } };
   }
 }
 
