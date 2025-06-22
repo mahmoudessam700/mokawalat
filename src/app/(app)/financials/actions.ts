@@ -33,6 +33,14 @@ export async function addTransaction(values: TransactionFormValues) {
         date: new Date(validatedFields.data.date),
         createdAt: serverTimestamp(),
     });
+
+    await addDoc(collection(firestore, 'activityLog'), {
+        message: `${validatedFields.data.type} of ${validatedFields.data.amount.toLocaleString()} recorded: ${validatedFields.data.description}`,
+        type: "TRANSACTION_ADDED",
+        link: `/financials`,
+        timestamp: serverTimestamp(),
+    });
+
     revalidatePath('/financials');
     return { message: 'Transaction added successfully.', errors: null };
   } catch (error) {

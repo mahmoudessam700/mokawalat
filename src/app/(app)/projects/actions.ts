@@ -44,7 +44,7 @@ export async function addProject(values: ProjectFormValues) {
   try {
     const { name, description, budget, startDate, status } =
       validatedFields.data;
-    await addDoc(collection(firestore, 'projects'), {
+    const projectRef = await addDoc(collection(firestore, 'projects'), {
       name,
       description: description || '',
       budget,
@@ -52,6 +52,14 @@ export async function addProject(values: ProjectFormValues) {
       status,
       createdAt: serverTimestamp(),
     });
+
+    await addDoc(collection(firestore, 'activityLog'), {
+        message: `New project created: ${name}`,
+        type: "PROJECT_CREATED",
+        link: `/projects/${projectRef.id}`,
+        timestamp: serverTimestamp(),
+    });
+
     revalidatePath('/projects');
     return { message: 'Project added successfully.', errors: null };
   } catch (error) {

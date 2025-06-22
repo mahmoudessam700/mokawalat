@@ -26,10 +26,18 @@ export async function addClient(values: ClientFormValues) {
   }
 
   try {
-    await addDoc(collection(firestore, 'clients'), {
+    const clientRef = await addDoc(collection(firestore, 'clients'), {
       ...validatedFields.data,
       createdAt: serverTimestamp(),
     });
+
+    await addDoc(collection(firestore, 'activityLog'), {
+        message: `New client added: ${validatedFields.data.name}`,
+        type: "CLIENT_ADDED",
+        link: `/clients/${clientRef.id}`,
+        timestamp: serverTimestamp(),
+    });
+
     revalidatePath('/clients');
     return { message: 'Client added successfully.', errors: null };
   } catch (error) {

@@ -16,6 +16,9 @@ import {
   TrendingUp,
   TrendingDown,
   Minus,
+  Contact,
+  Bell,
+  FileText,
 } from 'lucide-react';
 import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from 'recharts';
 import {
@@ -31,10 +34,12 @@ import {
   query,
   where,
   type Timestamp,
+  limit,
+  orderBy,
 } from 'firebase/firestore';
 import { firestore } from '@/lib/firebase';
 import { Skeleton } from '@/components/ui/skeleton';
-import { startOfMonth, endOfMonth } from 'date-fns';
+import { startOfMonth, endOfMonth, formatDistanceToNow } from 'date-fns';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
@@ -67,6 +72,13 @@ type PendingTask = {
   type: string;
   link: string;
 };
+type Activity = {
+  id: string;
+  message: string;
+  type: string;
+  link: string;
+  timestamp: Timestamp;
+};
 
 const formatCurrency = (value: number) => {
   const formatter = new Intl.NumberFormat('en-US', {
@@ -75,6 +87,15 @@ const formatCurrency = (value: number) => {
   });
   return `LE ${formatter.format(value)}`;
 };
+
+const activityIcons: { [key: string]: React.ReactNode } = {
+  PROJECT_CREATED: <Briefcase className="size-4" />,
+  CLIENT_ADDED: <Contact className="size-4" />,
+  EMPLOYEE_HIRED: <Users className="size-4" />,
+  TRANSACTION_ADDED: <DollarSign className="size-4" />,
+  DEFAULT: <Bell className="size-4" />,
+};
+
 
 export default function DashboardPage() {
   const [projectCount, setProjectCount] = useState(0);
@@ -88,6 +109,7 @@ export default function DashboardPage() {
   const [procurementTasks, setProcurementTasks] = useState<PendingTask[]>([]);
   const [inventoryTasks, setInventoryTasks] = useState<PendingTask[]>([]);
   const [materialRequestTasks, setMaterialRequestTasks] = useState<PendingTask[]>([]);
+  const [recentActivities, setRecentActivities] = useState<Activity[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   const pendingTasks = useMemo(
@@ -229,6 +251,16 @@ export default function DashboardPage() {
       })
     );
 
+    const qActivities = query(collection(firestore, 'activityLog'), orderBy('timestamp', 'desc'), limit(5));
+    unsubscribes.push(onSnapshot(qActivities, (snapshot) => {
+        const activitiesData: Activity[] = [];
+        snapshot.forEach(doc => {
+            activitiesData.push({ id: doc.id, ...doc.data() } as Activity);
+        });
+        setRecentActivities(activitiesData);
+    }));
+
+
     const timer = setTimeout(() => setIsLoading(false), 1500);
     unsubscribes.push(() => clearTimeout(timer));
 
@@ -342,8 +374,8 @@ export default function DashboardPage() {
           </CardContent>
         </Card>
       </div>
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-        <Card>
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+        <Card className="lg:col-span-2">
           <CardHeader>
             <CardTitle>Project Status Overview</CardTitle>
           </CardHeader>
@@ -423,6 +455,60 @@ export default function DashboardPage() {
               <div className="flex h-24 flex-col items-center justify-center text-center">
                 <p className="text-sm text-muted-foreground">
                   You have no pending tasks.
+                </p>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+       <div className="grid grid-cols-1 gap-4">
+        <Card>
+          <CardHeader>
+            <CardTitle>Recent Activity</CardTitle>
+            <CardDescription>
+              A log of recent events across the system.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            {isLoading ? (
+              <div className="space-y-4">
+                {Array.from({ length: 5 }).map((_, i) => (
+                  <div key={i} className="flex items-center gap-4">
+                    <Skeleton className="h-8 w-8 rounded-full" />
+                    <div className="space-y-2">
+                        <Skeleton className="h-4 w-[300px]" />
+                        <Skeleton className="h-3 w-[150px]" />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : recentActivities.length > 0 ? (
+              <div className="space-y-6">
+                {recentActivities.map((activity) => (
+                  <div key={activity.id} className="flex items-start gap-4">
+                    <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
+                      {activityIcons[activity.type] || activityIcons.DEFAULT}
+                    </div>
+                    <div className="flex-1">
+                      <p className="text-sm font-medium">{activity.message}</p>
+                      <p className="text-xs text-muted-foreground">
+                        <Link href={activity.link} className="hover:underline">
+                          View Details
+                        </Link>{' '}
+                        &middot;{' '}
+                        {activity.timestamp ? formatDistanceToNow(activity.timestamp.toDate(), {
+                          addSuffix: true,
+                        }) : ''}
+                      </p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="flex h-24 flex-col items-center justify-center text-center">
+                <FileText className="size-8 text-muted-foreground" />
+                <p className="mt-2 text-sm text-muted-foreground">
+                  No recent activity.
                 </p>
               </div>
             )}

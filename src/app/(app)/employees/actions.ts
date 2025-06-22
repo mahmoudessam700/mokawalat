@@ -1,7 +1,7 @@
 'use server';
 
 import { firestore } from '@/lib/firebase';
-import { collection, addDoc, doc, deleteDoc, updateDoc } from 'firebase/firestore';
+import { collection, addDoc, doc, deleteDoc, updateDoc, serverTimestamp } from 'firebase/firestore';
 import { z } from 'zod';
 import { revalidatePath } from 'next/cache';
 
@@ -26,7 +26,15 @@ export async function addEmployee(values: EmployeeFormValues) {
   }
 
   try {
-    await addDoc(collection(firestore, 'employees'), validatedFields.data);
+    const employeeRef = await addDoc(collection(firestore, 'employees'), validatedFields.data);
+    
+    await addDoc(collection(firestore, 'activityLog'), {
+        message: `New employee hired: ${validatedFields.data.name}`,
+        type: "EMPLOYEE_HIRED",
+        link: `/employees/${employeeRef.id}`,
+        timestamp: serverTimestamp(),
+    });
+    
     revalidatePath('/employees');
     return { message: 'Employee added successfully.', errors: null };
   } catch (error) {
