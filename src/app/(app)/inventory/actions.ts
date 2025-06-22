@@ -1,7 +1,7 @@
 'use server';
 
 import { firestore } from '@/lib/firebase';
-import { collection, addDoc, doc, deleteDoc } from 'firebase/firestore';
+import { collection, addDoc, doc, deleteDoc, updateDoc } from 'firebase/firestore';
 import { z } from 'zod';
 import { revalidatePath } from 'next/cache';
 
@@ -32,6 +32,31 @@ export async function addInventoryItem(values: InventoryFormValues) {
   } catch (error) {
     console.error('Error adding inventory item:', error);
     return { message: 'Failed to add item.', errors: { _server: ['An unexpected error occurred.'] } };
+  }
+}
+
+export async function updateInventoryItem(itemId: string, values: InventoryFormValues) {
+  if (!itemId) {
+    return { message: 'Item ID is required.', errors: { _server: ['Item ID not provided.'] } };
+  }
+
+  const validatedFields = inventoryFormSchema.safeParse(values);
+
+  if (!validatedFields.success) {
+    return {
+      errors: validatedFields.error.flatten().fieldErrors,
+      message: 'Invalid data provided. Please check the form.',
+    };
+  }
+
+  try {
+    const itemRef = doc(firestore, 'inventory', itemId);
+    await updateDoc(itemRef, validatedFields.data);
+    revalidatePath('/inventory');
+    return { message: 'Item updated successfully.', errors: null };
+  } catch (error) {
+    console.error('Error updating inventory item:', error);
+    return { message: 'Failed to update item.', errors: { _server: ['An unexpected error occurred.'] } };
   }
 }
 

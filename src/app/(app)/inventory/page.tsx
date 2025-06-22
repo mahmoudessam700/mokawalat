@@ -64,7 +64,7 @@ import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useState, useEffect } from 'react';
-import { addInventoryItem, deleteInventoryItem } from './actions';
+import { addInventoryItem, deleteInventoryItem, updateInventoryItem } from './actions';
 import { useToast } from '@/hooks/use-toast';
 import { collection, onSnapshot, query, orderBy } from 'firebase/firestore';
 import { firestore } from '@/lib/firebase';
@@ -94,6 +94,7 @@ export default function InventoryPage() {
   const [items, setItems] = useState<InventoryItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [itemToEdit, setItemToEdit] = useState<InventoryItem | null>(null);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [itemToDelete, setItemToDelete] = useState<InventoryItem | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -139,8 +140,18 @@ export default function InventoryPage() {
     },
   });
 
+  useEffect(() => {
+    if (itemToEdit) {
+      form.reset(itemToEdit);
+    } else {
+      form.reset(form.formState.defaultValues);
+    }
+  }, [itemToEdit, form]);
+
   async function onSubmit(values: InventoryFormValues) {
-    const result = await addInventoryItem(values);
+    const result = itemToEdit
+        ? await updateInventoryItem(itemToEdit.id, values)
+        : await addInventoryItem(values);
 
     if (result.errors) {
       toast({
@@ -153,8 +164,8 @@ export default function InventoryPage() {
         title: 'Success',
         description: result.message,
       });
-      form.reset();
       setIsDialogOpen(false);
+      setItemToEdit(null);
     }
   }
 
@@ -180,6 +191,13 @@ export default function InventoryPage() {
     setIsDeleteDialogOpen(false);
     setItemToDelete(null);
   }
+  
+  const handleFormDialogOpenChange = (open: boolean) => {
+    if (!open) {
+      setItemToEdit(null);
+    }
+    setIsDialogOpen(open);
+  }
 
   return (
     <>
@@ -193,18 +211,18 @@ export default function InventoryPage() {
             Track and manage materials, tools, and equipment.
           </p>
         </div>
-        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+        <Dialog open={isDialogOpen} onOpenChange={handleFormDialogOpenChange}>
           <DialogTrigger asChild>
-            <Button>
+            <Button onClick={() => setItemToEdit(null)}>
               <PlusCircle className="mr-2" />
               Add Item
             </Button>
           </DialogTrigger>
           <DialogContent className="sm:max-w-[480px]">
             <DialogHeader>
-              <DialogTitle>Add New Inventory Item</DialogTitle>
+              <DialogTitle>{itemToEdit ? 'Edit Item' : 'Add New Inventory Item'}</DialogTitle>
               <DialogDescription>
-                Fill in the details below to add a new item to the inventory.
+                {itemToEdit ? "Update the item's details below." : 'Fill in the details below to add a new item to the inventory.'}
               </DialogDescription>
             </DialogHeader>
             <Form {...form}>
@@ -236,7 +254,7 @@ export default function InventoryPage() {
                       <FormLabel>Category</FormLabel>
                       <Select
                         onValueChange={field.onChange}
-                        defaultValue={field.value}
+                        value={field.value}
                       >
                         <FormControl>
                           <SelectTrigger>
@@ -290,7 +308,7 @@ export default function InventoryPage() {
                         <FormLabel>Warehouse</FormLabel>
                         <Select
                           onValueChange={field.onChange}
-                          defaultValue={field.value}
+                          value={field.value}
                         >
                           <FormControl>
                             <SelectTrigger>
@@ -323,7 +341,7 @@ export default function InventoryPage() {
                       <FormLabel>Status</FormLabel>
                       <Select
                         onValueChange={field.onChange}
-                        defaultValue={field.value}
+                        value={field.value}
                       >
                         <FormControl>
                           <SelectTrigger>
@@ -350,7 +368,7 @@ export default function InventoryPage() {
                         Saving...
                       </>
                     ) : (
-                      'Save Item'
+                      itemToEdit ? 'Save Changes' : 'Save Item'
                     )}
                   </Button>
                 </DialogFooter>
@@ -453,7 +471,10 @@ export default function InventoryPage() {
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
                           <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                          <DropdownMenuItem>Edit</DropdownMenuItem>
+                          <DropdownMenuItem onSelect={() => {
+                            setItemToEdit(item);
+                            setIsDialogOpen(true);
+                          }}>Edit</DropdownMenuItem>
                           <DropdownMenuItem>Adjust Stock</DropdownMenuItem>
                           <DropdownMenuItem
                             className="text-destructive"
