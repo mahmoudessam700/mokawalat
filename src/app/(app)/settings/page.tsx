@@ -15,13 +15,14 @@ const settingsLinks = [
     title: 'User Management',
     description: 'Manage user accounts and roles.',
     icon: <Users className="size-8" />,
+    disabled: false,
   },
   {
-    href: '#',
+    href: '/settings/appearance',
     title: 'Theme & Appearance',
     description: 'Customize the look and feel of the application.',
     icon: <Palette className="size-8" />,
-    disabled: true,
+    disabled: false,
   },
 ];
 
