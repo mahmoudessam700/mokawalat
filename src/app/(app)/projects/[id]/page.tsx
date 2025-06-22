@@ -28,9 +28,8 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { z } from 'zod';
 import { useToast } from '@/hooks/use-toast';
-import { addMaterialRequest, updateMaterialRequestStatus, type MaterialRequestFormValues } from '../actions';
+import { addMaterialRequest, updateMaterialRequestStatus, materialRequestFormSchema, type MaterialRequestFormValues } from '../../material-requests/actions';
 import { Loader2 } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ProjectAiAssistant } from './project-ai-assistant';
@@ -103,12 +102,6 @@ const formatCurrency = (value: number) => {
     });
     return `LE ${formatter.format(value)}`;
 };
-
-const materialRequestFormSchema = z.object({
-  itemId: z.string().min(1, 'Please select an item.'),
-  quantity: z.coerce.number().min(1, 'Quantity must be at least 1.'),
-});
-
 
 export default function ProjectDetailPage({ params }: { params: { id: string } }) {
   const [project, setProject] = useState<Project | null>(null);
