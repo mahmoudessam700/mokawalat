@@ -3,10 +3,10 @@
 import { useEffect, useState } from 'react';
 import { doc, onSnapshot, collection, query, orderBy, Timestamp } from 'firebase/firestore';
 import { firestore } from '@/lib/firebase';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
-import { ArrowLeft, User, Phone, Mail, PlusCircle, Loader2, MessageSquare, Briefcase, PhoneCall, MailIcon, Users, NotepadText, Lightbulb, Sparkles, AlertCircle } from 'lucide-react';
+import { ArrowLeft, User, Phone, Mail, PlusCircle, Loader2, MessageSquare, Briefcase, PhoneCall, MailIcon, Users, NotepadText, Lightbulb, Sparkles, AlertCircle, FileText, Trash2, DollarSign } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import {
@@ -27,8 +27,12 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useToast } from '@/hooks/use-toast';
-import { addInteraction, getInteractionSummary } from './actions';
+import { addInteraction, getInteractionSummary, addContract, deleteContract } from './actions';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { useAuth } from '@/hooks/use-auth';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
+
 
 type ClientStatus = 'Lead' | 'Active' | 'Inactive';
 type InteractionType = 'Call' | 'Email' | 'Meeting' | 'Note';
@@ -47,6 +51,13 @@ type Interaction = {
   type: InteractionType;
   notes: string;
   date: Timestamp;
+};
+
+type Contract = {
+  id: string;
+  title: string;
+  effectiveDate: Timestamp;
+  value?: number;
 };
 
 const statusVariant: { [key in ClientStatus]: 'default' | 'secondary' | 'destructive' } = {
@@ -69,8 +80,23 @@ const interactionFormSchema = z.object({
     message: 'Please select a valid date.',
   }),
 });
-
 type InteractionFormValues = z.infer<typeof interactionFormSchema>;
+
+const contractFormSchema = z.object({
+  title: z.string().min(3, 'Contract title must be at least 3 characters long.'),
+  effectiveDate: z.string().refine((date) => !isNaN(Date.parse(date)), {
+    message: 'Please select a valid date.',
+  }),
+  value: z.coerce.number().optional(),
+});
+type ContractFormValues = z.infer<typeof contractFormSchema>;
+
+const formatCurrency = (value: number) => {
+  const formatter = new Intl.NumberFormat('en-US', {
+    minimumFractionDigits: 2,
+  });
+  return `LE ${formatter.format(value)}`;
+};
 
 function ClientAiSummary({ clientId, clientName }: { clientId: string, clientName: string }) {
   const [isLoading, setIsLoading] = useState(false);
@@ -155,19 +181,25 @@ function ClientAiSummary({ clientId, clientName }: { clientId: string, clientNam
 export default function ClientDetailPage({ params }: { params: { id: string } }) {
   const [client, setClient] = useState<Client | null>(null);
   const [interactions, setInteractions] = useState<Interaction[]>([]);
+  const [contracts, setContracts] = useState<Contract[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [isFormDialogOpen, setIsFormDialogOpen] = useState(false);
+  const [isInteractionFormOpen, setIsInteractionFormOpen] = useState(false);
+  const [isContractFormOpen, setIsContractFormOpen] = useState(false);
+  const [contractToDelete, setContractToDelete] = useState<Contract | null>(null);
+  const [isDeletingContract, setIsDeletingContract] = useState(false);
   const { toast } = useToast();
+  const { profile } = useAuth();
   const clientId = params.id;
 
   useEffect(() => {
     if (!clientId) return;
     setIsLoading(true);
 
-    const clientRef = doc(firestore, 'clients', clientId);
+    const unsubscribes: (() => void)[] = [];
     
-    const unsubClient = onSnapshot(clientRef, (doc) => {
+    const clientRef = doc(firestore, 'clients', clientId);
+    unsubscribes.push(onSnapshot(clientRef, (doc) => {
       if (doc.exists()) {
         setClient({ id: doc.id, ...doc.data() } as Client);
       } else {
@@ -176,56 +208,75 @@ export default function ClientDetailPage({ params }: { params: { id: string } })
     }, (err) => {
       console.error('Error fetching client:', err);
       setError('Failed to fetch client details.');
-    });
+    }));
 
     const interactionsQuery = query(collection(firestore, 'clients', clientId, 'interactions'), orderBy('date', 'desc'));
-    const unsubInteractions = onSnapshot(interactionsQuery, (snapshot) => {
-      const interactionsData: Interaction[] = [];
-      snapshot.forEach(doc => {
-        interactionsData.push({ id: doc.id, ...doc.data() } as Interaction);
-      });
-      setInteractions(interactionsData);
-      setIsLoading(false);
+    unsubscribes.push(onSnapshot(interactionsQuery, (snapshot) => {
+      setInteractions(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Interaction)));
     }, (err) => {
        console.error('Error fetching interactions:', err);
        setError('Failed to fetch interactions.');
-       setIsLoading(false);
-    });
+    }));
+    
+    const contractsQuery = query(collection(firestore, 'clients', clientId, 'contracts'), orderBy('effectiveDate', 'desc'));
+    unsubscribes.push(onSnapshot(contractsQuery, (snapshot) => {
+      setContracts(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Contract)));
+    }, (err) => {
+      console.error('Error fetching contracts:', err);
+      setError('Failed to fetch contracts.');
+    }));
 
-    return () => {
-      unsubClient();
-      unsubInteractions();
-    };
+
+    const timer = setTimeout(() => setIsLoading(false), 1500);
+    unsubscribes.push(() => clearTimeout(timer));
+
+    return () => unsubscribes.forEach(unsub => unsub());
   }, [clientId]);
 
-  const form = useForm<InteractionFormValues>({
+  const interactionForm = useForm<InteractionFormValues>({
     resolver: zodResolver(interactionFormSchema),
-    defaultValues: {
-      type: 'Call',
-      notes: '',
-      date: new Date().toISOString().split('T')[0],
-    },
+    defaultValues: { type: 'Call', notes: '', date: new Date().toISOString().split('T')[0] },
+  });
+
+  const contractForm = useForm<ContractFormValues>({
+    resolver: zodResolver(contractFormSchema),
+    defaultValues: { title: '', effectiveDate: new Date().toISOString().split('T')[0], value: 0 },
   });
 
   async function onInteractionSubmit(values: InteractionFormValues) {
     const result = await addInteraction(clientId, values);
-
     if (result.errors) {
-      toast({
-        variant: 'destructive',
-        title: 'Error',
-        description: result.message,
-      });
+      toast({ variant: 'destructive', title: 'Error', description: result.message });
     } else {
-      toast({
-        title: 'Success',
-        description: result.message,
-      });
-      form.reset();
-      setIsFormDialogOpen(false);
+      toast({ title: 'Success', description: result.message });
+      interactionForm.reset();
+      setIsInteractionFormOpen(false);
     }
   }
 
+  async function onContractSubmit(values: ContractFormValues) {
+    const result = await addContract(clientId, values);
+    if (result.errors) {
+      toast({ variant: 'destructive', title: 'Error', description: result.message });
+    } else {
+      toast({ title: 'Success', description: result.message });
+      contractForm.reset();
+      setIsContractFormOpen(false);
+    }
+  }
+
+  async function handleDeleteContract() {
+    if (!contractToDelete) return;
+    setIsDeletingContract(true);
+    const result = await deleteContract(clientId, contractToDelete.id);
+    if (result.success) {
+      toast({ title: 'Success', description: result.message });
+    } else {
+      toast({ variant: 'destructive', title: 'Error', description: result.message });
+    }
+    setIsDeletingContract(false);
+    setContractToDelete(null);
+  }
 
   if (isLoading) {
     return (
@@ -237,13 +288,8 @@ export default function ClientDetailPage({ params }: { params: { id: string } })
                 <Skeleton className="h-4 w-48 mt-2" />
             </div>
         </div>
-        <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-            <div className="lg:col-span-1 space-y-6">
-                <Card><CardContent className="p-6"><Skeleton className="h-32 w-full" /></CardContent></Card>
-                <Card><CardContent className="p-6"><Skeleton className="h-48 w-full" /></CardContent></Card>
-            </div>
-            <Card className="lg:col-span-2"><CardContent className="p-6"><Skeleton className="h-80 w-full" /></CardContent></Card>
-        </div>
+        <Skeleton className="h-10 w-64" />
+        <Card><CardContent className="p-6"><Skeleton className="h-80 w-full" /></CardContent></Card>
       </div>
     );
   }
@@ -267,6 +313,7 @@ export default function ClientDetailPage({ params }: { params: { id: string } })
   if (!client) return null;
 
   return (
+    <>
     <div className="space-y-6">
        <div className="flex items-center gap-4">
             <Button asChild variant="outline" size="icon">
@@ -285,147 +332,111 @@ export default function ClientDetailPage({ params }: { params: { id: string } })
             </div>
         </div>
         
-        <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-           <div className="lg:col-span-1 space-y-6">
-                <Card>
-                    <CardHeader>
-                        <CardTitle>Client Information</CardTitle>
+        <Tabs defaultValue="overview">
+            <TabsList>
+                <TabsTrigger value="overview">Overview</TabsTrigger>
+                <TabsTrigger value="interactions">Interactions</TabsTrigger>
+                <TabsTrigger value="contracts">Contracts</TabsTrigger>
+            </TabsList>
+            <TabsContent value="overview" className="pt-4">
+                 <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+                    <div className="lg:col-span-1 space-y-6">
+                        <Card>
+                            <CardHeader><CardTitle>Client Information</CardTitle></CardHeader>
+                            <CardContent className="space-y-4">
+                                <div className="flex items-center gap-4"><Briefcase className="size-4 text-muted-foreground" /><span className="text-sm">{client.company || 'N/A'}</span></div>
+                                <div className="flex items-center gap-4"><Mail className="size-4 text-muted-foreground" /><a href={`mailto:${client.email}`} className="text-sm hover:underline">{client.email}</a></div>
+                                <div className="flex items-center gap-4"><Phone className="size-4 text-muted-foreground" /><span className="text-sm">{client.phone}</span></div>
+                                <div className="flex items-center gap-4"><User className="size-4 text-muted-foreground" /><Badge variant={statusVariant[client.status]}>{client.status}</Badge></div>
+                            </CardContent>
+                        </Card>
+                    </div>
+                    <div className="lg:col-span-2">
+                        <ClientAiSummary clientId={client.id} clientName={client.name} />
+                    </div>
+                </div>
+            </TabsContent>
+            <TabsContent value="interactions" className="pt-4">
+                 <Card>
+                    <CardHeader className="flex-row items-center justify-between">
+                        <div>
+                            <CardTitle>Interaction History</CardTitle>
+                            <CardDescription>A log of all communications with this client.</CardDescription>
+                        </div>
+                        <Dialog open={isInteractionFormOpen} onOpenChange={setIsInteractionFormOpen}>
+                            <DialogTrigger asChild><Button size="sm"><PlusCircle className="mr-2" /> Log Interaction</Button></DialogTrigger>
+                            <DialogContent>
+                                <DialogHeader>
+                                    <DialogTitle>Log New Interaction</DialogTitle>
+                                    <DialogDescription>Record a new call, email, or meeting.</DialogDescription>
+                                </DialogHeader>
+                                <Form {...interactionForm}>
+                                    <form onSubmit={interactionForm.handleSubmit(onInteractionSubmit)} className="space-y-4 py-4">
+                                        <FormField control={interactionForm.control} name="date" render={({ field }) => (<FormItem><FormLabel>Date</FormLabel><FormControl><Input type="date" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                                        <FormField control={interactionForm.control} name="type" render={({ field }) => (<FormItem><FormLabel>Type</FormLabel><Select onValueChange={field.onChange} defaultValue={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Select interaction type" /></SelectTrigger></FormControl><SelectContent><SelectItem value="Call">Call</SelectItem><SelectItem value="Email">Email</SelectItem><SelectItem value="Meeting">Meeting</SelectItem><SelectItem value="Note">Note</SelectItem></SelectContent></Select><FormMessage /></FormItem>)} />
+                                        <FormField control={interactionForm.control} name="notes" render={({ field }) => (<FormItem><FormLabel>Notes</FormLabel><FormControl><Textarea placeholder="Enter details about the interaction..." {...field} /></FormControl><FormMessage /></FormItem>)} />
+                                        <DialogFooter><Button type="submit" disabled={interactionForm.formState.isSubmitting}>{interactionForm.formState.isSubmitting ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Saving...</> : 'Log Interaction'}</Button></DialogFooter>
+                                    </form>
+                                </Form>
+                            </DialogContent>
+                        </Dialog>
                     </CardHeader>
-                    <CardContent className="space-y-4">
-                        <div className="flex items-center gap-4">
-                            <Briefcase className="size-4 text-muted-foreground" />
-                            <span className="text-sm">{client.company || 'N/A'}</span>
-                        </div>
-                        <div className="flex items-center gap-4">
-                            <Mail className="size-4 text-muted-foreground" />
-                            <a href={`mailto:${client.email}`} className="text-sm hover:underline">{client.email}</a>
-                        </div>
-                        <div className="flex items-center gap-4">
-                            <Phone className="size-4 text-muted-foreground" />
-                            <span className="text-sm">{client.phone}</span>
-                        </div>
-                        <div className="flex items-center gap-4">
-                            <User className="size-4 text-muted-foreground" />
-                            <Badge variant={statusVariant[client.status]}>{client.status}</Badge>
-                        </div>
+                    <CardContent>
+                        {interactions.length > 0 ? (
+                            <Table><TableHeader><TableRow><TableHead className="w-[50px]">Type</TableHead><TableHead className="w-[150px]">Date</TableHead><TableHead>Notes</TableHead></TableRow></TableHeader><TableBody>{interactions.map(interaction => (<TableRow key={interaction.id}><TableCell>{interactionIcons[interaction.type]}</TableCell><TableCell>{interaction.date ? format(interaction.date.toDate(), 'PPP p') : 'N/A'}</TableCell><TableCell className="whitespace-pre-wrap">{interaction.notes}</TableCell></TableRow>))}</TableBody></Table>
+                        ) : (
+                            <div className="flex flex-col items-center justify-center gap-2 py-8 text-center text-muted-foreground"><MessageSquare className="size-12" /><p>No interactions logged yet.</p><p className="text-xs">Use the "Log Interaction" button to add the first one.</p></div>
+                        )}
                     </CardContent>
                 </Card>
-
-                <ClientAiSummary clientId={client.id} clientName={client.name} />
-           </div>
-
-            <Card className="lg:col-span-2">
-                 <CardHeader className="flex-row items-center justify-between">
-                    <div>
-                        <CardTitle>Interaction History</CardTitle>
-                        <CardDescription>A log of all communications with this client.</CardDescription>
-                    </div>
-                    <Dialog open={isFormDialogOpen} onOpenChange={setIsFormDialogOpen}>
-                        <DialogTrigger asChild>
-                            <Button size="sm">
-                                <PlusCircle className="mr-2" /> Log Interaction
-                            </Button>
-                        </DialogTrigger>
-                        <DialogContent>
-                            <DialogHeader>
-                                <DialogTitle>Log New Interaction</DialogTitle>
-                                <DialogDescription>Record a new call, email, or meeting.</DialogDescription>
-                            </DialogHeader>
-                            <Form {...form}>
-                                <form onSubmit={form.handleSubmit(onInteractionSubmit)} className="space-y-4 py-4">
-                                    <FormField
-                                        control={form.control}
-                                        name="date"
-                                        render={({ field }) => (
-                                            <FormItem>
-                                            <FormLabel>Date</FormLabel>
-                                            <FormControl>
-                                                <Input type="date" {...field} />
-                                            </FormControl>
-                                            <FormMessage />
-                                            </FormItem>
-                                        )}
-                                    />
-                                    <FormField
-                                        control={form.control}
-                                        name="type"
-                                        render={({ field }) => (
-                                            <FormItem>
-                                                <FormLabel>Type</FormLabel>
-                                                <Select onValueChange={field.onChange} defaultValue={field.value}>
-                                                    <FormControl>
-                                                    <SelectTrigger>
-                                                        <SelectValue placeholder="Select interaction type" />
-                                                    </SelectTrigger>
-                                                    </FormControl>
-                                                    <SelectContent>
-                                                        <SelectItem value="Call">Call</SelectItem>
-                                                        <SelectItem value="Email">Email</SelectItem>
-                                                        <SelectItem value="Meeting">Meeting</SelectItem>
-                                                        <SelectItem value="Note">Note</SelectItem>
-                                                    </SelectContent>
-                                                </Select>
-                                                <FormMessage />
-                                            </FormItem>
-                                        )}
-                                    />
-                                    <FormField
-                                        control={form.control}
-                                        name="notes"
-                                        render={({ field }) => (
-                                            <FormItem>
-                                            <FormLabel>Notes</FormLabel>
-                                            <FormControl>
-                                                <Textarea placeholder="Enter details about the interaction..." {...field} />
-                                            </FormControl>
-                                            <FormMessage />
-                                            </FormItem>
-                                        )}
-                                    />
-                                    <DialogFooter>
-                                        <Button type="submit" disabled={form.formState.isSubmitting}>
-                                            {form.formState.isSubmitting ? (
-                                                <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Saving...</>
-                                            ) : (
-                                                'Log Interaction'
-                                            )}
-                                        </Button>
-                                    </DialogFooter>
-                                </form>
-                            </Form>
-                        </DialogContent>
-                    </Dialog>
-                </CardHeader>
-                <CardContent>
-                    {interactions.length > 0 ? (
-                        <Table>
-                            <TableHeader>
-                                <TableRow>
-                                    <TableHead className="w-[50px]">Type</TableHead>
-                                    <TableHead className="w-[150px]">Date</TableHead>
-                                    <TableHead>Notes</TableHead>
-                                </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                                {interactions.map(interaction => (
-                                    <TableRow key={interaction.id}>
-                                        <TableCell>{interactionIcons[interaction.type]}</TableCell>
-                                        <TableCell>{interaction.date ? format(interaction.date.toDate(), 'PPP p') : 'N/A'}</TableCell>
-                                        <TableCell className="whitespace-pre-wrap">{interaction.notes}</TableCell>
-                                    </TableRow>
-                                ))}
-                            </TableBody>
-                        </Table>
-                    ) : (
-                        <div className="flex flex-col items-center justify-center gap-2 py-8 text-center text-muted-foreground">
-                            <MessageSquare className="size-12" />
-                            <p>No interactions logged yet.</p>
-                            <p className="text-xs">Use the "Log Interaction" button to add the first one.</p>
+            </TabsContent>
+            <TabsContent value="contracts" className="pt-4">
+                 <Card>
+                    <CardHeader className="flex-row items-center justify-between">
+                        <div>
+                            <CardTitle>Contract Management</CardTitle>
+                            <CardDescription>A list of all contracts and agreements with this client.</CardDescription>
                         </div>
-                    )}
-                </CardContent>
-            </Card>
-        </div>
+                        {profile?.role === 'admin' && (
+                            <Dialog open={isContractFormOpen} onOpenChange={setIsContractFormOpen}>
+                                <DialogTrigger asChild><Button size="sm"><PlusCircle className="mr-2" /> Add Contract</Button></DialogTrigger>
+                                <DialogContent>
+                                    <DialogHeader><DialogTitle>Add New Contract</DialogTitle><DialogDescription>Record a new contract for {client.name}.</DialogDescription></DialogHeader>
+                                    <Form {...contractForm}>
+                                        <form onSubmit={contractForm.handleSubmit(onContractSubmit)} className="space-y-4 py-4">
+                                            <FormField control={contractForm.control} name="title" render={({ field }) => (<FormItem><FormLabel>Contract Title</FormLabel><FormControl><Input placeholder="e.g., Phase 1 Construction Agreement" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                                            <div className="grid grid-cols-2 gap-4">
+                                                <FormField control={contractForm.control} name="effectiveDate" render={({ field }) => (<FormItem><FormLabel>Effective Date</FormLabel><FormControl><Input type="date" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                                                <FormField control={contractForm.control} name="value" render={({ field }) => (<FormItem><FormLabel>Value (LE) (Optional)</FormLabel><FormControl><Input type="number" placeholder="e.g., 500000" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                                            </div>
+                                            <DialogFooter><Button type="submit" disabled={contractForm.formState.isSubmitting}>{contractForm.formState.isSubmitting ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Saving...</> : 'Save Contract'}</Button></DialogFooter>
+                                        </form>
+                                    </Form>
+                                </DialogContent>
+                            </Dialog>
+                        )}
+                    </CardHeader>
+                    <CardContent>
+                        {contracts.length > 0 ? (
+                            <Table><TableHeader><TableRow><TableHead>Title</TableHead><TableHead>Value</TableHead><TableHead>Effective Date</TableHead>{profile?.role === 'admin' && <TableHead className="text-right">Actions</TableHead>}</TableRow></TableHeader><TableBody>{contracts.map(contract => (<TableRow key={contract.id}><TableCell className="font-medium">{contract.title}</TableCell><TableCell>{contract.value ? formatCurrency(contract.value) : 'N/A'}</TableCell><TableCell>{contract.effectiveDate ? format(contract.effectiveDate.toDate(), 'PPP') : 'N/A'}</TableCell>{profile?.role === 'admin' && (<TableCell className="text-right"><Button variant="ghost" size="icon" className="text-destructive hover:text-destructive" onClick={() => setContractToDelete(contract)}><Trash2 className="size-4" /></Button></TableCell>)}</TableRow>))}</TableBody></Table>
+                        ) : (
+                            <div className="flex flex-col items-center justify-center gap-2 py-8 text-center text-muted-foreground"><FileText className="size-12" /><p>No contracts found for this client.</p></div>
+                        )}
+                    </CardContent>
+                </Card>
+            </TabsContent>
+        </Tabs>
     </div>
+
+    <AlertDialog open={!!contractToDelete} onOpenChange={(open) => !open && setContractToDelete(null)}>
+        <AlertDialogContent>
+            <AlertDialogHeader><AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle><AlertDialogDescription>This action cannot be undone. This will permanently delete the contract "{contractToDelete?.title}".</AlertDialogDescription></AlertDialogHeader>
+            <AlertDialogFooter>
+                <AlertDialogCancel onClick={() => setContractToDelete(null)}>Cancel</AlertDialogCancel>
+                <AlertDialogAction onClick={handleDeleteContract} disabled={isDeletingContract} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">{isDeletingContract ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Deleting...</> : <><Trash2 className="mr-2 h-4 w-4" /> Delete</>}</AlertDialogAction>
+            </AlertDialogFooter>
+        </AlertDialogContent>
+    </AlertDialog>
+    </>
   );
 }

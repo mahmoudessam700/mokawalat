@@ -1,7 +1,7 @@
 'use server';
 
 import { firestore } from '@/lib/firebase';
-import { collection, addDoc, serverTimestamp, getDocs, query, orderBy, Timestamp } from 'firebase/firestore';
+import { collection, addDoc, serverTimestamp, getDocs, query, orderBy, Timestamp, doc, deleteDoc } from 'firebase/firestore';
 import { z } from 'zod';
 import { revalidatePath } from 'next/cache';
 import { summarizeClientInteractions } from '@/ai/flows/summarize-client-interactions';
@@ -85,4 +85,55 @@ export async function getInteractionSummary(clientId: string) {
         console.error('Error generating interaction summary:', error);
         return { error: true, message: 'An unexpected error occurred while generating the summary.', data: null };
     }
+}
+
+
+const contractFormSchema = z.object({
+  title: z.string().min(3, 'Contract title must be at least 3 characters long.'),
+  effectiveDate: z.string().refine((date) => !isNaN(Date.parse(date)), {
+    message: 'Please select a valid date.',
+  }),
+  value: z.coerce.number().optional(),
+});
+
+export type ContractFormValues = z.infer<typeof contractFormSchema>;
+
+export async function addContract(clientId: string, values: ContractFormValues) {
+  if (!clientId) {
+    return { message: 'Client ID is required.', errors: { _server: ['Client ID is missing.'] } };
+  }
+
+  const validatedFields = contractFormSchema.safeParse(values);
+  if (!validatedFields.success) {
+    return { errors: validatedFields.error.flatten().fieldErrors, message: 'Invalid data provided.' };
+  }
+
+  try {
+    const contractsRef = collection(firestore, 'clients', clientId, 'contracts');
+    await addDoc(contractsRef, {
+      ...validatedFields.data,
+      effectiveDate: new Date(validatedFields.data.effectiveDate),
+      createdAt: serverTimestamp(),
+    });
+    revalidatePath(`/clients/${clientId}`);
+    return { message: 'Contract added successfully.', errors: null };
+  } catch (error) {
+    console.error('Error adding contract:', error);
+    return { message: 'Failed to add contract.', errors: { _server: ['An unexpected error occurred.'] } };
+  }
+}
+
+export async function deleteContract(clientId: string, contractId: string) {
+  if (!clientId || !contractId) {
+    return { success: false, message: 'Client and Contract ID are required.' };
+  }
+
+  try {
+    await deleteDoc(doc(firestore, 'clients', clientId, 'contracts', contractId));
+    revalidatePath(`/clients/${clientId}`);
+    return { success: true, message: 'Contract deleted successfully.' };
+  } catch (error) {
+    console.error('Error deleting contract:', error);
+    return { success: false, message: 'Failed to delete contract.' };
+  }
 }

@@ -2,92 +2,78 @@ rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
-
-    // Helper function to check if a user is authenticated
-    function isAuthenticated() {
+  
+    function isSignedIn() {
       return request.auth != null;
     }
-
-    // Helper function to check if a user has the 'admin' role
+    
     function isAdmin() {
-      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+      return isSignedIn() && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
     }
 
-    // Users collection: only admins can change roles
     match /users/{userId} {
-      allow read: if isAuthenticated();
-      allow create: if isAuthenticated();
+      allow read: if isSignedIn();
+      allow create: if request.auth.uid == userId;
       allow update: if isAdmin();
-      allow delete: if isAdmin();
     }
     
-    // Activity Log collection: only backend can write, any user can read
-    match /activityLog/{activityId} {
-      allow read: if isAuthenticated();
-      allow write: if false; // Only server-side can write
+    match /activityLog/{logId} {
+      allow read: if isSignedIn();
+      allow create: if isSignedIn(); 
     }
 
-    // Projects collection
     match /projects/{projectId} {
-      allow read: if isAuthenticated();
+      allow read: if isSignedIn();
       allow create, update, delete: if isAdmin();
     }
     
-    // Employees collection
     match /employees/{employeeId} {
-        allow read: if isAuthenticated();
-        allow create, update, delete: if isAdmin();
-    }
-
-    // Suppliers collection
-    match /suppliers/{supplierId} {
-        allow read: if isAuthenticated();
-        allow create, update, delete: if isAdmin();
-
-        // Contracts sub-collection
-        match /contracts/{contractId} {
-            allow read: if isAuthenticated();
-            allow create, delete: if isAdmin();
-        }
-    }
-
-    // Inventory collection
-    match /inventory/{itemId} {
-        allow read: if isAuthenticated();
-        allow create, update, delete: if isAdmin();
-    }
-
-    // Procurement collection
-    match /procurement/{requestId} {
-        allow read: if isAuthenticated();
-        allow create, update, delete: if isAdmin();
+      allow read: if isSignedIn();
+      allow create, update, delete: if isAdmin();
     }
     
-    // Material Requests collection
-    match /materialRequests/{requestId} {
-        allow read: if isAuthenticated();
-        allow create: if isAuthenticated();
-        allow update, delete: if isAdmin();
-    }
-    
-    // Clients collection
     match /clients/{clientId} {
-      allow read: if isAuthenticated();
+      allow read: if isSignedIn();
       allow create, update, delete: if isAdmin();
       
-      // Interactions sub-collection
       match /interactions/{interactionId} {
-        allow read: if isAuthenticated();
-        allow create: if isAuthenticated(); // All authenticated users can log interactions
-        allow update, delete: if isAdmin();
+        allow read, create: if isSignedIn();
+      }
+      
+      match /contracts/{contractId} {
+        allow read: if isSignedIn();
+        allow create, delete: if isAdmin();
       }
     }
-
-    // Transactions collection
-    match /transactions/{transactionId} {
-        allow read: if isAuthenticated();
-        allow create, update, delete: if isAdmin();
+    
+    match /suppliers/{supplierId} {
+      allow read: if isSignedIn();
+      allow create, update, delete: if isAdmin();
+      
+      match /contracts/{contractId} {
+        allow read: if isSignedIn();
+        allow create, delete: if isAdmin();
+      }
     }
-
+    
+    match /inventory/{itemId} {
+      allow read: if isSignedIn();
+      allow create, update, delete: if isAdmin();
+    }
+    
+    match /procurement/{requestId} {
+      allow read: if isSignedIn();
+      allow create, update, delete: if isAdmin();
+    }
+    
+    match /materialRequests/{requestId} {
+      allow read: if isSignedIn();
+      allow create, update: if isSignedIn();
+    }
+    
+     match /transactions/{transactionId} {
+      allow read: if isSignedIn();
+      allow create, update, delete: if isAdmin();
+    }
   }
 }
