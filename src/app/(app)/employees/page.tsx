@@ -51,7 +51,7 @@ import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useState, useEffect } from 'react';
-import { addEmployee, deleteEmployee } from './actions';
+import { addEmployee, deleteEmployee, updateEmployee } from './actions';
 import { useToast } from '@/hooks/use-toast';
 import { collection, onSnapshot, query, orderBy } from 'firebase/firestore';
 import { firestore } from '@/lib/firebase';
@@ -80,7 +80,8 @@ type EmployeeFormValues = z.infer<typeof employeeFormSchema>;
 export default function EmployeesPage() {
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+  const [isFormDialogOpen, setIsFormDialogOpen] = useState(false);
+  const [employeeToEdit, setEmployeeToEdit] = useState<Employee | null>(null);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [employeeToDelete, setEmployeeToDelete] = useState<Employee | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -112,8 +113,18 @@ export default function EmployeesPage() {
     },
   });
 
+  useEffect(() => {
+    if (employeeToEdit) {
+      form.reset(employeeToEdit);
+    } else {
+      form.reset(form.formState.defaultValues);
+    }
+  }, [employeeToEdit, form]);
+
   async function onSubmit(values: EmployeeFormValues) {
-    const result = await addEmployee(values);
+    const result = employeeToEdit
+      ? await updateEmployee(employeeToEdit.id, values)
+      : await addEmployee(values);
 
     if (result.errors) {
       toast({
@@ -126,8 +137,8 @@ export default function EmployeesPage() {
         title: 'Success',
         description: result.message,
       });
-      form.reset();
-      setIsAddDialogOpen(false);
+      setIsFormDialogOpen(false);
+      setEmployeeToEdit(null);
     }
   }
 
@@ -154,6 +165,13 @@ export default function EmployeesPage() {
     setEmployeeToDelete(null);
   }
 
+  const handleFormDialog_onOpenChange = (open: boolean) => {
+    if (!open) {
+      setEmployeeToEdit(null);
+    }
+    setIsFormDialogOpen(open);
+  }
+
   return (
     <>
     <div className="space-y-6">
@@ -166,18 +184,18 @@ export default function EmployeesPage() {
             View, add, and manage all company employees.
           </p>
         </div>
-        <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
+        <Dialog open={isFormDialogOpen} onOpenChange={handleFormDialog_onOpenChange}>
           <DialogTrigger asChild>
-            <Button>
+            <Button onClick={() => setEmployeeToEdit(null)}>
               <PlusCircle className="mr-2" />
               Add Employee
             </Button>
           </DialogTrigger>
           <DialogContent className="sm:max-w-[425px]">
             <DialogHeader>
-              <DialogTitle>Add New Employee</DialogTitle>
+              <DialogTitle>{employeeToEdit ? 'Edit Employee' : 'Add New Employee'}</DialogTitle>
               <DialogDescription>
-                Fill in the details below to add a new employee to the system.
+                {employeeToEdit ? 'Update the details of the employee.' : 'Fill in the details below to add a new employee to the system.'}
               </DialogDescription>
             </DialogHeader>
             <Form {...form}>
@@ -214,7 +232,7 @@ export default function EmployeesPage() {
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Role</FormLabel>
-                       <Select onValueChange={field.onChange} defaultValue={field.value}>
+                       <Select onValueChange={field.onChange} value={field.value}>
                         <FormControl>
                           <SelectTrigger>
                             <SelectValue placeholder="Select a role" />
@@ -239,7 +257,7 @@ export default function EmployeesPage() {
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Department</FormLabel>
-                       <Select onValueChange={field.onChange} defaultValue={field.value}>
+                       <Select onValueChange={field.onChange} value={field.value}>
                         <FormControl>
                           <SelectTrigger>
                             <SelectValue placeholder="Select a department" />
@@ -263,7 +281,7 @@ export default function EmployeesPage() {
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Status</FormLabel>
-                      <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <Select onValueChange={field.onChange} value={field.value}>
                         <FormControl>
                           <SelectTrigger>
                             <SelectValue placeholder="Select status" />
@@ -287,7 +305,7 @@ export default function EmployeesPage() {
                         Saving...
                       </>
                     ) : (
-                      'Save Employee'
+                      employeeToEdit ? 'Save Changes' : 'Save Employee'
                     )}
                   </Button>
                 </DialogFooter>
@@ -355,7 +373,14 @@ export default function EmployeesPage() {
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
                           <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                          <DropdownMenuItem>Edit</DropdownMenuItem>
+                          <DropdownMenuItem
+                            onSelect={() => {
+                                setEmployeeToEdit(employee);
+                                setIsFormDialogOpen(true);
+                            }}
+                          >
+                            Edit
+                          </DropdownMenuItem>
                           <DropdownMenuItem>View Details</DropdownMenuItem>
                           <DropdownMenuItem
                             className="text-destructive"

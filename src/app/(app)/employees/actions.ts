@@ -1,7 +1,7 @@
 'use server';
 
 import { firestore } from '@/lib/firebase';
-import { collection, addDoc, doc, deleteDoc } from 'firebase/firestore';
+import { collection, addDoc, doc, deleteDoc, updateDoc } from 'firebase/firestore';
 import { z } from 'zod';
 import { revalidatePath } from 'next/cache';
 
@@ -13,7 +13,7 @@ const employeeFormSchema = z.object({
   status: z.enum(["Active", "On Leave", "Inactive"]),
 });
 
-type EmployeeFormValues = z.infer<typeof employeeFormSchema>;
+export type EmployeeFormValues = z.infer<typeof employeeFormSchema>;
 
 export async function addEmployee(values: EmployeeFormValues) {
   const validatedFields = employeeFormSchema.safeParse(values);
@@ -32,6 +32,31 @@ export async function addEmployee(values: EmployeeFormValues) {
   } catch (error) {
     console.error('Error adding employee:', error);
     return { message: 'Failed to add employee.', errors: { _server: ['An unexpected error occurred.'] } };
+  }
+}
+
+export async function updateEmployee(employeeId: string, values: EmployeeFormValues) {
+  if (!employeeId) {
+    return { message: 'Employee ID is required.', errors: { _server: ['Employee ID not provided.'] } };
+  }
+
+  const validatedFields = employeeFormSchema.safeParse(values);
+
+  if (!validatedFields.success) {
+    return {
+      errors: validatedFields.error.flatten().fieldErrors,
+      message: 'Invalid data provided. Please check the form.',
+    };
+  }
+
+  try {
+    const employeeRef = doc(firestore, 'employees', employeeId);
+    await updateDoc(employeeRef, validatedFields.data);
+    revalidatePath('/employees');
+    return { message: 'Employee updated successfully.', errors: null };
+  } catch (error) {
+    console.error('Error updating employee:', error);
+    return { message: 'Failed to update employee.', errors: { _server: ['An unexpected error occurred.'] } };
   }
 }
 
