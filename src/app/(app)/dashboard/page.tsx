@@ -8,7 +8,15 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
-import { Briefcase, Users, Warehouse, DollarSign } from 'lucide-react';
+import {
+  Briefcase,
+  Users,
+  Warehouse,
+  DollarSign,
+  TrendingUp,
+  TrendingDown,
+  Minus,
+} from 'lucide-react';
 import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from 'recharts';
 import {
   ChartContainer,
@@ -29,6 +37,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { startOfMonth, endOfMonth } from 'date-fns';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
+import { cn } from '@/lib/utils';
 
 // Simplified types for dashboard calculations
 type Project = { status: 'Planning' | 'In Progress' | 'Completed' | 'On Hold' };
@@ -43,9 +52,9 @@ type ProcurementRequest = {
   status: 'Pending' | 'Approved' | 'Rejected' | 'Ordered';
 };
 type InventoryItem = {
-    id: string;
-    name: string;
-    status: 'In Stock' | 'Low Stock' | 'Out of Stock';
+  id: string;
+  name: string;
+  status: 'In Stock' | 'Low Stock' | 'Out of Stock';
 };
 type PendingTask = {
   id: string;
@@ -66,13 +75,23 @@ export default function DashboardPage() {
   const [projectCount, setProjectCount] = useState(0);
   const [employeeCount, setEmployeeCount] = useState(0);
   const [inventoryCount, setInventoryCount] = useState(0);
-  const [monthlyRevenue, setMonthlyRevenue] = useState(0);
+  const [monthlyFinancials, setMonthlyFinancials] = useState({
+    revenue: 0,
+    expenses: 0,
+  });
   const [projectStatusData, setProjectStatusData] = useState<any[]>([]);
   const [procurementTasks, setProcurementTasks] = useState<PendingTask[]>([]);
   const [inventoryTasks, setInventoryTasks] = useState<PendingTask[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
-  const pendingTasks = useMemo(() => [...procurementTasks, ...inventoryTasks], [procurementTasks, inventoryTasks]);
+  const pendingTasks = useMemo(
+    () => [...procurementTasks, ...inventoryTasks],
+    [procurementTasks, inventoryTasks]
+  );
+  const netBalance = useMemo(
+    () => monthlyFinancials.revenue - monthlyFinancials.expenses,
+    [monthlyFinancials]
+  );
 
   useEffect(() => {
     const unsubscribes: (() => void)[] = [];
@@ -119,15 +138,15 @@ export default function DashboardPage() {
     unsubscribes.push(
       onSnapshot(qInventory, (snapshot) => {
         setInventoryCount(snapshot.size);
-         const lowStockTasks = snapshot.docs
-            .map(doc => ({ id: doc.id, ...doc.data() } as InventoryItem))
-            .filter(item => item.status === 'Low Stock')
-            .map(item => ({
-                id: item.id,
-                title: `Low stock for "${item.name}"`,
-                type: 'Inventory',
-                link: '/inventory',
-            }));
+        const lowStockTasks = snapshot.docs
+          .map((doc) => ({ id: doc.id, ...doc.data() } as InventoryItem))
+          .filter((item) => item.status === 'Low Stock')
+          .map((item) => ({
+            id: item.id,
+            title: `Low stock for "${item.name}"`,
+            type: 'Inventory',
+            link: '/inventory',
+          }));
         setInventoryTasks(lowStockTasks);
       })
     );
@@ -139,7 +158,7 @@ export default function DashboardPage() {
         const now = new Date();
         const start = startOfMonth(now);
         const end = endOfMonth(now);
-        const revenue = snapshot.docs
+        const monthlyTotals = snapshot.docs
           .map((doc) => doc.data() as Transaction)
           .filter((transaction) => {
             if (
@@ -149,14 +168,20 @@ export default function DashboardPage() {
               return false;
             }
             const transactionDate = transaction.date.toDate();
-            return (
-              transaction.type === 'Income' &&
-              transactionDate >= start &&
-              transactionDate <= end
-            );
+            return transactionDate >= start && transactionDate <= end;
           })
-          .reduce((sum, transaction) => sum + transaction.amount, 0);
-        setMonthlyRevenue(revenue);
+          .reduce(
+            (acc, transaction) => {
+              if (transaction.type === 'Income') {
+                acc.revenue += transaction.amount;
+              } else {
+                acc.expenses += transaction.amount;
+              }
+              return acc;
+            },
+            { revenue: 0, expenses: 0 }
+          );
+        setMonthlyFinancials(monthlyTotals);
       })
     );
 
@@ -185,33 +210,6 @@ export default function DashboardPage() {
     return () => unsubscribes.forEach((unsub) => unsub());
   }, []);
 
-  const kpis = [
-    {
-      title: 'Active Projects',
-      value: projectCount,
-      icon: <Briefcase className="size-6 text-muted-foreground" />,
-      isLoading: isLoading,
-    },
-    {
-      title: 'Total Employees',
-      value: employeeCount,
-      icon: <Users className="size-6 text-muted-foreground" />,
-      isLoading: isLoading,
-    },
-    {
-      title: 'Inventory Items',
-      value: inventoryCount,
-      icon: <Warehouse className="size-6 text-muted-foreground" />,
-      isLoading: isLoading,
-    },
-    {
-      title: 'Monthly Revenue',
-      value: formatCurrency(monthlyRevenue),
-      icon: <DollarSign className="size-6 text-muted-foreground" />,
-      isLoading: isLoading,
-    },
-  ];
-
   const chartConfig = {
     projects: {
       label: 'Projects',
@@ -224,22 +222,100 @@ export default function DashboardPage() {
       <h1 className="font-headline text-3xl font-bold tracking-tight">
         Dashboard
       </h1>
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        {kpis.map((kpi) => (
-          <Card key={kpi.title}>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">{kpi.title}</CardTitle>
-              {kpi.icon}
-            </CardHeader>
-            <CardContent>
-              {kpi.isLoading ? (
-                <Skeleton className="h-8 w-24" />
-              ) : (
-                <div className="text-2xl font-bold">{kpi.value}</div>
-              )}
-            </CardContent>
-          </Card>
-        ))}
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Active Projects</CardTitle>
+            <Briefcase className="size-5 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            {isLoading ? (
+              <Skeleton className="h-8 w-24" />
+            ) : (
+              <div className="text-2xl font-bold">{projectCount}</div>
+            )}
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Total Employees</CardTitle>
+            <Users className="size-5 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            {isLoading ? (
+              <Skeleton className="h-8 w-24" />
+            ) : (
+              <div className="text-2xl font-bold">{employeeCount}</div>
+            )}
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Inventory Items</CardTitle>
+            <Warehouse className="size-5 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            {isLoading ? (
+              <Skeleton className="h-8 w-24" />
+            ) : (
+              <div className="text-2xl font-bold">{inventoryCount}</div>
+            )}
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">
+              Monthly Revenue
+            </CardTitle>
+            <TrendingUp className="size-5 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            {isLoading ? (
+              <Skeleton className="h-8 w-24" />
+            ) : (
+              <div className="text-2xl font-bold">
+                {formatCurrency(monthlyFinancials.revenue)}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">
+              Monthly Expenses
+            </CardTitle>
+            <TrendingDown className="size-5 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            {isLoading ? (
+              <Skeleton className="h-8 w-24" />
+            ) : (
+              <div className="text-2xl font-bold">
+                {formatCurrency(monthlyFinancials.expenses)}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Net Balance</CardTitle>
+            <Minus className="size-5 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            {isLoading ? (
+              <Skeleton className="h-8 w-24" />
+            ) : (
+              <div
+                className={cn(
+                  'text-2xl font-bold',
+                  netBalance >= 0 ? 'text-success' : 'text-destructive'
+                )}
+              >
+                {formatCurrency(netBalance)}
+              </div>
+            )}
+          </CardContent>
+        </Card>
       </div>
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
         <Card>
