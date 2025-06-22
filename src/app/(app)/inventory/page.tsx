@@ -40,12 +40,7 @@ import {
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useState, useEffect } from 'react';
-import { addInventoryItem } from './actions';
-import { useToast } from '@/hooks/use-toast';
-import { collection, onSnapshot, query, orderBy } from 'firebase/firestore';
-import { firestore } from '@/lib/firebase';
-import { Skeleton } from '@/components/ui/skeleton';
+import { useState } from 'react';
 
 // Define the inventory item type
 type InventoryItem = {
@@ -67,33 +62,16 @@ const inventoryFormSchema = z.object({
 
 type InventoryFormValues = z.infer<typeof inventoryFormSchema>;
 
+// Dummy data for display
+const dummyItems: InventoryItem[] = [
+    { id: '1', name: 'Cement Bags (50kg)', category: 'Building Materials', quantity: 500, warehouse: 'Main Warehouse', status: 'In Stock'},
+    { id: '2', name: 'Rebar #4 (20ft)', category: 'Structural Steel', quantity: 200, warehouse: 'Yard A', status: 'In Stock'},
+    { id: '3', name: 'Safety Helmets', category: 'Safety Gear', quantity: 45, warehouse: 'Site Office', status: 'Low Stock'},
+    { id: '4', name: 'PVC Pipe (4-inch)', category: 'Plumbing', quantity: 0, warehouse: 'Warehouse B', status: 'Out of Stock'},
+];
+
 export default function InventoryPage() {
-  const [items, setItems] = useState<InventoryItem[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const { toast } = useToast();
-
-  useEffect(() => {
-    const q = query(collection(firestore, 'inventory'), orderBy('name', 'asc'));
-    const unsubscribe = onSnapshot(q, (querySnapshot) => {
-      const itemsData: InventoryItem[] = [];
-      querySnapshot.forEach((doc) => {
-        itemsData.push({ id: doc.id, ...doc.data() } as InventoryItem);
-      });
-      setItems(itemsData);
-      setIsLoading(false);
-    }, (error) => {
-      console.error("Error fetching inventory: ", error);
-      toast({
-        variant: 'destructive',
-        title: 'Error',
-        description: 'Failed to fetch inventory. Check permissions and network connection.',
-      });
-      setIsLoading(false);
-    });
-
-    return () => unsubscribe();
-  }, [toast]);
 
   const form = useForm<InventoryFormValues>({
     resolver: zodResolver(inventoryFormSchema),
@@ -106,23 +84,11 @@ export default function InventoryPage() {
     },
   });
 
-  async function onSubmit(values: InventoryFormValues) {
-    const result = await addInventoryItem(values);
-
-    if (result.errors) {
-      toast({
-        variant: 'destructive',
-        title: 'Error',
-        description: result.message,
-      });
-    } else {
-      toast({
-        title: 'Success',
-        description: result.message,
-      });
-      form.reset();
-      setIsDialogOpen(false);
-    }
+  function onSubmit(values: InventoryFormValues) {
+    console.log(values);
+    // Real submission logic will be added later
+    form.reset();
+    setIsDialogOpen(false);
   }
 
   const getStatusVariant = (status: InventoryItem['status']): 'secondary' | 'outline' | 'destructive' => {
@@ -296,23 +262,8 @@ export default function InventoryPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-             {isLoading ? (
-                Array.from({ length: 5 }).map((_, index) => (
-                  <TableRow key={index}>
-                    <TableCell><Skeleton className="h-4 w-[200px]" /></TableCell>
-                    <TableCell className="hidden md:table-cell"><Skeleton className="h-4 w-[150px]" /></TableCell>
-                    <TableCell><Skeleton className="h-4 w-[80px]" /></TableCell>
-                    <TableCell className="hidden md:table-cell"><Skeleton className="h-4 w-[120px]" /></TableCell>
-                    <TableCell><Skeleton className="h-6 w-[80px] rounded-full" /></TableCell>
-                    <TableCell>
-                      <Button aria-haspopup="true" size="icon" variant="ghost" disabled>
-                        <MoreHorizontal className="h-4 w-4" />
-                      </Button>
-                    </TableCell>
-                  </TableRow>
-                ))
-              ) : items.length > 0 ? (
-                 items.map((item) => (
+             {dummyItems.length > 0 ? (
+                 dummyItems.map((item) => (
                   <TableRow key={item.id}>
                     <TableCell className="font-medium">{item.name}</TableCell>
                     <TableCell className="hidden md:table-cell">{item.category}</TableCell>
