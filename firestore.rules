@@ -2,26 +2,42 @@ rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
+
     function isAuthenticated() {
       return request.auth != null;
     }
 
-    // Default deny all
-    match /{document=**} {
-      allow read, write: if false;
-    }
-
-    // Users can manage their own document
     match /users/{userId} {
       allow read, write: if isAuthenticated() && request.auth.uid == userId;
+      allow create: if isAuthenticated();
     }
-    
-    // Authenticated users can manage these collections
-    match /employees/{docId} { allow read, write: if isAuthenticated(); }
-    match /inventory/{docId} { allow read, write: if isAuthenticated(); }
-    match /projects/{docId} { allow read, write: if isAuthenticated(); }
-    match /suppliers/{docId} { allow read, write: if isAuthenticated(); }
-    match /procurement/{docId} { allow read, write: if isAuthenticated(); }
-    match /clients/{docId} { allow read, write: if isAuthenticated(); }
+
+    match /projects/{document=**} {
+      allow read, write: if isAuthenticated();
+    }
+
+    match /employees/{document=**} {
+      allow read, write: if isAuthenticated();
+    }
+
+    match /suppliers/{document=**} {
+      allow read, write: if isAuthenticated();
+    }
+
+    match /inventory/{document=**} {
+      allow read, write: if isAuthenticated();
+    }
+
+    match /procurement/{document=**} {
+      allow read, write: if isAuthenticated();
+    }
+
+    match /clients/{document=**} {
+      allow read, write: if isAuthenticated();
+    }
+
+    match /financials/{document=**} {
+      allow read, write: if isAuthenticated();
+    }
   }
 }
