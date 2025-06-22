@@ -17,7 +17,7 @@ import { startOfMonth, endOfMonth } from 'date-fns';
 
 // Simplified types for dashboard calculations
 type Project = { status: 'Planning' | 'In Progress' | 'Completed' | 'On Hold' };
-type Transaction = { type: 'Income'; amount: number; date: Timestamp };
+type Transaction = { type: 'Income' | 'Expense'; amount: number; date: Timestamp };
 
 const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('en-US', {
@@ -67,19 +67,22 @@ export default function DashboardPage() {
     unsubscribes.push(onSnapshot(qInventory, (snapshot) => {
       setInventoryCount(snapshot.size);
     }));
-
-    const now = new Date();
-    const start = startOfMonth(now);
-    const end = endOfMonth(now);
-    const qTransactions = query(
-        collection(firestore, 'transactions'), 
-        where('type', '==', 'Income'),
-        where('date', '>=', start),
-        where('date', '<=', end)
-    );
+    
+    // Fetch all transactions and filter client-side to avoid composite index requirement
+    const qTransactions = query(collection(firestore, 'transactions'));
     unsubscribes.push(onSnapshot(qTransactions, (snapshot) => {
+        const now = new Date();
+        const start = startOfMonth(now);
+        const end = endOfMonth(now);
         const revenue = snapshot.docs
             .map(doc => doc.data() as Transaction)
+            .filter(transaction => {
+                if (!transaction.date || typeof transaction.date.toDate !== 'function') {
+                    return false;
+                }
+                const transactionDate = transaction.date.toDate();
+                return transaction.type === 'Income' && transactionDate >= start && transactionDate <= end;
+            })
             .reduce((sum, transaction) => sum + transaction.amount, 0);
         setMonthlyRevenue(revenue);
     }));
