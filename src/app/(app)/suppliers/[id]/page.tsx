@@ -7,7 +7,7 @@ import { firestore } from '@/lib/firebase';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
-import { ArrowLeft, User, Mail, Phone, Building, ShoppingCart, Truck } from 'lucide-react';
+import { ArrowLeft, User, Mail, Phone, Building, ShoppingCart, Truck, Star } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import {
@@ -19,6 +19,9 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { format } from 'date-fns';
+import { EvaluateSupplierDialog } from './evaluate-supplier-dialog';
+import { useAuth } from '@/hooks/use-auth';
+import { cn } from '@/lib/utils';
 
 type SupplierStatus = 'Active' | 'Inactive';
 type RequestStatus = 'Pending' | 'Approved' | 'Rejected' | 'Ordered';
@@ -30,6 +33,8 @@ type Supplier = {
   email: string;
   phone: string;
   status: SupplierStatus;
+  rating?: number;
+  evaluationNotes?: string;
 };
 
 type PurchaseRequest = {
@@ -58,6 +63,22 @@ const requestStatusVariant: { [key in RequestStatus]: 'default' | 'secondary' | 
   Rejected: 'destructive',
 };
 
+function StarRatingDisplay({ rating = 0 }: { rating?: number }) {
+    return (
+        <div className="flex items-center gap-1">
+        {[1, 2, 3, 4, 5].map((star) => (
+            <Star
+            key={star}
+            className={cn(
+                'size-5',
+                rating >= star ? 'text-yellow-400 fill-yellow-400' : 'text-muted-foreground/30'
+            )}
+            />
+        ))}
+        </div>
+    );
+}
+
 export default function SupplierDetailPage({ params }: { params: { id: string } }) {
   const [supplier, setSupplier] = useState<Supplier | null>(null);
   const [requests, setRequests] = useState<PurchaseRequest[]>([]);
@@ -65,6 +86,8 @@ export default function SupplierDetailPage({ params }: { params: { id: string } 
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const supplierId = params.id;
+  const { profile } = useAuth();
+
 
   useEffect(() => {
     if (!supplierId) return;
@@ -122,7 +145,10 @@ export default function SupplierDetailPage({ params }: { params: { id: string } 
             </div>
         </div>
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-            <Card className="lg:col-span-1"><CardContent className="p-6"><Skeleton className="h-48 w-full" /></CardContent></Card>
+            <div className="lg:col-span-1 space-y-6">
+                <Card><CardContent className="p-6"><Skeleton className="h-48 w-full" /></CardContent></Card>
+                <Card><CardContent className="p-6"><Skeleton className="h-32 w-full" /></CardContent></Card>
+            </div>
             <Card className="lg:col-span-2"><CardContent className="p-6"><Skeleton className="h-48 w-full" /></CardContent></Card>
         </div>
       </div>
@@ -167,29 +193,55 @@ export default function SupplierDetailPage({ params }: { params: { id: string } 
         </div>
 
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-           <Card className="lg:col-span-1">
-                <CardHeader>
-                    <CardTitle>Supplier Information</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                    <div className="flex items-center gap-4">
-                        <User className="size-4 text-muted-foreground" />
-                        <span className="text-sm">{supplier.contactPerson}</span>
-                    </div>
-                    <div className="flex items-center gap-4">
-                        <Mail className="size-4 text-muted-foreground" />
-                        <a href={`mailto:${supplier.email}`} className="text-sm hover:underline">{supplier.email}</a>
-                    </div>
-                    <div className="flex items-center gap-4">
-                        <Phone className="size-4 text-muted-foreground" />
-                        <span className="text-sm">{supplier.phone}</span>
-                    </div>
-                    <div className="flex items-center gap-4">
-                        <Building className="size-4 text-muted-foreground" />
-                        <Badge variant={statusVariant[supplier.status]}>{supplier.status}</Badge>
-                    </div>
-                </CardContent>
-            </Card>
+           <div className="lg:col-span-1 space-y-6">
+                <Card>
+                    <CardHeader>
+                        <CardTitle>Supplier Information</CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                        <div className="flex items-center gap-4">
+                            <User className="size-4 text-muted-foreground" />
+                            <span className="text-sm">{supplier.contactPerson}</span>
+                        </div>
+                        <div className="flex items-center gap-4">
+                            <Mail className="size-4 text-muted-foreground" />
+                            <a href={`mailto:${supplier.email}`} className="text-sm hover:underline">{supplier.email}</a>
+                        </div>
+                        <div className="flex items-center gap-4">
+                            <Phone className="size-4 text-muted-foreground" />
+                            <span className="text-sm">{supplier.phone}</span>
+                        </div>
+                        <div className="flex items-center gap-4">
+                            <Building className="size-4 text-muted-foreground" />
+                            <Badge variant={statusVariant[supplier.status]}>{supplier.status}</Badge>
+                        </div>
+                    </CardContent>
+                </Card>
+
+                <Card>
+                    <CardHeader className="flex-row items-start justify-between">
+                        <CardTitle>Performance Evaluation</CardTitle>
+                        {profile?.role === 'admin' && <EvaluateSupplierDialog supplier={supplier} />}
+                    </CardHeader>
+                    <CardContent className="space-y-3">
+                        {supplier.rating ? (
+                            <>
+                                <div className="flex items-center gap-2">
+                                    <StarRatingDisplay rating={supplier.rating} />
+                                    <span className="text-sm text-muted-foreground">({supplier.rating.toFixed(1)} / 5.0)</span>
+                                </div>
+                                {supplier.evaluationNotes && (
+                                     <p className="text-sm text-muted-foreground whitespace-pre-wrap pt-2 border-t border-dashed">
+                                        {supplier.evaluationNotes}
+                                    </p>
+                                )}
+                            </>
+                        ) : (
+                            <p className="text-sm text-muted-foreground">No evaluation has been recorded yet.</p>
+                        )}
+                    </CardContent>
+                </Card>
+            </div>
 
             <Card className="lg:col-span-2">
                  <CardHeader>

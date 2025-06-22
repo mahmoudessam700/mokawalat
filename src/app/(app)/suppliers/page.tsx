@@ -18,7 +18,7 @@ import {
   DropdownMenuLabel,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Loader2, MoreHorizontal, PlusCircle, Trash2 } from 'lucide-react';
+import { Loader2, MoreHorizontal, PlusCircle, Star, Trash2 } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   Dialog,
@@ -59,6 +59,7 @@ import { firestore } from '@/lib/firebase';
 import { Skeleton } from '@/components/ui/skeleton';
 import Link from 'next/link';
 import { useAuth } from '@/hooks/use-auth';
+import { cn } from '@/lib/utils';
 
 // Define the supplier type
 type Supplier = {
@@ -68,6 +69,7 @@ type Supplier = {
   email: string;
   phone: string;
   status: 'Active' | 'Inactive';
+  rating?: number;
 };
 
 const supplierFormSchema = z.object({
@@ -79,6 +81,22 @@ const supplierFormSchema = z.object({
 });
 
 type SupplierFormValues = z.infer<typeof supplierFormSchema>;
+
+function StarRatingDisplay({ rating = 0 }: { rating?: number }) {
+  return (
+    <div className="flex items-center gap-0.5">
+      {[1, 2, 3, 4, 5].map((star) => (
+        <Star
+          key={star}
+          className={cn(
+            'size-4',
+            rating >= star ? 'text-yellow-400 fill-yellow-400' : 'text-muted-foreground/30'
+          )}
+        />
+      ))}
+    </div>
+  );
+}
 
 export default function SuppliersPage() {
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
@@ -318,8 +336,7 @@ export default function SuppliersPage() {
               <TableRow>
                 <TableHead>Supplier Name</TableHead>
                 <TableHead className="hidden md:table-cell">Contact Person</TableHead>
-                <TableHead className="hidden lg:table-cell">Email</TableHead>
-                <TableHead className="hidden md:table-cell">Phone</TableHead>
+                <TableHead>Rating</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead>
                   <span className="sr-only">Actions</span>
@@ -332,8 +349,7 @@ export default function SuppliersPage() {
                   <TableRow key={index}>
                     <TableCell><Skeleton className="h-4 w-[200px]" /></TableCell>
                     <TableCell className="hidden md:table-cell"><Skeleton className="h-4 w-[150px]" /></TableCell>
-                    <TableCell className="hidden lg:table-cell"><Skeleton className="h-4 w-[200px]" /></TableCell>
-                    <TableCell className="hidden md:table-cell"><Skeleton className="h-4 w-[120px]" /></TableCell>
+                    <TableCell><Skeleton className="h-4 w-[100px]" /></TableCell>
                     <TableCell><Skeleton className="h-6 w-[70px] rounded-full" /></TableCell>
                     <TableCell>
                       <Button aria-haspopup="true" size="icon" variant="ghost" disabled>
@@ -348,8 +364,7 @@ export default function SuppliersPage() {
                   <TableRow key={supplier.id}>
                     <TableCell className="font-medium">{supplier.name}</TableCell>
                     <TableCell className="hidden md:table-cell">{supplier.contactPerson}</TableCell>
-                    <TableCell className="hidden lg:table-cell">{supplier.email}</TableCell>
-                    <TableCell className="hidden md:table-cell">{supplier.phone}</TableCell>
+                    <TableCell><StarRatingDisplay rating={supplier.rating} /></TableCell>
                     <TableCell>
                       <Badge variant={supplier.status === 'Active' ? 'secondary' : 'destructive'}>
                         {supplier.status}

@@ -53,6 +53,7 @@ export async function updateSupplier(supplierId: string, values: SupplierFormVal
     const supplierRef = doc(firestore, 'suppliers', supplierId);
     await updateDoc(supplierRef, validatedFields.data);
     revalidatePath('/suppliers');
+    revalidatePath(`/suppliers/${supplierId}`);
     return { message: 'Supplier updated successfully.', errors: null };
   } catch (error) {
     console.error('Error updating supplier:', error);
@@ -72,5 +73,41 @@ export async function deleteSupplier(supplierId: string) {
   } catch (error) {
     console.error('Error deleting supplier:', error);
     return { success: false, message: 'Failed to delete supplier.' };
+  }
+}
+
+const evaluateSupplierFormSchema = z.object({
+  rating: z.coerce.number().min(1, "Rating is required").max(5),
+  evaluationNotes: z.string().optional(),
+});
+
+export type EvaluateSupplierFormValues = z.infer<typeof evaluateSupplierFormSchema>;
+
+export async function evaluateSupplier(supplierId: string, values: EvaluateSupplierFormValues) {
+  if (!supplierId) {
+    return { message: 'Supplier ID is required.', errors: { _server: ['Supplier ID not provided.'] } };
+  }
+
+  const validatedFields = evaluateSupplierFormSchema.safeParse(values);
+
+  if (!validatedFields.success) {
+    return {
+      errors: validatedFields.error.flatten().fieldErrors,
+      message: 'Invalid data provided.',
+    };
+  }
+
+  try {
+    const supplierRef = doc(firestore, 'suppliers', supplierId);
+    await updateDoc(supplierRef, {
+      rating: validatedFields.data.rating,
+      evaluationNotes: validatedFields.data.evaluationNotes || '',
+    });
+    revalidatePath('/suppliers');
+    revalidatePath(`/suppliers/${supplierId}`);
+    return { message: 'Supplier evaluation updated successfully.', errors: null };
+  } catch (error) {
+    console.error('Error evaluating supplier:', error);
+    return { message: 'Failed to update evaluation.', errors: { _server: ['An unexpected error occurred.'] } };
   }
 }
