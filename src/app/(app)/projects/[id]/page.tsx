@@ -71,6 +71,14 @@ type MaterialRequest = {
   requestedAt: Timestamp;
 };
 
+type Transaction = {
+  id: string;
+  description: string;
+  amount: number;
+  type: 'Income' | 'Expense';
+  date: Timestamp;
+};
+
 type InventoryItem = {
     id: string;
     name: string;
@@ -111,6 +119,7 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [procurements, setProcurements] = useState<ProcurementRequest[]>([]);
   const [materialRequests, setMaterialRequests] = useState<MaterialRequest[]>([]);
+  const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [inventoryItems, setInventoryItems] = useState<InventoryItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -164,6 +173,14 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
         setMaterialRequests(requestsData);
     }, (err) => {
         console.error('Error fetching material requests:', err);
+    }));
+
+    // Subscribe to transactions for this project
+    const transactionsQuery = query(collection(firestore, 'transactions'), where('projectId', '==', projectId), orderBy('date', 'desc'));
+    unsubscribes.push(onSnapshot(transactionsQuery, (snapshot) => {
+        setTransactions(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Transaction)));
+    }, (err) => {
+        console.error('Error fetching transactions for project:', err);
     }));
 
     // Fetch all inventory items for the dropdown
@@ -296,6 +313,7 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
                 <TabsTrigger value="overview">Overview</TabsTrigger>
                 <TabsTrigger value="team-materials">Team & Materials</TabsTrigger>
                 <TabsTrigger value="procurement">Procurement</TabsTrigger>
+                <TabsTrigger value="financials">Financials</TabsTrigger>
                 <TabsTrigger value="ai-assistant">
                     <Lightbulb className="mr-2" /> AI Assistant
                 </TabsTrigger>
@@ -543,6 +561,49 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
                             <div className="flex flex-col items-center justify-center gap-2 p-4 text-center text-muted-foreground">
                                 <ShoppingCart className="size-12" />
                                 <p>No procurement requests are linked to this project yet.</p>
+                            </div>
+                        )}
+                    </CardContent>
+                </Card>
+            </TabsContent>
+             <TabsContent value="financials" className="pt-4">
+                <Card>
+                    <CardHeader>
+                        <CardTitle>Financial History</CardTitle>
+                        <CardDescription>A list of all income and expense records linked to this project.</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        {transactions.length > 0 ? (
+                            <Table>
+                                <TableHeader>
+                                    <TableRow>
+                                        <TableHead>Date</TableHead>
+                                        <TableHead>Description</TableHead>
+                                        <TableHead>Type</TableHead>
+                                        <TableHead className="text-right">Amount</TableHead>
+                                    </TableRow>
+                                </TableHeader>
+                                <TableBody>
+                                    {transactions.map(transaction => (
+                                        <TableRow key={transaction.id}>
+                                            <TableCell>{transaction.date ? format(transaction.date.toDate(), 'PPP') : 'N/A'}</TableCell>
+                                            <TableCell className="font-medium">{transaction.description}</TableCell>
+                                            <TableCell>
+                                                <Badge variant={transaction.type === 'Income' ? 'secondary' : 'destructive'}>
+                                                    {transaction.type}
+                                                </Badge>
+                                           </TableCell>
+                                            <TableCell className={`text-right font-semibold ${transaction.type === 'Income' ? 'text-success' : ''}`}>
+                                                {formatCurrency(transaction.amount)}
+                                            </TableCell>
+                                        </TableRow>
+                                    ))}
+                                </TableBody>
+                            </Table>
+                        ) : (
+                             <div className="flex flex-col items-center justify-center gap-2 py-8 text-center text-muted-foreground">
+                                <DollarSign className="size-12" />
+                                <p>No financial records found for this project.</p>
                             </div>
                         )}
                     </CardContent>
