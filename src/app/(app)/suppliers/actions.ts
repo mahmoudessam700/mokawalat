@@ -1,0 +1,36 @@
+'use server';
+
+import { firestore } from '@/lib/firebase';
+import { collection, addDoc } from 'firebase/firestore';
+import { z } from 'zod';
+import { revalidatePath } from 'next/cache';
+
+const supplierFormSchema = z.object({
+  name: z.string().min(2, "Name must be at least 2 characters long."),
+  contactPerson: z.string().min(2, "Contact person must be at least 2 characters long."),
+  email: z.string().email("Please enter a valid email address."),
+  phone: z.string().min(10, "Please enter a valid phone number."),
+  status: z.enum(["Active", "Inactive"]),
+});
+
+export type SupplierFormValues = z.infer<typeof supplierFormSchema>;
+
+export async function addSupplier(values: SupplierFormValues) {
+  const validatedFields = supplierFormSchema.safeParse(values);
+
+  if (!validatedFields.success) {
+    return {
+      errors: validatedFields.error.flatten().fieldErrors,
+      message: 'Invalid data provided. Please check the form.',
+    };
+  }
+
+  try {
+    await addDoc(collection(firestore, 'suppliers'), validatedFields.data);
+    revalidatePath('/suppliers');
+    return { message: 'Supplier added successfully.', errors: null };
+  } catch (error) {
+    console.error('Error adding supplier:', error);
+    return { message: 'Failed to add supplier.', errors: { _server: ['An unexpected error occurred.'] } };
+  }
+}

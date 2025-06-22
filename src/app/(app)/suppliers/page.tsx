@@ -17,9 +17,34 @@ import {
   DropdownMenuLabel,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { MoreHorizontal, PlusCircle } from 'lucide-react';
+import { Loader2, MoreHorizontal, PlusCircle } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { useState } from 'react';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { Input } from '@/components/ui/input';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { useForm } from 'react-hook-form';
+import { z } from 'zod';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { useState, useEffect } from 'react';
+import { addSupplier } from './actions';
+import { useToast } from '@/hooks/use-toast';
+import { collection, onSnapshot, query, orderBy } from 'firebase/firestore';
+import { firestore } from '@/lib/firebase';
 import { Skeleton } from '@/components/ui/skeleton';
 
 // Define the supplier type
@@ -32,19 +57,73 @@ type Supplier = {
   status: 'Active' | 'Inactive';
 };
 
-// Dummy data for suppliers
-const dummySuppliers: Supplier[] = [
-  { id: '1', name: 'Al-Foulad Steel Co.', contactPerson: 'Ahmed Saleh', email: 'sales@al-foulad.com', phone: '+966 11 123 4567', status: 'Active' },
-  { id: '2', name: 'Modern Concrete Solutions', contactPerson: 'Fatima Ali', email: 'fatima.ali@mcs.com', phone: '+966 12 765 4321', status: 'Active' },
-  { id: '3', name: 'Global Equipment Rentals', contactPerson: 'Youssef Mansour', email: 'y.mansour@ger.com', phone: '+966 13 888 9900', status: 'Inactive' },
-  { id: '4', name: 'Najran Cement Factory', contactPerson: 'Khalid Abdullah', email: 'k.abdullah@najrancement.com', phone: '+966 14 555 1212', status: 'Active' },
-];
+const supplierFormSchema = z.object({
+  name: z.string().min(2, "Name must be at least 2 characters long."),
+  contactPerson: z.string().min(2, "Contact person must be at least 2 characters long."),
+  email: z.string().email("Please enter a valid email address."),
+  phone: z.string().min(10, "Please enter a valid phone number."),
+  status: z.enum(["Active", "Inactive"]),
+});
 
+type SupplierFormValues = z.infer<typeof supplierFormSchema>;
 
 export default function SuppliersPage() {
-  const [suppliers] = useState<Supplier[]>(dummySuppliers);
-  const [isLoading] = useState(false); // Set to false since it's dummy data for now
+  const [suppliers, setSuppliers] = useState<Supplier[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const { toast } = useToast();
+
+  useEffect(() => {
+    const q = query(collection(firestore, 'suppliers'), orderBy('name', 'asc'));
+    const unsubscribe = onSnapshot(q, (querySnapshot) => {
+      const suppliersData: Supplier[] = [];
+      querySnapshot.forEach((doc) => {
+        suppliersData.push({ id: doc.id, ...doc.data() } as Supplier);
+      });
+      setSuppliers(suppliersData);
+      setIsLoading(false);
+    }, (error) => {
+      console.error("Error fetching suppliers: ", error);
+       toast({
+        variant: 'destructive',
+        title: 'Error',
+        description: 'Failed to fetch suppliers. Check console for details.',
+      });
+      setIsLoading(false);
+    });
+
+    return () => unsubscribe();
+  }, [toast]);
+
+  const form = useForm<SupplierFormValues>({
+    resolver: zodResolver(supplierFormSchema),
+    defaultValues: {
+      name: '',
+      contactPerson: '',
+      email: '',
+      phone: '',
+      status: 'Active',
+    },
+  });
+
+  async function onSubmit(values: SupplierFormValues) {
+    const result = await addSupplier(values);
+
+    if (result.errors) {
+      toast({
+        variant: 'destructive',
+        title: 'Error',
+        description: result.message,
+      });
+    } else {
+      toast({
+        title: 'Success',
+        description: result.message,
+      });
+      form.reset();
+      setIsDialogOpen(false);
+    }
+  }
 
   return (
     <div className="space-y-6">
@@ -57,10 +136,113 @@ export default function SuppliersPage() {
             Manage all your company's suppliers and vendors.
           </p>
         </div>
-         <Button onClick={() => setIsDialogOpen(true)}>
-            <PlusCircle className="mr-2" />
-            Add Supplier
-        </Button>
+        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+          <DialogTrigger asChild>
+            <Button>
+              <PlusCircle className="mr-2" />
+              Add Supplier
+            </Button>
+          </DialogTrigger>
+          <DialogContent className="sm:max-w-[480px]">
+            <DialogHeader>
+              <DialogTitle>Add New Supplier</DialogTitle>
+              <DialogDescription>
+                Fill in the details below to add a new supplier.
+              </DialogDescription>
+            </DialogHeader>
+            <Form {...form}>
+              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 py-4">
+                <FormField
+                  control={form.control}
+                  name="name"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Supplier Name</FormLabel>
+                      <FormControl>
+                        <Input placeholder="e.g., Al-Foulad Steel Co." {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                 <FormField
+                  control={form.control}
+                  name="contactPerson"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Contact Person</FormLabel>
+                      <FormControl>
+                        <Input placeholder="e.g., Ahmed Saleh" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                 <div className="grid grid-cols-2 gap-4">
+                   <FormField
+                    control={form.control}
+                    name="email"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Email</FormLabel>
+                        <FormControl>
+                          <Input placeholder="e.g., sales@al-foulad.com" type="email" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                   <FormField
+                    control={form.control}
+                    name="phone"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Phone Number</FormLabel>
+                        <FormControl>
+                          <Input placeholder="e.g., +966 11 123 4567" type="tel" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+                 <FormField
+                  control={form.control}
+                  name="status"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Status</FormLabel>
+                      <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select status" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="Active">Active</SelectItem>
+                          <SelectItem value="Inactive">Inactive</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <DialogFooter>
+                  <Button type="submit" disabled={form.formState.isSubmitting}>
+                    {form.formState.isSubmitting ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Saving...
+                      </>
+                    ) : (
+                      'Save Supplier'
+                    )}
+                  </Button>
+                </DialogFooter>
+              </form>
+            </Form>
+          </DialogContent>
+        </Dialog>
       </div>
 
       <Card>

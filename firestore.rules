@@ -1,25 +1,29 @@
 rules_version = '2';
-
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Users can only read and write their own user document
+    // Users can read their own user document
     match /users/{userId} {
-      allow read, write: if request.auth != null && request.auth.uid == userId;
+      allow read, update: if request.auth != null && request.auth.uid == userId;
+      allow create: if request.auth != null;
     }
 
-    // Allow logged-in users to read and create employees
+    // Authenticated users can manage employees
     match /employees/{employeeId} {
       allow read, create: if request.auth != null;
+      // Allow update and delete for potential future admin roles
+      allow update, delete: if request.auth != null;
     }
 
-    // Allow logged-in users to manage projects
+    // Authenticated users can manage projects
     match /projects/{projectId} {
-      allow read, create, update, delete: if request.auth != null;
+      allow read, create: if request.auth != null;
+      allow update, delete: if request.auth != null;
     }
 
-    // Fallback rule to deny access to any other collections
-    match /{document=**} {
-      allow read, write: if false;
+    // Authenticated users can manage suppliers
+    match /suppliers/{supplierId} {
+      allow read, create: if request.auth != null;
+      allow update, delete: if request.auth != null;
     }
   }
 }
