@@ -1,3 +1,4 @@
+
 'use client';
 
 import {
@@ -17,7 +18,7 @@ import {
   DropdownMenuLabel,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Loader2, MoreHorizontal, PlusCircle, Trash2 } from 'lucide-react';
+import { Loader2, MoreHorizontal, PlusCircle, Search, Trash2 } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   Dialog,
@@ -50,7 +51,7 @@ import {
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { addClient, deleteClient, updateClient } from './actions';
 import { useToast } from '@/hooks/use-toast';
 import { collection, onSnapshot, query, orderBy, type Timestamp } from 'firebase/firestore';
@@ -88,6 +89,7 @@ type ClientFormValues = z.infer<typeof clientFormSchema>;
 
 export default function ClientsPage() {
   const [clients, setClients] = useState<Client[]>([]);
+  const [searchTerm, setSearchTerm] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [isFormDialogOpen, setIsFormDialogOpen] = useState(false);
   const [clientToEdit, setClientToEdit] = useState<Client | null>(null);
@@ -117,6 +119,17 @@ export default function ClientsPage() {
 
     return () => unsubscribe();
   }, [toast]);
+
+  const filteredClients = useMemo(() => {
+    const lowercasedFilter = searchTerm.toLowerCase();
+    return clients.filter((client) => {
+      return (
+        client.name.toLowerCase().includes(lowercasedFilter) ||
+        client.email.toLowerCase().includes(lowercasedFilter) ||
+        (client.company && client.company.toLowerCase().includes(lowercasedFilter))
+      );
+    });
+  }, [clients, searchTerm]);
 
   const form = useForm<ClientFormValues>({
     resolver: zodResolver(clientFormSchema),
@@ -316,8 +329,22 @@ export default function ClientsPage() {
 
       <Card>
         <CardHeader>
-          <CardTitle>Client List</CardTitle>
-          <CardDescription>A list of all clients in the system.</CardDescription>
+          <div className="flex justify-between items-center">
+            <div>
+              <CardTitle>Client List</CardTitle>
+              <CardDescription>A list of all clients in the system.</CardDescription>
+            </div>
+            <div className="relative w-full max-w-sm">
+                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                <Input
+                    type="search"
+                    placeholder="Search by name, email, or company..."
+                    className="pl-8"
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                />
+            </div>
+          </div>
         </CardHeader>
         <CardContent>
           <Table>
@@ -349,8 +376,8 @@ export default function ClientsPage() {
                     </TableCell>
                   </TableRow>
                 ))
-              ) : clients.length > 0 ? (
-                clients.map((client) => (
+              ) : filteredClients.length > 0 ? (
+                filteredClients.map((client) => (
                   <TableRow key={client.id}>
                     <TableCell className="font-medium">{client.name}</TableCell>
                     <TableCell className="hidden md:table-cell">{client.company || 'N/A'}</TableCell>
@@ -396,7 +423,7 @@ export default function ClientsPage() {
               ) : (
                  <TableRow>
                   <TableCell colSpan={6} className="h-24 text-center">
-                    No clients found. Add one to get started.
+                    {searchTerm ? `No clients found for "${searchTerm}".` : 'No clients found. Add one to get started.'}
                   </TableCell>
                 </TableRow>
               )}
