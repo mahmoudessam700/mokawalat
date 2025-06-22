@@ -92,6 +92,9 @@ export default function EmployeesPage() {
   const { toast } = useToast();
   const { profile } = useAuth();
 
+  const [departmentFilter, setDepartmentFilter] = useState('All');
+  const [statusFilter, setStatusFilter] = useState('All');
+
   useEffect(() => {
     const q = query(collection(firestore, 'employees'), orderBy('name', 'asc'));
     const unsubscribe = onSnapshot(q, (querySnapshot) => {
@@ -108,14 +111,20 @@ export default function EmployeesPage() {
   }, []);
 
   const filteredEmployees = useMemo(() => {
-    const lowercasedFilter = searchTerm.toLowerCase();
     return employees.filter((employee) => {
-      return (
-        employee.name.toLowerCase().includes(lowercasedFilter) ||
-        employee.email.toLowerCase().includes(lowercasedFilter)
-      );
+      const lowercasedTerm = searchTerm.toLowerCase();
+      
+      const matchesSearch = !searchTerm ||
+        employee.name.toLowerCase().includes(lowercasedTerm) ||
+        employee.email.toLowerCase().includes(lowercasedTerm);
+        
+      const matchesDepartment = departmentFilter === 'All' || employee.department === departmentFilter;
+
+      const matchesStatus = statusFilter === 'All' || employee.status === statusFilter;
+
+      return matchesSearch && matchesDepartment && matchesStatus;
     });
-  }, [employees, searchTerm]);
+  }, [employees, searchTerm, departmentFilter, statusFilter]);
 
 
   const form = useForm<EmployeeFormValues>({
@@ -335,18 +344,46 @@ export default function EmployeesPage() {
 
       <Card>
         <CardHeader>
-          <CardTitle>Employee List</CardTitle>
-           <div className="flex justify-between items-center">
-            <CardDescription>A list of all employees in the system.</CardDescription>
-            <div className="relative w-full max-w-sm">
+          <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+            <div>
+              <CardTitle>Employee List</CardTitle>
+              <CardDescription>A list of all employees in the system.</CardDescription>
+            </div>
+            <div className="flex flex-col items-stretch gap-2 md:flex-row md:items-center">
+              <Select value={departmentFilter} onValueChange={setDepartmentFilter}>
+                <SelectTrigger className="w-full md:w-[180px]">
+                  <SelectValue placeholder="Filter by department" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="All">All Departments</SelectItem>
+                  <SelectItem value="Engineering">Engineering</SelectItem>
+                  <SelectItem value="Human Resources">Human Resources</SelectItem>
+                  <SelectItem value="Finance">Finance</SelectItem>
+                  <SelectItem value="Procurement">Procurement</SelectItem>
+                  <SelectItem value="Operations">Operations</SelectItem>
+                </SelectContent>
+              </Select>
+              <Select value={statusFilter} onValueChange={setStatusFilter}>
+                <SelectTrigger className="w-full md:w-[150px]">
+                  <SelectValue placeholder="Filter by status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="All">All Statuses</SelectItem>
+                  <SelectItem value="Active">Active</SelectItem>
+                  <SelectItem value="On Leave">On Leave</SelectItem>
+                  <SelectItem value="Inactive">Inactive</SelectItem>
+                </SelectContent>
+              </Select>
+              <div className="relative w-full md:w-auto">
                 <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
                 <Input
-                    type="search"
-                    placeholder="Search by name or email..."
-                    className="pl-8"
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
+                  type="search"
+                  placeholder="Search by name or email..."
+                  className="w-full pl-8 md:w-[250px]"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
                 />
+              </div>
             </div>
           </div>
         </CardHeader>
@@ -436,7 +473,9 @@ export default function EmployeesPage() {
               ) : (
                  <TableRow>
                   <TableCell colSpan={6} className="h-24 text-center">
-                    {searchTerm ? `No employees found for "${searchTerm}".` : 'No employees found. Add one to get started.'}
+                    {employees.length > 0
+                      ? 'No employees match the current filters.'
+                      : 'No employees found. Add one to get started.'}
                   </TableCell>
                 </TableRow>
               )}
