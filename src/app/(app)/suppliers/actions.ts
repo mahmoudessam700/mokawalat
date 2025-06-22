@@ -1,7 +1,7 @@
 'use server';
 
 import { firestore } from '@/lib/firebase';
-import { collection, addDoc } from 'firebase/firestore';
+import { collection, addDoc, doc, deleteDoc } from 'firebase/firestore';
 import { z } from 'zod';
 import { revalidatePath } from 'next/cache';
 
@@ -32,5 +32,20 @@ export async function addSupplier(values: SupplierFormValues) {
   } catch (error) {
     console.error('Error adding supplier:', error);
     return { message: 'Failed to add supplier.', errors: { _server: ['An unexpected error occurred.'] } };
+  }
+}
+
+export async function deleteSupplier(supplierId: string) {
+  if (!supplierId) {
+    return { success: false, message: 'Supplier ID is required.' };
+  }
+
+  try {
+    await deleteDoc(doc(firestore, 'suppliers', supplierId));
+    revalidatePath('/suppliers');
+    return { success: true, message: 'Supplier deleted successfully.' };
+  } catch (error) {
+    console.error('Error deleting supplier:', error);
+    return { success: false, message: 'Failed to delete supplier.' };
   }
 }
