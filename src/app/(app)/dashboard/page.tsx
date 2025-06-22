@@ -9,36 +9,112 @@ import {
   ChartTooltipContent,
   type ChartConfig,
 } from '@/components/ui/chart';
+import { useState, useEffect } from 'react';
+import { collection, onSnapshot, query, where, type Timestamp } from 'firebase/firestore';
+import { firestore } from '@/lib/firebase';
+import { Skeleton } from '@/components/ui/skeleton';
+import { startOfMonth, endOfMonth } from 'date-fns';
+
+// Simplified types for dashboard calculations
+type Project = { status: 'Planning' | 'In Progress' | 'Completed' | 'On Hold' };
+type Transaction = { type: 'Income'; amount: number; date: Timestamp };
+
+const formatCurrency = (value: number) => {
+    return new Intl.NumberFormat('en-US', {
+    style: 'currency',
+    currency: 'USD',
+    notation: 'compact',
+    maximumFractionDigits: 1,
+    }).format(value);
+};
 
 export default function DashboardPage() {
+  const [projectCount, setProjectCount] = useState(0);
+  const [employeeCount, setEmployeeCount] = useState(0);
+  const [inventoryCount, setInventoryCount] = useState(0);
+  const [monthlyRevenue, setMonthlyRevenue] = useState(0);
+  const [projectStatusData, setProjectStatusData] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const unsubscribes: (() => void)[] = [];
+
+    const qProjects = query(collection(firestore, 'projects'));
+    unsubscribes.push(onSnapshot(qProjects, (snapshot) => {
+      setProjectCount(snapshot.docs.filter(doc => (doc.data() as Project).status === 'In Progress').length);
+      const statusCounts = snapshot.docs
+        .map(doc => doc.data() as Project)
+        .reduce((acc, project) => {
+          acc[project.status] = (acc[project.status] || 0) + 1;
+          return acc;
+        }, {} as Record<string, number>);
+      
+      const chartData = [
+        { status: 'Planning', projects: statusCounts['Planning'] || 0 },
+        { status: 'In Progress', projects: statusCounts['In Progress'] || 0 },
+        { status: 'Completed', projects: statusCounts['Completed'] || 0 },
+        { status: 'On Hold', projects: statusCounts['On Hold'] || 0 },
+      ];
+      setProjectStatusData(chartData);
+    }));
+
+    const qEmployees = query(collection(firestore, 'employees'));
+    unsubscribes.push(onSnapshot(qEmployees, (snapshot) => {
+      setEmployeeCount(snapshot.size);
+    }));
+
+    const qInventory = query(collection(firestore, 'inventory'));
+    unsubscribes.push(onSnapshot(qInventory, (snapshot) => {
+      setInventoryCount(snapshot.size);
+    }));
+
+    const now = new Date();
+    const start = startOfMonth(now);
+    const end = endOfMonth(now);
+    const qTransactions = query(
+        collection(firestore, 'transactions'), 
+        where('type', '==', 'Income'),
+        where('date', '>=', start),
+        where('date', '<=', end)
+    );
+    unsubscribes.push(onSnapshot(qTransactions, (snapshot) => {
+        const revenue = snapshot.docs
+            .map(doc => doc.data() as Transaction)
+            .reduce((sum, transaction) => sum + transaction.amount, 0);
+        setMonthlyRevenue(revenue);
+    }));
+    
+    const timer = setTimeout(() => setIsLoading(false), 1500);
+    unsubscribes.push(() => clearTimeout(timer));
+
+    return () => unsubscribes.forEach(unsub => unsub());
+  }, []);
+
   const kpis = [
     {
       title: 'Active Projects',
-      value: '12',
+      value: projectCount,
       icon: <Briefcase className="size-6 text-muted-foreground" />,
+      isLoading: isLoading,
     },
     {
       title: 'Total Employees',
-      value: '150',
+      value: employeeCount,
       icon: <Users className="size-6 text-muted-foreground" />,
+      isLoading: isLoading,
     },
     {
       title: 'Inventory Items',
-      value: '2,345',
+      value: inventoryCount,
       icon: <Warehouse className="size-6 text-muted-foreground" />,
+      isLoading: isLoading,
     },
     {
       title: 'Monthly Revenue',
-      value: '$1.2M',
+      value: formatCurrency(monthlyRevenue),
       icon: <DollarSign className="size-6 text-muted-foreground" />,
+      isLoading: isLoading,
     },
-  ];
-
-  const chartData = [
-    { status: 'Planning', projects: 3 },
-    { status: 'In Progress', projects: 7 },
-    { status: 'Completed', projects: 2 },
-    { status: 'On Hold', projects: 1 },
   ];
 
   const chartConfig = {
@@ -61,7 +137,9 @@ export default function DashboardPage() {
               {kpi.icon}
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{kpi.value}</div>
+              {kpi.isLoading ? <Skeleton className="h-8 w-24" /> : (
+                <div className="text-2xl font-bold">{kpi.value}</div>
+              )}
             </CardContent>
           </Card>
         ))}
@@ -72,31 +150,33 @@ export default function DashboardPage() {
             <CardTitle>Project Status Overview</CardTitle>
           </CardHeader>
           <CardContent className="pl-2">
-            <ChartContainer config={chartConfig} className="h-[250px] w-full">
-              <BarChart accessibilityLayer data={chartData}>
-                <CartesianGrid vertical={false} />
-                <XAxis
-                  dataKey="status"
-                  tickLine={false}
-                  tickMargin={10}
-                  axisLine={false}
-                  stroke="hsl(var(--muted-foreground))"
-                />
-                <YAxis
-                  allowDecimals={false}
-                  stroke="hsl(var(--muted-foreground))"
-                />
-                <ChartTooltip
-                  cursor={false}
-                  content={<ChartTooltipContent hideLabel />}
-                />
-                <Bar
-                  dataKey="projects"
-                  fill="var(--color-projects)"
-                  radius={4}
-                />
-              </BarChart>
-            </ChartContainer>
+            {isLoading ? <Skeleton className="h-[250px] w-full" /> : (
+                <ChartContainer config={chartConfig} className="h-[250px] w-full">
+                <BarChart accessibilityLayer data={projectStatusData}>
+                    <CartesianGrid vertical={false} />
+                    <XAxis
+                    dataKey="status"
+                    tickLine={false}
+                    tickMargin={10}
+                    axisLine={false}
+                    stroke="hsl(var(--muted-foreground))"
+                    />
+                    <YAxis
+                    allowDecimals={false}
+                    stroke="hsl(var(--muted-foreground))"
+                    />
+                    <ChartTooltip
+                    cursor={false}
+                    content={<ChartTooltipContent hideLabel />}
+                    />
+                    <Bar
+                    dataKey="projects"
+                    fill="var(--color-projects)"
+                    radius={4}
+                    />
+                </BarChart>
+                </ChartContainer>
+            )}
           </CardContent>
         </Card>
         <Card>
