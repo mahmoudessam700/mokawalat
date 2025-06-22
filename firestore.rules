@@ -1,26 +1,27 @@
 rules_version = '2';
+
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Users can only read and write their own document
-    match /users/{userId} {
-      allow read, write: if request.auth != null && request.auth.uid == userId;
+    function isAuthenticated() {
+      return request.auth != null;
     }
 
-    // Authenticated users can read and write to these collections
-    match /employees/{employeeId} {
-      allow read, write: if request.auth != null;
+    // Default deny all
+    match /{document=**} {
+      allow read, write: if false;
     }
-    match /projects/{projectId} {
-      allow read, write: if request.auth != null;
+
+    // Users can manage their own document
+    match /users/{userId} {
+      allow read, write: if isAuthenticated() && request.auth.uid == userId;
     }
-    match /suppliers/{supplierId} {
-      allow read, write: if request.auth != null;
-    }
-    match /inventory/{itemId} {
-      allow read, write: if request.auth != null;
-    }
-    match /procurement/{requestId} {
-      allow read, write: if request.auth != null;
-    }
+    
+    // Authenticated users can manage these collections
+    match /employees/{docId} { allow read, write: if isAuthenticated(); }
+    match /inventory/{docId} { allow read, write: if isAuthenticated(); }
+    match /projects/{docId} { allow read, write: if isAuthenticated(); }
+    match /suppliers/{docId} { allow read, write: if isAuthenticated(); }
+    match /procurement/{docId} { allow read, write: if isAuthenticated(); }
+    match /clients/{docId} { allow read, write: if isAuthenticated(); }
   }
 }
