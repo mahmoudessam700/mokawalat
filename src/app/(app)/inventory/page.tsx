@@ -87,7 +87,7 @@ export default function InventoryPage() {
       toast({
         variant: 'destructive',
         title: 'Error',
-        description: 'Failed to fetch inventory. Check console for details.',
+        description: 'Failed to fetch inventory. Check permissions and network connection.',
       });
       setIsLoading(false);
     });
@@ -129,7 +129,7 @@ export default function InventoryPage() {
     if (status === 'Low Stock') return 'outline';
     if (status === 'Out of Stock') return 'destructive';
     return 'secondary';
-  }
+  };
 
   return (
     <div className="space-y-6">
