@@ -1,3 +1,4 @@
+
 'use client';
 
 import {
@@ -15,7 +16,7 @@ import {
   ChartTooltipContent,
   type ChartConfig,
 } from '@/components/ui/chart';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import {
   collection,
   onSnapshot,
@@ -41,10 +42,16 @@ type ProcurementRequest = {
   quantity: number;
   status: 'Pending' | 'Approved' | 'Rejected' | 'Ordered';
 };
+type InventoryItem = {
+    id: string;
+    name: string;
+    status: 'In Stock' | 'Low Stock' | 'Out of Stock';
+};
 type PendingTask = {
   id: string;
   title: string;
   type: string;
+  link: string;
 };
 
 const formatCurrency = (value: number) => {
@@ -61,8 +68,11 @@ export default function DashboardPage() {
   const [inventoryCount, setInventoryCount] = useState(0);
   const [monthlyRevenue, setMonthlyRevenue] = useState(0);
   const [projectStatusData, setProjectStatusData] = useState<any[]>([]);
-  const [pendingTasks, setPendingTasks] = useState<PendingTask[]>([]);
+  const [procurementTasks, setProcurementTasks] = useState<PendingTask[]>([]);
+  const [inventoryTasks, setInventoryTasks] = useState<PendingTask[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+
+  const pendingTasks = useMemo(() => [...procurementTasks, ...inventoryTasks], [procurementTasks, inventoryTasks]);
 
   useEffect(() => {
     const unsubscribes: (() => void)[] = [];
@@ -109,6 +119,16 @@ export default function DashboardPage() {
     unsubscribes.push(
       onSnapshot(qInventory, (snapshot) => {
         setInventoryCount(snapshot.size);
+         const lowStockTasks = snapshot.docs
+            .map(doc => ({ id: doc.id, ...doc.data() } as InventoryItem))
+            .filter(item => item.status === 'Low Stock')
+            .map(item => ({
+                id: item.id,
+                title: `Low stock for "${item.name}"`,
+                type: 'Inventory',
+                link: '/inventory',
+            }));
+        setInventoryTasks(lowStockTasks);
       })
     );
 
@@ -152,9 +172,10 @@ export default function DashboardPage() {
             id: doc.id,
             title: `Request for ${data.quantity}x ${data.itemName}`,
             type: 'Procurement',
+            link: '/procurement',
           };
         });
-        setPendingTasks(tasks);
+        setProcurementTasks(tasks);
       })
     );
 
@@ -271,6 +292,7 @@ export default function DashboardPage() {
               <div className="space-y-4">
                 <Skeleton className="h-10 w-full" />
                 <Skeleton className="h-10 w-full" />
+                <Skeleton className="h-10 w-full" />
               </div>
             ) : pendingTasks.length > 0 ? (
               <div className="space-y-4">
@@ -286,20 +308,14 @@ export default function DashboardPage() {
                       </p>
                     </div>
                     <Button asChild size="sm" variant="outline">
-                      <Link href="/procurement">View</Link>
+                      <Link href={task.link}>View</Link>
                     </Button>
                   </div>
                 ))}
                 {pendingTasks.length > 3 && (
-                  <Button
-                    asChild
-                    variant="link"
-                    className="p-0 h-auto w-full justify-start"
-                  >
-                    <Link href="/procurement">
-                      And {pendingTasks.length - 3} more...
-                    </Link>
-                  </Button>
+                  <p className="text-sm text-muted-foreground pt-2">
+                    And {pendingTasks.length - 3} more...
+                  </p>
                 )}
               </div>
             ) : (
