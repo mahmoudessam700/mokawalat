@@ -1,8 +1,13 @@
+
 'use client';
 
 import { Card, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Users, Palette } from 'lucide-react';
 import Link from 'next/link';
+import { useAuth } from '@/hooks/use-auth';
+import { useRouter } from 'next/navigation';
+import { useEffect } from 'react';
+import { Skeleton } from '@/components/ui/skeleton';
 
 const settingsLinks = [
   {
@@ -21,6 +26,31 @@ const settingsLinks = [
 ];
 
 export default function SettingsPage() {
+  const { profile, isLoading } = useAuth();
+  const router = useRouter();
+
+  useEffect(() => {
+    if (!isLoading && profile?.role !== 'admin') {
+      router.replace('/dashboard');
+    }
+  }, [profile, isLoading, router]);
+
+  if (isLoading || profile?.role !== 'admin') {
+     return (
+        <div className="space-y-6">
+            <div>
+                <Skeleton className="h-9 w-48" />
+                <Skeleton className="h-5 w-80 mt-2" />
+            </div>
+            <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
+                <Skeleton className="h-24 w-full" />
+                <Skeleton className="h-24 w-full" />
+            </div>
+        </div>
+    );
+  }
+
+
   return (
     <div className="space-y-6">
       <div>

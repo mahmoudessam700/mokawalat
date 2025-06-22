@@ -44,6 +44,8 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
+import { useAuth } from '@/hooks/use-auth';
+import { Skeleton } from './ui/skeleton';
 
 
 const menuItems = [
@@ -65,9 +67,10 @@ export function AppSidebar() {
   const router = useRouter();
   const { toast } = useToast();
   const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const { profile, isLoading: isAuthLoading } = useAuth();
 
   const isActive = (href: string) => {
-    return pathname === href;
+    return pathname.startsWith(href);
   };
   
   const handleLogout = async () => {
@@ -112,14 +115,16 @@ export function AppSidebar() {
         </SidebarMenu>
 
         <SidebarMenu className="mt-auto">
-            <SidebarMenuItem>
-                <SidebarMenuButton asChild isActive={isActive('/settings')} tooltip="Settings">
-                    <Link href="/settings">
-                        <Settings />
-                        <span>Settings</span>
-                    </Link>
-                </SidebarMenuButton>
-            </SidebarMenuItem>
+            {profile?.role === 'admin' && (
+              <SidebarMenuItem>
+                  <SidebarMenuButton asChild isActive={isActive('/settings')} tooltip="Settings">
+                      <Link href="/settings">
+                          <Settings />
+                          <span>Settings</span>
+                      </Link>
+                  </SidebarMenuButton>
+              </SidebarMenuItem>
+            )}
             <SidebarMenuItem>
                 <AlertDialog>
                     <AlertDialogTrigger asChild>
@@ -154,14 +159,30 @@ export function AppSidebar() {
       <SidebarFooter className='mt-auto'>
          <Separator className="my-2" />
          <div className="flex items-center gap-3 p-2">
-            <Avatar>
-                <AvatarImage src="https://placehold.co/40x40" alt="@shadcn" data-ai-hint="profile picture" />
-                <AvatarFallback>JD</AvatarFallback>
-            </Avatar>
-            <div className="flex flex-col">
-                <span className="text-sm font-semibold">John Doe</span>
-                <span className="text-xs text-muted-foreground">john.doe@mokawalat.com</span>
-            </div>
+            {isAuthLoading ? (
+              <>
+                  <Skeleton className="h-10 w-10 rounded-full" />
+                  <div className="flex flex-col gap-2">
+                      <Skeleton className="h-4 w-20" />
+                      <Skeleton className="h-3 w-32" />
+                  </div>
+              </>
+            ) : profile ? (
+              <>
+                  <Avatar>
+                      <AvatarImage src={`https://placehold.co/40x40.png`} alt={profile.email} data-ai-hint="profile picture" />
+                      <AvatarFallback>{profile.email.charAt(0).toUpperCase()}</AvatarFallback>
+                  </Avatar>
+                  <div className="flex flex-col overflow-hidden">
+                      <span className="text-sm font-semibold truncate">{profile.email.split('@')[0]}</span>
+                      <span className="text-xs text-muted-foreground truncate">{profile.email}</span>
+                  </div>
+              </>
+            ) : (
+                <div className="flex flex-col">
+                  <span className="text-sm font-semibold">Not logged in</span>
+              </div>
+            )}
          </div>
       </SidebarFooter>
     </>

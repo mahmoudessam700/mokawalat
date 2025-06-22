@@ -1,3 +1,4 @@
+
 'use client';
 
 import {
@@ -45,6 +46,8 @@ import { collection, onSnapshot, query, orderBy } from 'firebase/firestore';
 import { firestore } from '@/lib/firebase';
 import { Skeleton } from '@/components/ui/skeleton';
 import Link from 'next/link';
+import { useAuth } from '@/hooks/use-auth';
+import { useRouter } from 'next/navigation';
 
 type UserRole = 'admin' | 'user';
 
@@ -67,17 +70,27 @@ type UpdateUserRoleFormValues = z.infer<typeof updateUserRoleSchema>;
 
 export default function UserManagementPage() {
   const [users, setUsers] = useState<User[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isDataLoading, setIsDataLoading] = useState(true);
   const [isFormDialogOpen, setIsFormDialogOpen] = useState(false);
   const [userToEdit, setUserToEdit] = useState<User | null>(null);
   const { toast } = useToast();
+  const { profile, isLoading: isAuthLoading } = useAuth();
+  const router = useRouter();
+  
+  useEffect(() => {
+    if (!isAuthLoading && profile?.role !== 'admin') {
+      router.replace('/dashboard');
+    }
+  }, [profile, isAuthLoading, router]);
 
   useEffect(() => {
+    if (profile?.role !== 'admin') return;
+
     const q = query(collection(firestore, 'users'), orderBy('email', 'asc'));
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const data: User[] = snapshot.docs.map(doc => doc.data() as User);
       setUsers(data);
-      setIsLoading(false);
+      setIsDataLoading(false);
     }, (error) => {
       console.error("Error fetching users: ", error);
       toast({
@@ -85,11 +98,11 @@ export default function UserManagementPage() {
         title: 'Error',
         description: 'Failed to fetch users. Check security rules.',
       });
-      setIsLoading(false);
+      setIsDataLoading(false);
     });
 
     return () => unsubscribe();
-  }, [toast]);
+  }, [toast, profile]);
 
   const form = useForm<UpdateUserRoleFormValues>({
     resolver: zodResolver(updateUserRoleSchema),
@@ -129,6 +142,29 @@ export default function UserManagementPage() {
     setIsFormDialogOpen(open);
   }
 
+  if (isAuthLoading || profile?.role !== 'admin') {
+    return (
+        <div className="space-y-6">
+            <div className="flex items-center gap-4">
+                <Skeleton className="h-10 w-10 rounded-md" />
+                <div>
+                    <Skeleton className="h-9 w-64" />
+                    <Skeleton className="h-5 w-80 mt-2" />
+                </div>
+            </div>
+            <Card>
+                <CardHeader>
+                    <Skeleton className="h-6 w-32" />
+                    <Skeleton className="h-4 w-72 mt-2" />
+                </CardHeader>
+                <CardContent>
+                    <Skeleton className="h-40 w-full" />
+                </CardContent>
+            </Card>
+        </div>
+    );
+  }
+
   return (
     <>
     <div className="space-y-6">
@@ -166,7 +202,7 @@ export default function UserManagementPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {isLoading ? (
+              {isDataLoading ? (
                 Array.from({ length: 3 }).map((_, index) => (
                   <TableRow key={index}>
                     <TableCell><Skeleton className="h-4 w-[250px]" /></TableCell>
