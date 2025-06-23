@@ -15,7 +15,6 @@ import {
   DollarSign,
   TrendingUp,
   TrendingDown,
-  Minus,
   Contact,
   Bell,
   FileText,
@@ -356,48 +355,35 @@ export default function DashboardPage() {
             )}
           </CardContent>
         </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Inventory Items</CardTitle>
-            <Warehouse className="size-5 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            {isLoading ? (
-              <Skeleton className="h-8 w-24" />
-            ) : (
-              <div className="text-2xl font-bold">{inventoryCount}</div>
-            )}
-          </CardContent>
-        </Card>
-        <Card>
+        <Card className="bg-success/10 border-success">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">
               Monthly Revenue
             </CardTitle>
-            <TrendingUp className="size-5 text-muted-foreground" />
+            <TrendingUp className="size-5 text-success" />
           </CardHeader>
           <CardContent>
             {isLoading ? (
               <Skeleton className="h-8 w-24" />
             ) : (
-              <div className="text-2xl font-bold">
+              <div className="text-2xl font-bold text-success">
                 {formatCurrency(monthlyFinancials.revenue)}
               </div>
             )}
           </CardContent>
         </Card>
-        <Card>
+        <Card className="bg-destructive/10 border-destructive">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">
               Monthly Expenses
             </CardTitle>
-            <TrendingDown className="size-5 text-muted-foreground" />
+            <TrendingDown className="size-5 text-destructive" />
           </CardHeader>
           <CardContent>
             {isLoading ? (
               <Skeleton className="h-8 w-24" />
             ) : (
-              <div className="text-2xl font-bold">
+              <div className="text-2xl font-bold text-destructive">
                 {formatCurrency(monthlyFinancials.expenses)}
               </div>
             )}
@@ -406,7 +392,12 @@ export default function DashboardPage() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Net Balance</CardTitle>
-            <Minus className="size-5 text-muted-foreground" />
+            <DollarSign
+              className={cn(
+                'size-5 text-muted-foreground',
+                netBalance >= 0 ? 'text-success' : 'text-destructive'
+              )}
+            />
           </CardHeader>
           <CardContent>
             {isLoading ? (
@@ -420,6 +411,19 @@ export default function DashboardPage() {
               >
                 {formatCurrency(netBalance)}
               </div>
+            )}
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Inventory Items</CardTitle>
+            <Warehouse className="size-5 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            {isLoading ? (
+              <Skeleton className="h-8 w-24" />
+            ) : (
+              <div className="text-2xl font-bold">{inventoryCount}</div>
             )}
           </CardContent>
         </Card>
