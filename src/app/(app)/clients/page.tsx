@@ -91,6 +91,7 @@ type ClientFormValues = z.infer<typeof clientFormSchema>;
 export default function ClientsPage() {
   const [clients, setClients] = useState<Client[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
+  const [statusFilter, setStatusFilter] = useState('All');
   const [isLoading, setIsLoading] = useState(true);
   const [isFormDialogOpen, setIsFormDialogOpen] = useState(false);
   const [clientToEdit, setClientToEdit] = useState<Client | null>(null);
@@ -125,13 +126,16 @@ export default function ClientsPage() {
   const filteredClients = useMemo(() => {
     const lowercasedFilter = searchTerm.toLowerCase();
     return clients.filter((client) => {
-      return (
+      const matchesSearch = (
         client.name.toLowerCase().includes(lowercasedFilter) ||
         client.email.toLowerCase().includes(lowercasedFilter) ||
         (client.company && client.company.toLowerCase().includes(lowercasedFilter))
       );
+      const matchesStatus = statusFilter === 'All' || client.status === statusFilter;
+
+      return matchesSearch && matchesStatus;
     });
-  }, [clients, searchTerm]);
+  }, [clients, searchTerm, statusFilter]);
 
   const form = useForm<ClientFormValues>({
     resolver: zodResolver(clientFormSchema),
@@ -333,20 +337,33 @@ export default function ClientsPage() {
 
       <Card>
         <CardHeader>
-          <div className="flex justify-between items-center">
+          <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
             <div>
               <CardTitle>Client List</CardTitle>
               <CardDescription>A list of all clients in the system.</CardDescription>
             </div>
-            <div className="relative w-full max-w-sm">
+            <div className="flex flex-col items-stretch gap-2 md:flex-row md:items-center">
+              <div className="relative w-full md:w-auto">
                 <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
                 <Input
-                    type="search"
-                    placeholder="Search by name, email, or company..."
-                    className="pl-8"
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
+                  type="search"
+                  placeholder="Search by name, email, or company..."
+                  className="w-full pl-8 md:w-[250px]"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
                 />
+              </div>
+              <Select value={statusFilter} onValueChange={setStatusFilter}>
+                <SelectTrigger className="w-full md:w-[180px]">
+                  <SelectValue placeholder="Filter by status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="All">All Statuses</SelectItem>
+                  <SelectItem value="Lead">Lead</SelectItem>
+                  <SelectItem value="Active">Active</SelectItem>
+                  <SelectItem value="Inactive">Inactive</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
           </div>
         </CardHeader>
@@ -431,7 +448,9 @@ export default function ClientsPage() {
               ) : (
                  <TableRow>
                   <TableCell colSpan={6} className="h-24 text-center">
-                    {searchTerm ? `No clients found for "${searchTerm}".` : 'No clients found. Add one to get started.'}
+                    {clients.length > 0
+                      ? 'No clients match the current filters.'
+                      : 'No clients found. Add one to get started.'}
                   </TableCell>
                 </TableRow>
               )}
