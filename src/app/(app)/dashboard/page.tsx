@@ -108,6 +108,8 @@ const activityIcons: { [key: string]: React.ReactNode } = {
 export default function DashboardPage() {
   const [projectCount, setProjectCount] = useState(0);
   const [employeeCount, setEmployeeCount] = useState(0);
+  const [clientCount, setClientCount] = useState(0);
+  const [supplierCount, setSupplierCount] = useState(0);
   const [inventoryCount, setInventoryCount] = useState(0);
   const [monthlyFinancials, setMonthlyFinancials] = useState({
     revenue: 0,
@@ -168,6 +170,20 @@ export default function DashboardPage() {
       onSnapshot(qEmployees, (snapshot) => {
         setEmployeeCount(snapshot.size);
       })
+    );
+
+    const qClients = query(collection(firestore, 'clients'));
+    unsubscribes.push(
+        onSnapshot(qClients, (snapshot) => {
+            setClientCount(snapshot.size);
+        })
+    );
+
+    const qSuppliers = query(collection(firestore, 'suppliers'));
+    unsubscribes.push(
+        onSnapshot(qSuppliers, (snapshot) => {
+            setSupplierCount(snapshot.size);
+        })
     );
 
     const qInventory = query(collection(firestore, 'inventory'));
@@ -287,7 +303,7 @@ export default function DashboardPage() {
       <h1 className="font-headline text-3xl font-bold tracking-tight">
         Dashboard
       </h1>
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Active Projects</CardTitle>
@@ -311,6 +327,32 @@ export default function DashboardPage() {
               <Skeleton className="h-8 w-24" />
             ) : (
               <div className="text-2xl font-bold">{employeeCount}</div>
+            )}
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Total Clients</CardTitle>
+            <Contact className="size-5 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            {isLoading ? (
+              <Skeleton className="h-8 w-24" />
+            ) : (
+              <div className="text-2xl font-bold">{clientCount}</div>
+            )}
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Total Suppliers</CardTitle>
+            <Truck className="size-5 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            {isLoading ? (
+              <Skeleton className="h-8 w-24" />
+            ) : (
+              <div className="text-2xl font-bold">{supplierCount}</div>
             )}
           </CardContent>
         </Card>
