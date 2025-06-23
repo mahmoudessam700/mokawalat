@@ -377,7 +377,11 @@ export default function AssetsPage() {
                   ) : filteredAssets.length > 0 ? (
                     filteredAssets.map((asset) => (
                       <TableRow key={asset.id}>
-                        <TableCell className="font-medium">{asset.name}</TableCell>
+                        <TableCell className="font-medium">
+                          <Link href={`/assets/${asset.id}`} className="hover:underline">
+                            {asset.name}
+                          </Link>
+                        </TableCell>
                         <TableCell>{asset.category}</TableCell>
                         <TableCell>{asset.currentProjectId ? <Link href={`/projects/${asset.currentProjectId}`} className="hover:underline">{projectMap.get(asset.currentProjectId) || 'N/A'}</Link> : 'N/A'}</TableCell>
                         <TableCell className="hidden md:table-cell">

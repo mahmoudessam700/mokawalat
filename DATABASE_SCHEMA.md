@@ -167,6 +167,14 @@ Manages company-owned assets like vehicles and heavy machinery.
     -   `currentProjectId` (string, optional): A reference to the `projects` collection document ID if currently assigned.
     -   `nextMaintenanceDate` (Timestamp, optional): The date for the next scheduled maintenance.
     -   `createdAt` (Timestamp)
+-   **Sub-collections**:
+    -   `maintenanceLogs`: A record of all maintenance activities for the asset.
+        -   `date` (Timestamp): The date the maintenance was performed.
+        -   `type` (string): The type of maintenance (e.g., 'Scheduled', 'Repair', 'Inspection').
+        -   `description` (string): A detailed description of the work performed.
+        -   `cost` (number, optional): The cost of the maintenance.
+        -   `completedBy` (string, optional): Name of the person or company that performed the work.
+        -   `createdAt` (Timestamp)
 
 ### `procurement`
 
