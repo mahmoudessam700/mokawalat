@@ -2,7 +2,7 @@
 'use server';
 
 import { firestore, storage } from '@/lib/firebase';
-import { collection, addDoc, doc, deleteDoc, updateDoc, serverTimestamp, setDoc, getDoc } from 'firebase/firestore';
+import { collection, addDoc, doc, deleteDoc, updateDoc, serverTimestamp, setDoc, getDoc, query, where, getDocs } from 'firebase/firestore';
 import { z } from 'zod';
 import { revalidatePath } from 'next/cache';
 import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
@@ -84,6 +84,13 @@ export async function deleteSupplier(supplierId: string) {
   }
 
   try {
+    // Check for linked purchase orders
+    const poQuery = query(collection(firestore, 'procurement'), where('supplierId', '==', supplierId));
+    const poSnapshot = await getDocs(poQuery);
+    if (!poSnapshot.empty) {
+      return { success: false, message: 'Cannot delete supplier with existing purchase orders. Please re-assign or delete them first.' };
+    }
+
     await deleteDoc(doc(firestore, 'suppliers', supplierId));
     revalidatePath('/suppliers');
     return { success: true, message: 'Supplier deleted successfully.' };

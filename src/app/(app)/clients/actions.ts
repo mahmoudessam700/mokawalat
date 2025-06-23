@@ -2,7 +2,7 @@
 'use server';
 
 import { firestore } from '@/lib/firebase';
-import { collection, addDoc, serverTimestamp, doc, deleteDoc, updateDoc } from 'firebase/firestore';
+import { collection, addDoc, serverTimestamp, doc, deleteDoc, updateDoc, query, where, getDocs } from 'firebase/firestore';
 import { z } from 'zod';
 import { revalidatePath } from 'next/cache';
 
@@ -82,6 +82,20 @@ export async function deleteClient(clientId: string) {
   }
 
   try {
+    // Check for linked projects
+    const projectsQuery = query(collection(firestore, 'projects'), where('clientId', '==', clientId));
+    const projectsSnapshot = await getDocs(projectsQuery);
+    if (!projectsSnapshot.empty) {
+      return { success: false, message: 'Cannot delete client with active projects. Please re-assign them first.' };
+    }
+
+    // Check for linked transactions
+    const transactionsQuery = query(collection(firestore, 'transactions'), where('clientId', '==', clientId));
+    const transactionsSnapshot = await getDocs(transactionsQuery);
+    if (!transactionsSnapshot.empty) {
+      return { success: false, message: 'Cannot delete client with existing financial transactions.' };
+    }
+
     await deleteDoc(doc(firestore, 'clients', clientId));
     revalidatePath('/clients');
     return { success: true, message: 'Client deleted successfully.' };
