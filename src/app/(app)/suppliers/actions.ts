@@ -27,10 +27,18 @@ export async function addSupplier(values: SupplierFormValues) {
   }
 
   try {
-    await addDoc(collection(firestore, 'suppliers'), {
+    const supplierRef = await addDoc(collection(firestore, 'suppliers'), {
       ...validatedFields.data,
       name_lowercase: validatedFields.data.name.toLowerCase(),
     });
+
+    await addDoc(collection(firestore, 'activityLog'), {
+        message: `New supplier added: ${validatedFields.data.name}`,
+        type: "SUPPLIER_ADDED",
+        link: `/suppliers/${supplierRef.id}`,
+        timestamp: serverTimestamp(),
+    });
+
     revalidatePath('/suppliers');
     return { message: 'Supplier added successfully.', errors: null };
   } catch (error) {
@@ -146,6 +154,14 @@ export async function addContract(supplierId: string, values: ContractFormValues
       effectiveDate: new Date(validatedFields.data.effectiveDate),
       createdAt: serverTimestamp(),
     });
+
+    await addDoc(collection(firestore, 'activityLog'), {
+        message: `New contract added for supplier: ${validatedFields.data.title}`,
+        type: "CONTRACT_ADDED",
+        link: `/suppliers/${supplierId}`,
+        timestamp: serverTimestamp(),
+    });
+
     revalidatePath(`/suppliers/${supplierId}`);
     return { message: 'Contract added successfully.', errors: null };
   } catch (error) {

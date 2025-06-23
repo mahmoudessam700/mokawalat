@@ -117,6 +117,14 @@ export async function addContract(clientId: string, values: ContractFormValues) 
       effectiveDate: new Date(validatedFields.data.effectiveDate),
       createdAt: serverTimestamp(),
     });
+
+    await addDoc(collection(firestore, 'activityLog'), {
+        message: `New contract added for client: ${validatedFields.data.title}`,
+        type: "CONTRACT_ADDED",
+        link: `/clients/${clientId}`,
+        timestamp: serverTimestamp(),
+    });
+
     revalidatePath(`/clients/${clientId}`);
     return { message: 'Contract added successfully.', errors: null };
   } catch (error) {

@@ -36,11 +36,19 @@ export async function addPurchaseRequest(values: ProcurementFormValues) {
     
     const itemName = itemDoc.data().name;
 
-    await addDoc(collection(firestore, 'procurement'), {
+    const poRef = await addDoc(collection(firestore, 'procurement'), {
       ...validatedFields.data,
       itemName,
       requestedAt: serverTimestamp(),
     });
+
+    await addDoc(collection(firestore, 'activityLog'), {
+        message: `New PO created for ${itemName}`,
+        type: "PO_CREATED",
+        link: `/procurement/${poRef.id}`,
+        timestamp: serverTimestamp(),
+    });
+
     revalidatePath('/procurement');
     return { message: 'Purchase order created successfully.', errors: null };
   } catch (error) {

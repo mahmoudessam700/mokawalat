@@ -1,3 +1,4 @@
+
 'use client';
 
 import {
@@ -6,7 +7,7 @@ import {
   PopoverTrigger,
 } from '@/components/ui/popover';
 import { Button } from '@/components/ui/button';
-import { Bell, Briefcase, Contact, DollarSign, Users } from 'lucide-react';
+import { Bell, Briefcase, Contact, DollarSign, Users, Truck, Warehouse, ShoppingCart, FileText, ClipboardList } from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { useState, useEffect } from 'react';
 import { collection, onSnapshot, query, orderBy, limit, type Timestamp } from 'firebase/firestore';
@@ -28,6 +29,11 @@ const activityIcons: { [key: string]: React.ReactNode } = {
   CLIENT_ADDED: <Contact className="size-4" />,
   EMPLOYEE_HIRED: <Users className="size-4" />,
   TRANSACTION_ADDED: <DollarSign className="size-4" />,
+  SUPPLIER_ADDED: <Truck className="size-4" />,
+  INVENTORY_ADDED: <Warehouse className="size-4" />,
+  PO_CREATED: <ShoppingCart className="size-4" />,
+  CONTRACT_ADDED: <FileText className="size-4" />,
+  MATERIAL_REQUESTED: <ClipboardList className="size-4" />,
   DEFAULT: <Bell className="size-4" />,
 };
 

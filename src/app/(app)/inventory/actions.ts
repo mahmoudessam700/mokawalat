@@ -2,7 +2,7 @@
 'use server';
 
 import { firestore } from '@/lib/firebase';
-import { collection, addDoc, doc, deleteDoc, updateDoc, runTransaction } from 'firebase/firestore';
+import { collection, addDoc, doc, deleteDoc, updateDoc, runTransaction, serverTimestamp } from 'firebase/firestore';
 import { z } from 'zod';
 import { revalidatePath } from 'next/cache';
 
@@ -27,10 +27,18 @@ export async function addInventoryItem(values: InventoryFormValues) {
   }
 
   try {
-    await addDoc(collection(firestore, 'inventory'), {
+    const itemRef = await addDoc(collection(firestore, 'inventory'), {
       ...validatedFields.data,
       name_lowercase: validatedFields.data.name.toLowerCase(),
     });
+    
+    await addDoc(collection(firestore, 'activityLog'), {
+        message: `New item added to inventory: ${validatedFields.data.name}`,
+        type: "INVENTORY_ADDED",
+        link: `/inventory`,
+        timestamp: serverTimestamp(),
+    });
+
     revalidatePath('/inventory');
     return { message: 'Item added successfully.', errors: null };
   } catch (error) {

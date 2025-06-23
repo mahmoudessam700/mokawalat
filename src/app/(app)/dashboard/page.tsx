@@ -19,6 +19,9 @@ import {
   Contact,
   Bell,
   FileText,
+  ShoppingCart,
+  ClipboardList,
+  Truck,
 } from 'lucide-react';
 import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from 'recharts';
 import {
@@ -93,6 +96,11 @@ const activityIcons: { [key: string]: React.ReactNode } = {
   CLIENT_ADDED: <Contact className="size-4" />,
   EMPLOYEE_HIRED: <Users className="size-4" />,
   TRANSACTION_ADDED: <DollarSign className="size-4" />,
+  SUPPLIER_ADDED: <Truck className="size-4" />,
+  INVENTORY_ADDED: <Warehouse className="size-4" />,
+  PO_CREATED: <ShoppingCart className="size-4" />,
+  CONTRACT_ADDED: <FileText className="size-4" />,
+  MATERIAL_REQUESTED: <ClipboardList className="size-4" />,
   DEFAULT: <Bell className="size-4" />,
 };
 
