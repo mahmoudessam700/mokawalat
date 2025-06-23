@@ -559,7 +559,8 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
             <TabsList>
                 <TabsTrigger value="overview">Overview</TabsTrigger>
                 <TabsTrigger value="tasks">Tasks</TabsTrigger>
-                <TabsTrigger value="team-materials">Team & Materials</TabsTrigger>
+                <TabsTrigger value="team">Team</TabsTrigger>
+                <TabsTrigger value="materials">Materials</TabsTrigger>
                 <TabsTrigger value="assets">Assets</TabsTrigger>
                 <TabsTrigger value="documents">Documents</TabsTrigger>
                 <TabsTrigger value="daily-logs">Daily Logs</TabsTrigger>
@@ -675,159 +676,159 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
                     </CardContent>
                 </Card>
             </TabsContent>
-            <TabsContent value="team-materials" className="pt-4">
-                <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-                    <Card>
-                        <CardHeader className="flex flex-row items-center justify-between">
-                            <div>
-                                <CardTitle>Assigned Team</CardTitle>
-                                <CardDescription>Team members assigned to this project.</CardDescription>
+            <TabsContent value="team" className="pt-4">
+                <Card>
+                    <CardHeader className="flex flex-row items-center justify-between">
+                        <div>
+                            <CardTitle>Assigned Team</CardTitle>
+                            <CardDescription>Team members assigned to this project.</CardDescription>
+                        </div>
+                        {profile?.role === 'admin' && (
+                            <AssignTeamDialog
+                                projectId={project.id}
+                                employees={employees}
+                                assignedEmployeeIds={project.teamMemberIds || []}
+                            />
+                        )}
+                    </CardHeader>
+                    <CardContent>
+                        {assignedTeam.length > 0 ? (
+                            <ul className="space-y-2">
+                                {assignedTeam.map(member => (
+                                    <li key={member.id}>
+                                        <Link href={`/employees/${member.id}`} className="flex items-center gap-4 rounded-md p-2 -m-2 hover:bg-accent transition-colors">
+                                            <Avatar>
+                                                <AvatarImage src={`https://placehold.co/40x40.png`} alt={member.name} data-ai-hint="profile picture" />
+                                                <AvatarFallback>{member.name.split(' ').map(n => n[0]).join('')}</AvatarFallback>
+                                            </Avatar>
+                                            <div>
+                                                <p className="font-semibold text-foreground">{member.name}</p>
+                                                <p className="text-sm text-muted-foreground">{member.role}</p>
+                                            </div>
+                                        </Link>
+                                    </li>
+                                ))}
+                            </ul>
+                        ) : (
+                            <div className="flex flex-col items-center justify-center gap-2 p-4 text-center text-muted-foreground">
+                                <Users className="size-12" />
+                                <p>No team members assigned yet.</p>
+                                {profile?.role === 'admin' && (
+                                    <p className="text-xs">Use the "Assign Team" button to add members.</p>
+                                )}
                             </div>
-                            {profile?.role === 'admin' && (
-                                <AssignTeamDialog
-                                    projectId={project.id}
-                                    employees={employees}
-                                    assignedEmployeeIds={project.teamMemberIds || []}
-                                />
-                            )}
-                        </CardHeader>
-                        <CardContent>
-                            {assignedTeam.length > 0 ? (
-                                <ul className="space-y-2">
-                                    {assignedTeam.map(member => (
-                                        <li key={member.id}>
-                                            <Link href={`/employees/${member.id}`} className="flex items-center gap-4 rounded-md p-2 -m-2 hover:bg-accent transition-colors">
-                                                <Avatar>
-                                                    <AvatarImage src={`https://placehold.co/40x40.png`} alt={member.name} data-ai-hint="profile picture" />
-                                                    <AvatarFallback>{member.name.split(' ').map(n => n[0]).join('')}</AvatarFallback>
-                                                </Avatar>
-                                                <div>
-                                                    <p className="font-semibold text-foreground">{member.name}</p>
-                                                    <p className="text-sm text-muted-foreground">{member.role}</p>
-                                                </div>
-                                            </Link>
-                                        </li>
-                                    ))}
-                                </ul>
-                            ) : (
-                                <div className="flex flex-col items-center justify-center gap-2 p-4 text-center text-muted-foreground">
-                                    <Users className="size-12" />
-                                    <p>No team members assigned yet.</p>
-                                    {profile?.role === 'admin' && (
-                                        <p className="text-xs">Use the "Assign Team" button to add members.</p>
-                                    )}
-                                </div>
-                            )}
-                        </CardContent>
-                    </Card>
-                     <Card>
-                        <CardHeader className="flex flex-row items-center justify-between">
-                            <div>
-                                <CardTitle>Material Requests</CardTitle>
-                                <CardDescription>Requests for materials from inventory.</CardDescription>
-                            </div>
-                            <Dialog open={isRequestDialogOpen} onOpenChange={setIsRequestDialogOpen}>
-                                <DialogTrigger asChild>
-                                    <Button>
-                                        <PackagePlus className="mr-2" /> Request
-                                    </Button>
-                                </DialogTrigger>
-                                <DialogContent>
-                                    <DialogHeader>
-                                        <DialogTitle>Request Material from Inventory</DialogTitle>
-                                        <DialogDescription>Select an item and specify the quantity needed for the project.</DialogDescription>
-                                    </DialogHeader>
-                                    <Form {...requestForm}>
-                                        <form onSubmit={requestForm.handleSubmit(onMaterialRequestSubmit)} className="space-y-4 py-4">
-                                            <FormField
-                                                control={requestForm.control}
-                                                name="itemId"
-                                                render={({ field }) => (
-                                                    <FormItem>
-                                                        <FormLabel>Inventory Item</FormLabel>
-                                                        <Select onValueChange={field.onChange} value={field.value}>
-                                                            <FormControl>
-                                                            <SelectTrigger>
-                                                                <SelectValue placeholder="Select an item" />
-                                                            </SelectTrigger>
-                                                            </FormControl>
-                                                            <SelectContent>
-                                                            {inventoryItems.map(item => (
-                                                                <SelectItem key={item.id} value={item.id}>
-                                                                    {item.name} (Available: {item.quantity})
-                                                                </SelectItem>
-                                                            ))}
-                                                            </SelectContent>
-                                                        </Select>
-                                                        <FormMessage />
-                                                    </FormItem>
-                                                )}
-                                            />
-                                            <FormField
-                                                control={requestForm.control}
-                                                name="quantity"
-                                                render={({ field }) => (
-                                                    <FormItem>
-                                                        <FormLabel>Quantity</FormLabel>
+                        )}
+                    </CardContent>
+                </Card>
+            </TabsContent>
+            <TabsContent value="materials" className="pt-4">
+                 <Card>
+                    <CardHeader className="flex flex-row items-center justify-between">
+                        <div>
+                            <CardTitle>Material Requests</CardTitle>
+                            <CardDescription>Requests for materials from inventory.</CardDescription>
+                        </div>
+                        <Dialog open={isRequestDialogOpen} onOpenChange={setIsRequestDialogOpen}>
+                            <DialogTrigger asChild>
+                                <Button>
+                                    <PackagePlus className="mr-2" /> Request
+                                </Button>
+                            </DialogTrigger>
+                            <DialogContent>
+                                <DialogHeader>
+                                    <DialogTitle>Request Material from Inventory</DialogTitle>
+                                    <DialogDescription>Select an item and specify the quantity needed for the project.</DialogDescription>
+                                </DialogHeader>
+                                <Form {...requestForm}>
+                                    <form onSubmit={requestForm.handleSubmit(onMaterialRequestSubmit)} className="space-y-4 py-4">
+                                        <FormField
+                                            control={requestForm.control}
+                                            name="itemId"
+                                            render={({ field }) => (
+                                                <FormItem>
+                                                    <FormLabel>Inventory Item</FormLabel>
+                                                    <Select onValueChange={field.onChange} value={field.value}>
                                                         <FormControl>
-                                                            <Input type="number" placeholder="e.g., 10" {...field} />
+                                                        <SelectTrigger>
+                                                            <SelectValue placeholder="Select an item" />
+                                                        </SelectTrigger>
                                                         </FormControl>
-                                                        <FormMessage />
-                                                    </FormItem>
-                                                )}
-                                            />
-                                            <DialogFooter>
-                                                <Button type="submit" disabled={requestForm.formState.isSubmitting}>
-                                                    {requestForm.formState.isSubmitting ? (
-                                                    <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Submitting...</>
-                                                    ) : ( 'Submit Request' )}
-                                                </Button>
-                                            </DialogFooter>
-                                        </form>
-                                    </Form>
-                                </DialogContent>
-                            </Dialog>
-                        </CardHeader>
-                        <CardContent>
-                            {materialRequests.length > 0 ? (
-                                <Table>
-                                    <TableHeader>
-                                        <TableRow>
-                                            <TableHead>Item</TableHead>
-                                            <TableHead>Qty</TableHead>
-                                            <TableHead>Status</TableHead>
-                                            {profile?.role === 'admin' && <TableHead className="text-right">Actions</TableHead>}
+                                                        <SelectContent>
+                                                        {inventoryItems.map(item => (
+                                                            <SelectItem key={item.id} value={item.id}>
+                                                                {item.name} (Available: {item.quantity})
+                                                            </SelectItem>
+                                                        ))}
+                                                        </SelectContent>
+                                                    </Select>
+                                                    <FormMessage />
+                                                </FormItem>
+                                            )}
+                                        />
+                                        <FormField
+                                            control={requestForm.control}
+                                            name="quantity"
+                                            render={({ field }) => (
+                                                <FormItem>
+                                                    <FormLabel>Quantity</FormLabel>
+                                                    <FormControl>
+                                                        <Input type="number" placeholder="e.g., 10" {...field} />
+                                                    </FormControl>
+                                                    <FormMessage />
+                                                </FormItem>
+                                            )}
+                                        />
+                                        <DialogFooter>
+                                            <Button type="submit" disabled={requestForm.formState.isSubmitting}>
+                                                {requestForm.formState.isSubmitting ? (
+                                                <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Submitting...</>
+                                                ) : ( 'Submit Request' )}
+                                            </Button>
+                                        </DialogFooter>
+                                    </form>
+                                </Form>
+                            </DialogContent>
+                        </Dialog>
+                    </CardHeader>
+                    <CardContent>
+                        {materialRequests.length > 0 ? (
+                            <Table>
+                                <TableHeader>
+                                    <TableRow>
+                                        <TableHead>Item</TableHead>
+                                        <TableHead>Qty</TableHead>
+                                        <TableHead>Status</TableHead>
+                                        {profile?.role === 'admin' && <TableHead className="text-right">Actions</TableHead>}
+                                    </TableRow>
+                                </TableHeader>
+                                <TableBody>
+                                    {materialRequests.map(req => (
+                                        <TableRow key={req.id}>
+                                            <TableCell className="font-medium">{req.itemName}</TableCell>
+                                            <TableCell>{req.quantity}</TableCell>
+                                            <TableCell><Badge variant={materialRequestStatusVariant[req.status]}>{req.status}</Badge></TableCell>
+                                            {profile?.role === 'admin' && (
+                                                <TableCell className="text-right">
+                                                    {req.status === 'Pending' && (
+                                                        <div className="flex gap-2 justify-end">
+                                                            <Button size="sm" variant="outline" className="h-8 px-2 text-success hover:text-success border-green-500 hover:bg-green-50" onClick={() => handleRequestStatusUpdate(req.id, 'Approved')}><PackageCheck className="size-4" /></Button>
+                                                            <Button size="sm" variant="outline" className="h-8 px-2 text-destructive hover:text-destructive border-red-500 hover:bg-red-50" onClick={() => handleRequestStatusUpdate(req.id, 'Rejected')}><PackageX className="size-4" /></Button>
+                                                        </div>
+                                                    )}
+                                                </TableCell>
+                                            )}
                                         </TableRow>
-                                    </TableHeader>
-                                    <TableBody>
-                                        {materialRequests.map(req => (
-                                            <TableRow key={req.id}>
-                                                <TableCell className="font-medium">{req.itemName}</TableCell>
-                                                <TableCell>{req.quantity}</TableCell>
-                                                <TableCell><Badge variant={materialRequestStatusVariant[req.status]}>{req.status}</Badge></TableCell>
-                                                {profile?.role === 'admin' && (
-                                                    <TableCell className="text-right">
-                                                        {req.status === 'Pending' && (
-                                                            <div className="flex gap-2 justify-end">
-                                                                <Button size="sm" variant="outline" className="h-8 px-2 text-success hover:text-success border-green-500 hover:bg-green-50" onClick={() => handleRequestStatusUpdate(req.id, 'Approved')}><PackageCheck className="size-4" /></Button>
-                                                                <Button size="sm" variant="outline" className="h-8 px-2 text-destructive hover:text-destructive border-red-500 hover:bg-red-50" onClick={() => handleRequestStatusUpdate(req.id, 'Rejected')}><PackageX className="size-4" /></Button>
-                                                            </div>
-                                                        )}
-                                                    </TableCell>
-                                                )}
-                                            </TableRow>
-                                        ))}
-                                    </TableBody>
-                                </Table>
-                            ) : (
-                                <div className="flex flex-col items-center justify-center gap-2 p-8 text-center text-muted-foreground">
-                                    <PackageSearch className="size-12" />
-                                    <p>No material requests for this project yet.</p>
-                                </div>
-                            )}
-                        </CardContent>
-                    </Card>
-                </div>
+                                    ))}
+                                </TableBody>
+                            </Table>
+                        ) : (
+                            <div className="flex flex-col items-center justify-center gap-2 p-8 text-center text-muted-foreground">
+                                <PackageSearch className="size-12" />
+                                <p>No material requests for this project yet.</p>
+                            </div>
+                        )}
+                    </CardContent>
+                </Card>
             </TabsContent>
             <TabsContent value="assets" className="pt-4">
                 <Card>
