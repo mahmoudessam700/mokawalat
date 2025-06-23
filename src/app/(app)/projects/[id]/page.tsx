@@ -7,7 +7,7 @@ import { firestore } from '@/lib/firebase';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
-import { ArrowLeft, Briefcase, Calendar, DollarSign, Activity, Users, ShoppingCart, PackagePlus, PackageCheck, PackageX, PackageSearch, Lightbulb, TrendingUp, MapPin, BookText, ExternalLink, FileText, PlusCircle, Trash2, ListChecks, CheckCheck, MoreHorizontal, Contact } from 'lucide-react';
+import { ArrowLeft, Briefcase, Calendar, DollarSign, Activity, Users, ShoppingCart, PackagePlus, PackageCheck, PackageX, PackageSearch, Lightbulb, TrendingUp, MapPin, BookText, ExternalLink, FileText, PlusCircle, Trash2, ListChecks, CheckCheck, MoreHorizontal, Contact, Sparkles } from 'lucide-react';
 import { format, formatDistanceToNow } from 'date-fns';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
@@ -31,7 +31,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useToast } from '@/hooks/use-toast';
 import { addMaterialRequest, updateMaterialRequestStatus } from '../../material-requests/actions';
-import { addDailyLog, addProjectDocument, deleteProjectDocument, addTask, type TaskFormValues, taskFormSchema, updateTaskStatus, deleteTask } from '../actions';
+import { addDailyLog, addProjectDocument, deleteProjectDocument, addTask, type TaskFormValues, taskFormSchema, updateTaskStatus, deleteTask, suggestTasksForProject } from '../actions';
 import { Loader2 } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ProjectAiAssistant } from './project-ai-assistant';
@@ -199,6 +199,7 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
   const [taskToDelete, setTaskToDelete] = useState<Task | null>(null);
   const [isDeletingDocument, setIsDeletingDocument] = useState(false);
   const [isDeletingTask, setIsDeletingTask] = useState(false);
+  const [isSuggestingTasks, setIsSuggestingTasks] = useState(false);
   const { profile } = useAuth();
   const { toast } = useToast();
   
@@ -431,6 +432,17 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
       toast({ variant: 'destructive', title: 'Error', description: result.message });
     }
   }
+  
+  async function handleSuggestTasks() {
+    setIsSuggestingTasks(true);
+    const result = await suggestTasksForProject(projectId);
+    if (result.success) {
+      toast({ title: 'Success', description: result.message });
+    } else {
+      toast({ variant: 'destructive', title: 'Error', description: result.message });
+    }
+    setIsSuggestingTasks(false);
+  }
 
 
   if (isLoading) {
@@ -601,19 +613,25 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
                             <CardTitle>Project Tasks</CardTitle>
                             <CardDescription>All tasks required to complete the project.</CardDescription>
                         </div>
-                        <Dialog open={isTaskDialogOpen} onOpenChange={setIsTaskDialogOpen}>
-                            <DialogTrigger asChild><Button><PlusCircle className="mr-2" /> Add Task</Button></DialogTrigger>
-                            <DialogContent>
-                                <DialogHeader><DialogTitle>Add New Task</DialogTitle></DialogHeader>
-                                <Form {...taskForm}>
-                                    <form onSubmit={taskForm.handleSubmit(onTaskSubmit)} className="space-y-4 py-4">
-                                        <FormField control={taskForm.control} name="name" render={({ field }) => (<FormItem><FormLabel>Task Name</FormLabel><FormControl><Input placeholder="e.g., Lay building foundations" {...field} /></FormControl><FormMessage /></FormItem>)} />
-                                        <FormField control={taskForm.control} name="dueDate" render={({ field }) => (<FormItem><FormLabel>Due Date (Optional)</FormLabel><FormControl><Input type="date" {...field} /></FormControl><FormMessage /></FormItem>)} />
-                                        <DialogFooter><Button type="submit" disabled={taskForm.formState.isSubmitting}>{taskForm.formState.isSubmitting ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Saving...</> : 'Save Task'}</Button></DialogFooter>
-                                    </form>
-                                </Form>
-                            </DialogContent>
-                        </Dialog>
+                        <div className="flex items-center gap-2">
+                            <Button variant="outline" onClick={handleSuggestTasks} disabled={isSuggestingTasks}>
+                                {isSuggestingTasks ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Sparkles className="mr-2" />}
+                                AI Suggest Tasks
+                            </Button>
+                            <Dialog open={isTaskDialogOpen} onOpenChange={setIsTaskDialogOpen}>
+                                <DialogTrigger asChild><Button><PlusCircle className="mr-2" /> Add Task</Button></DialogTrigger>
+                                <DialogContent>
+                                    <DialogHeader><DialogTitle>Add New Task</DialogTitle></DialogHeader>
+                                    <Form {...taskForm}>
+                                        <form onSubmit={taskForm.handleSubmit(onTaskSubmit)} className="space-y-4 py-4">
+                                            <FormField control={taskForm.control} name="name" render={({ field }) => (<FormItem><FormLabel>Task Name</FormLabel><FormControl><Input placeholder="e.g., Lay building foundations" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                                            <FormField control={taskForm.control} name="dueDate" render={({ field }) => (<FormItem><FormLabel>Due Date (Optional)</FormLabel><FormControl><Input type="date" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                                            <DialogFooter><Button type="submit" disabled={taskForm.formState.isSubmitting}>{taskForm.formState.isSubmitting ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Saving...</> : 'Save Task'}</Button></DialogFooter>
+                                        </form>
+                                    </Form>
+                                </DialogContent>
+                            </Dialog>
+                        </div>
                     </CardHeader>
                     <CardContent>
                         {tasks.length > 0 ? (
@@ -670,7 +688,7 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
                         </CardContent>
                     </Card>
                      <Card>
-                        <CardHeader className="flex-row items-center justify-between">
+                        <CardHeader className="flex flex-row items-center justify-between">
                             <div>
                                 <CardTitle>Material Requests</CardTitle>
                                 <CardDescription>Requests for materials from inventory.</CardDescription>

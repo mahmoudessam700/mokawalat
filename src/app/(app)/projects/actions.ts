@@ -8,12 +8,13 @@
  */
 
 import { firestore, storage } from '@/lib/firebase';
-import { collection, addDoc, serverTimestamp, doc, deleteDoc, updateDoc, getDoc, setDoc, runTransaction, getDocs } from 'firebase/firestore';
+import { collection, addDoc, serverTimestamp, doc, deleteDoc, updateDoc, getDoc, setDoc, runTransaction, getDocs, writeBatch } from 'firebase/firestore';
 import { z } from 'zod';
 import { revalidatePath } from 'next/cache';
 import { analyzeProjectRisks, type ProjectRiskAnalysisInput, type ProjectRiskAnalysisOutput } from '@/ai/flows/project-risk-analysis';
 import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
 import { summarizeDailyLogs, type SummarizeDailyLogsOutput } from '@/ai/flows/summarize-daily-logs';
+import { suggestProjectTasks } from '@/ai/flows/suggest-project-tasks';
 
 const projectFormSchema = z.object({
   name: z.string().min(3, 'Project name must be at least 3 characters long.'),
@@ -542,5 +543,58 @@ export async function deleteTask(projectId: string, taskId: string) {
     } catch (error) {
         console.error('Error deleting task:', error);
         return { success: false, message: 'Failed to delete task.' };
+    }
+}
+
+
+/**
+ * Generates a list of tasks for a project using AI and adds them to Firestore.
+ * @param {string} projectId - The ID of the project.
+ * @returns {Promise<{success: boolean, message: string}>} An object indicating success or failure.
+ */
+export async function suggestTasksForProject(projectId: string) {
+    if (!projectId) {
+        return { success: false, message: 'Project ID is required.' };
+    }
+
+    try {
+        const projectRef = doc(firestore, 'projects', projectId);
+        const projectDoc = await getDoc(projectRef);
+
+        if (!projectDoc.exists()) {
+            return { success: false, message: 'Project not found.' };
+        }
+
+        const projectData = projectDoc.data();
+        const result = await suggestProjectTasks({
+            projectName: projectData.name,
+            projectDescription: projectData.description || 'No description provided.',
+        });
+
+        if (!result.tasks || result.tasks.length === 0) {
+            return { success: false, message: 'AI could not suggest any tasks for this project.' };
+        }
+
+        const batch = writeBatch(firestore);
+        const tasksRef = collection(firestore, 'projects', projectId, 'tasks');
+        
+        result.tasks.forEach(task => {
+            const newTaskRef = doc(tasksRef);
+            batch.set(newTaskRef, {
+                name: task.name,
+                status: 'To Do',
+                createdAt: serverTimestamp(),
+                dueDate: null,
+            });
+        });
+
+        await batch.commit();
+        await recalculateProjectProgress(projectId);
+        revalidatePath(`/projects/${projectId}`);
+        
+        return { success: true, message: `${result.tasks.length} tasks suggested and added.` };
+    } catch (error) {
+        console.error('Error suggesting tasks:', error);
+        return { success: false, message: 'An unexpected AI error occurred while suggesting tasks.' };
     }
 }
