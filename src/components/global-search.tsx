@@ -122,7 +122,7 @@ export function GlobalSearch() {
                             }}
                             className="flex items-center justify-between"
                         >
-                            <div className="flex items-center">
+                            <div className="flex items-center gap-2">
                                 {typeIcons[item.type] || <File className="mr-2 h-4 w-4" />}
                                 <div>
                                     <span>{item.name}</span>
