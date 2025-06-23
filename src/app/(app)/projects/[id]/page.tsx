@@ -7,7 +7,7 @@ import { firestore } from '@/lib/firebase';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
-import { ArrowLeft, Briefcase, Calendar, DollarSign, Activity, Users, ShoppingCart, PackagePlus, PackageCheck, PackageX, PackageSearch, Lightbulb, TrendingUp, MapPin, BookText, ExternalLink, FileText, PlusCircle, Trash2, ListChecks, CheckCheck, MoreHorizontal, Contact, Sparkles } from 'lucide-react';
+import { ArrowLeft, Briefcase, Calendar, DollarSign, Activity, Users, ShoppingCart, PackagePlus, PackageCheck, PackageX, PackageSearch, Lightbulb, TrendingUp, MapPin, BookText, ExternalLink, FileText, PlusCircle, Trash2, ListChecks, CheckCheck, MoreHorizontal, Contact, Sparkles, Wrench } from 'lucide-react';
 import { format, formatDistanceToNow } from 'date-fns';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
@@ -44,6 +44,7 @@ import { updateMaterialRequestStatus } from '../../material-requests/actions';
 
 type ProjectStatus = 'In Progress' | 'Planning' | 'Completed' | 'On Hold';
 type TaskStatus = 'To Do' | 'In Progress' | 'Done';
+type AssetStatus = 'Available' | 'In Use' | 'Under Maintenance' | 'Decommissioned';
 
 export type Project = {
   id: string;
@@ -136,6 +137,13 @@ type Document = {
   createdAt: Timestamp;
 };
 
+type Asset = {
+    id: string;
+    name: string;
+    category: string;
+    status: AssetStatus;
+};
+
 const statusVariant: {
   [key in ProjectStatus]: 'secondary' | 'default' | 'outline' | 'destructive';
 } = {
@@ -151,6 +159,15 @@ const taskStatusVariant: {
   'To Do': 'outline',
   'In Progress': 'default',
   'Done': 'secondary',
+};
+
+const assetStatusVariant: {
+  [key in AssetStatus]: 'secondary' | 'default' | 'outline' | 'destructive';
+} = {
+  'Available': 'secondary',
+  'In Use': 'default',
+  'Under Maintenance': 'outline',
+  'Decommissioned': 'destructive',
 };
 
 const procurementStatusVariant: { [key in ProcurementRequest['status']]: 'default' | 'secondary' | 'destructive' | 'outline' } = {
@@ -196,6 +213,7 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [inventoryItems, setInventoryItems] = useState<InventoryItem[]>([]);
   const [documents, setDocuments] = useState<Document[]>([]);
+  const [assets, setAssets] = useState<Asset[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isRequestDialogOpen, setIsRequestDialogOpen] = useState(false);
@@ -290,6 +308,12 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
     unsubscribes.push(onSnapshot(documentsQuery, (snapshot) => {
         setDocuments(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Document)));
     }));
+
+    const assetsQuery = query(collection(firestore, 'assets'), where('currentProjectId', '==', projectId));
+    unsubscribes.push(onSnapshot(assetsQuery, (snapshot) => {
+        setAssets(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Asset)));
+    }));
+
 
     return () => unsubscribes.forEach(unsub => unsub());
 
@@ -534,6 +558,7 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
                 <TabsTrigger value="overview">Overview</TabsTrigger>
                 <TabsTrigger value="tasks">Tasks</TabsTrigger>
                 <TabsTrigger value="team-materials">Team & Materials</TabsTrigger>
+                <TabsTrigger value="assets">Assets</TabsTrigger>
                 <TabsTrigger value="documents">Documents</TabsTrigger>
                 <TabsTrigger value="daily-logs">Daily Logs</TabsTrigger>
                 <TabsTrigger value="procurement">Procurement</TabsTrigger>
@@ -801,6 +826,41 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
                         </CardContent>
                     </Card>
                 </div>
+            </TabsContent>
+            <TabsContent value="assets" className="pt-4">
+                <Card>
+                    <CardHeader>
+                        <CardTitle>Assigned Assets</CardTitle>
+                        <CardDescription>Equipment and machinery assigned to this project.</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        {assets.length > 0 ? (
+                            <Table>
+                                <TableHeader>
+                                    <TableRow>
+                                        <TableHead>Asset Name</TableHead>
+                                        <TableHead>Category</TableHead>
+                                        <TableHead>Status</TableHead>
+                                    </TableRow>
+                                </TableHeader>
+                                <TableBody>
+                                    {assets.map(asset => (
+                                        <TableRow key={asset.id}>
+                                            <TableCell className="font-medium">{asset.name}</TableCell>
+                                            <TableCell>{asset.category}</TableCell>
+                                            <TableCell><Badge variant={assetStatusVariant[asset.status]}>{asset.status}</Badge></TableCell>
+                                        </TableRow>
+                                    ))}
+                                </TableBody>
+                            </Table>
+                        ) : (
+                            <div className="flex flex-col items-center justify-center gap-2 py-8 text-center text-muted-foreground">
+                                <Wrench className="size-12" />
+                                <p>No assets are currently assigned to this project.</p>
+                            </div>
+                        )}
+                    </CardContent>
+                </Card>
             </TabsContent>
             <TabsContent value="documents" className="pt-4">
                  <Card>
