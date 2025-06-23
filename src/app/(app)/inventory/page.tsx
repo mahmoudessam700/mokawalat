@@ -1,4 +1,3 @@
-
 'use client';
 
 import {
@@ -88,11 +87,16 @@ type Category = {
   name: string;
 };
 
+type Warehouse = {
+    id: string;
+    name: string;
+};
+
 const inventoryFormSchema = z.object({
   name: z.string().min(2, 'Name must be at least 2 characters long.'),
   category: z.string().min(1, 'Category is required.'),
   quantity: z.coerce.number().min(0, 'Quantity cannot be negative.'),
-  warehouse: z.string().min(2, 'Warehouse is required.'),
+  warehouse: z.string().min(1, 'Warehouse is required.'),
   status: z.enum(['In Stock', 'Low Stock', 'Out of Stock']),
 });
 
@@ -101,6 +105,7 @@ type InventoryFormValues = z.infer<typeof inventoryFormSchema>;
 export default function InventoryPage() {
   const [items, setItems] = useState<InventoryItem[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
+  const [warehouses, setWarehouses] = useState<Warehouse[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [itemToEdit, setItemToEdit] = useState<InventoryItem | null>(null);
@@ -151,6 +156,22 @@ export default function InventoryPage() {
             variant: 'destructive',
             title: 'Error',
             description: 'Could not load inventory categories.',
+        });
+    }));
+
+    const qWarehouses = query(collection(firestore, 'warehouses'), orderBy('name', 'asc'));
+    unsubscribes.push(onSnapshot(qWarehouses, (snapshot) => {
+        const warehousesData: Warehouse[] = [];
+        snapshot.forEach((doc) => {
+            warehousesData.push({ id: doc.id, name: doc.data().name } as Warehouse);
+        });
+        setWarehouses(warehousesData);
+    }, (error) => {
+        console.error('Error fetching warehouses:', error);
+        toast({
+            variant: 'destructive',
+            title: 'Error',
+            description: 'Could not load warehouses.',
         });
     }));
 
@@ -331,26 +352,25 @@ export default function InventoryPage() {
                         <FormItem>
                             <FormLabel>Warehouse</FormLabel>
                             <Select
-                            onValueChange={field.onChange}
-                            value={field.value}
+                                onValueChange={field.onChange}
+                                value={field.value}
                             >
-                            <FormControl>
+                                <FormControl>
                                 <SelectTrigger>
-                                <SelectValue placeholder="Select a warehouse" />
+                                    <SelectValue placeholder="Select a warehouse" />
                                 </SelectTrigger>
-                            </FormControl>
-                            <SelectContent>
-                                <SelectItem value="Main Warehouse">
-                                Main Warehouse
-                                </SelectItem>
-                                <SelectItem value="Warehouse B">
-                                Warehouse B
-                                </SelectItem>
-                                <SelectItem value="Yard A">Yard A</SelectItem>
-                                <SelectItem value="Site Office">
-                                Site Office
-                                </SelectItem>
-                            </SelectContent>
+                                </FormControl>
+                                <SelectContent>
+                                    {warehouses.length > 0 ? (
+                                        warehouses.map((w) => (
+                                            <SelectItem key={w.id} value={w.name}>
+                                            {w.name}
+                                            </SelectItem>
+                                        ))
+                                    ) : (
+                                        <SelectItem value="disabled" disabled>No warehouses configured</SelectItem>
+                                    )}
+                                </SelectContent>
                             </Select>
                             <FormMessage />
                         </FormItem>

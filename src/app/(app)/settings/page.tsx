@@ -1,8 +1,7 @@
-
 'use client';
 
 import { Card, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Users, Palette, Shapes } from 'lucide-react';
+import { Users, Palette, Shapes, Warehouse } from 'lucide-react';
 import Link from 'next/link';
 import { useAuth } from '@/hooks/use-auth';
 import { useRouter } from 'next/navigation';
@@ -29,6 +28,13 @@ const settingsLinks = [
     title: 'Inventory Categories',
     description: 'Manage categories for inventory items.',
     icon: <Shapes className="size-8" />,
+    disabled: false,
+  },
+  {
+    href: '/settings/warehouses',
+    title: 'Warehouse Management',
+    description: 'Manage all company warehouses and locations.',
+    icon: <Warehouse className="size-8" />,
     disabled: false,
   },
 ];
