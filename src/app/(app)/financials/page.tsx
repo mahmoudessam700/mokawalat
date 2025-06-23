@@ -166,30 +166,17 @@ export default function FinancialsPage() {
     return () => unsubscribes.forEach(unsub => unsub());
   }, [toast]);
 
-  const { totalIncome, totalExpenses, netBalance, accountBalances } = useMemo(() => {
-    const totals = transactions.reduce((acc, transaction) => {
+  const { totalIncome, totalExpenses, netBalance } = useMemo(() => {
+    return transactions.reduce((acc, transaction) => {
       if (transaction.type === 'Income') {
         acc.totalIncome += transaction.amount;
       } else {
         acc.totalExpenses += transaction.amount;
       }
+      acc.netBalance = acc.totalIncome - acc.totalExpenses;
       return acc;
-    }, { totalIncome: 0, totalExpenses: 0 });
-
-    const accBalances = new Map<string, number>();
-    accounts.forEach(acc => {
-        let currentBalance = acc.initialBalance;
-        transactions.forEach(t => {
-            if (t.accountId === acc.id) {
-                if (t.type === 'Income') currentBalance += t.amount;
-                else currentBalance -= t.amount;
-            }
-        });
-        accBalances.set(acc.id, currentBalance);
-    });
-
-    return { ...totals, netBalance: totals.totalIncome - totals.totalExpenses, accountBalances: accBalances };
-  }, [transactions, accounts]);
+    }, { totalIncome: 0, totalExpenses: 0, netBalance: 0 });
+  }, [transactions]);
   
   const nameMaps = useMemo(() => {
     return {
@@ -309,7 +296,7 @@ export default function FinancialsPage() {
       </div>
 
       <div className="space-y-4">
-        <CardTitle className="text-xl">Overall Summary</CardTitle>
+        <CardTitle className="text-xl">Overall Financial Summary</CardTitle>
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
             <Card>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -341,9 +328,13 @@ export default function FinancialsPage() {
         </div>
       </div>
 
-      <div className="space-y-4">
-        <div className="flex items-center justify-between">
-            <CardTitle className="text-xl">Account Balances</CardTitle>
+      <Card>
+        <CardHeader className="flex-row items-center justify-between">
+          <div>
+            <CardTitle>Transaction History</CardTitle>
+            <CardDescription>A list of all income and expense records.</CardDescription>
+          </div>
+          <div className="flex items-center gap-2">
             {profile?.role === 'admin' && (
                 <Button asChild variant="outline">
                     <Link href="/financials/accounts">
@@ -351,77 +342,47 @@ export default function FinancialsPage() {
                     </Link>
                 </Button>
             )}
-        </div>
-        {isLoading ? (
-             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                <Skeleton className="h-24 w-full" />
-                <Skeleton className="h-24 w-full" />
-             </div>
-        ) : accounts.length > 0 ? (
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                {accounts.map(account => (
-                    <Card key={account.id}>
-                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                            <CardTitle className="text-sm font-medium">{account.name}</CardTitle>
-                            <Banknote className="size-4 text-muted-foreground" />
-                        </CardHeader>
-                        <CardContent>
-                            <div className="text-2xl font-bold">{formatCurrency(accountBalances.get(account.id) || 0)}</div>
-                        </CardContent>
-                    </Card>
-                ))}
-            </div>
-        ) : (
-             <p className="text-sm text-muted-foreground">No bank accounts created yet. Go to "Manage Accounts" to add one.</p>
-        )}
-      </div>
-
-      <Card>
-        <CardHeader className="flex-row items-center justify-between">
-          <div>
-            <CardTitle>Transaction History</CardTitle>
-            <CardDescription>A list of all income and expense records.</CardDescription>
-          </div>
-          {profile?.role === 'admin' && (
-            <Dialog open={isFormDialogOpen} onOpenChange={handleFormDialogOpenChange}>
-            <DialogTrigger asChild>
-                <Button onClick={() => setTransactionToEdit(null)} disabled={accounts.length === 0}>
-                <PlusCircle className="mr-2" />
-                Add Transaction
-                </Button>
-            </DialogTrigger>
-            <DialogContent className="sm:max-w-[480px]">
-                <DialogHeader>
-                <DialogTitle>{transactionToEdit ? 'Edit Transaction' : 'Add New Transaction'}</DialogTitle>
-                <DialogDescription>
-                    {transactionToEdit ? "Update the transaction's details below." : 'Fill in the details below to add a new financial record.'}
-                </DialogDescription>
-                </DialogHeader>
-                <Form {...form}>
-                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 py-4">
-                    <FormField control={form.control} name="description" render={({ field }) => (<FormItem><FormLabel>Description</FormLabel><FormControl><Input placeholder="e.g., Payment from Client X" {...field} /></FormControl><FormMessage /></FormItem>)} />
-                    <div className="grid grid-cols-2 gap-4">
-                      <FormField control={form.control} name="amount" render={({ field }) => (<FormItem><FormLabel>Amount (LE)</FormLabel><FormControl><Input type="number" placeholder="e.g., 1500.00" {...field} /></FormControl><FormMessage /></FormItem>)} />
-                      <FormField control={form.control} name="type" render={({ field }) => (<FormItem><FormLabel>Type</FormLabel><Select onValueChange={field.onChange} defaultValue={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Select type" /></SelectTrigger></FormControl><SelectContent><SelectItem value="Income">Income</SelectItem><SelectItem value="Expense">Expense</SelectItem></SelectContent></Select><FormMessage /></FormItem>)} />
-                    </div>
-                     <div className="grid grid-cols-2 gap-4">
-                        <FormField control={form.control} name="date" render={({ field }) => (<FormItem><FormLabel>Transaction Date</FormLabel><FormControl><Input type="date" {...field} /></FormControl><FormMessage /></FormItem>)} />
-                        <FormField control={form.control} name="accountId" render={({ field }) => (<FormItem><FormLabel>Account</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Select an account" /></SelectTrigger></FormControl><SelectContent>{accounts.map(acc => (<SelectItem key={acc.id} value={acc.id}>{acc.name}</SelectItem>))}</SelectContent></Select><FormMessage /></FormItem>)} />
-                    </div>
-                    <FormField control={form.control} name="projectId" render={({ field }) => (<FormItem><FormLabel>Project (Optional)</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Link to a project" /></SelectTrigger></FormControl><SelectContent><SelectItem value="">None</SelectItem>{projects.map(project => (<SelectItem key={project.id} value={project.id}>{project.name}</SelectItem>))}</SelectContent></Select><FormMessage /></FormItem>)} />
-                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                        <FormField control={form.control} name="clientId" render={({ field }) => (<FormItem className={transactionType === 'Expense' ? 'hidden' : ''}><FormLabel>Client (Optional)</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Link to a client" /></SelectTrigger></FormControl><SelectContent><SelectItem value="">None</SelectItem>{clients.map(client => (<SelectItem key={client.id} value={client.id}>{client.name}</SelectItem>))}</SelectContent></Select><FormMessage /></FormItem>)} />
-                        <FormField control={form.control} name="supplierId" render={({ field }) => (<FormItem className={transactionType === 'Income' ? 'hidden' : ''}><FormLabel>Supplier (Optional)</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Link to a supplier" /></SelectTrigger></FormControl><SelectContent><SelectItem value="">None</SelectItem>{suppliers.map(supplier => (<SelectItem key={supplier.id} value={supplier.id}>{supplier.name}</SelectItem>))}</SelectContent></Select><FormMessage /></FormItem>)} />
-                    </div>
-                    <FormField control={form.control} name="purchaseOrderId" render={({ field }) => (<FormItem className={transactionType === 'Income' ? 'hidden' : ''}><FormLabel>Purchase Order (Optional)</FormLabel><Select onValueChange={field.onChange} value={field.value || ''} disabled={!selectedSupplierId}><FormControl><SelectTrigger><SelectValue placeholder="Link to a PO" /></SelectTrigger></FormControl><SelectContent><SelectItem value="">None</SelectItem>{purchaseOrders.filter(po => po.supplierId === selectedSupplierId).map(po => (<SelectItem key={po.id} value={po.id}>{po.itemName} (...{po.id.slice(-5)})</SelectItem>))}</SelectContent></Select><FormMessage /></FormItem>)} />
-                    <DialogFooter>
-                        <Button type="submit" disabled={form.formState.isSubmitting}>{form.formState.isSubmitting ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Saving...</> : (transactionToEdit ? 'Save Changes' : 'Save Transaction')}</Button>
-                    </DialogFooter>
-                </form>
-                </Form>
-            </DialogContent>
-            </Dialog>
-          )}
+            {profile?.role === 'admin' && (
+              <Dialog open={isFormDialogOpen} onOpenChange={handleFormDialogOpenChange}>
+              <DialogTrigger asChild>
+                  <Button onClick={() => setTransactionToEdit(null)} disabled={accounts.length === 0}>
+                  <PlusCircle className="mr-2" />
+                  Add Transaction
+                  </Button>
+              </DialogTrigger>
+              <DialogContent className="sm:max-w-[480px]">
+                  <DialogHeader>
+                  <DialogTitle>{transactionToEdit ? 'Edit Transaction' : 'Add New Transaction'}</DialogTitle>
+                  <DialogDescription>
+                      {transactionToEdit ? "Update the transaction's details below." : 'Fill in the details below to add a new financial record.'}
+                  </DialogDescription>
+                  </DialogHeader>
+                  <Form {...form}>
+                  <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 py-4">
+                      <FormField control={form.control} name="description" render={({ field }) => (<FormItem><FormLabel>Description</FormLabel><FormControl><Input placeholder="e.g., Payment from Client X" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                      <div className="grid grid-cols-2 gap-4">
+                        <FormField control={form.control} name="amount" render={({ field }) => (<FormItem><FormLabel>Amount (LE)</FormLabel><FormControl><Input type="number" placeholder="e.g., 1500.00" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                        <FormField control={form.control} name="type" render={({ field }) => (<FormItem><FormLabel>Type</FormLabel><Select onValueChange={field.onChange} defaultValue={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Select type" /></SelectTrigger></FormControl><SelectContent><SelectItem value="Income">Income</SelectItem><SelectItem value="Expense">Expense</SelectItem></SelectContent></Select><FormMessage /></FormItem>)} />
+                      </div>
+                       <div className="grid grid-cols-2 gap-4">
+                          <FormField control={form.control} name="date" render={({ field }) => (<FormItem><FormLabel>Transaction Date</FormLabel><FormControl><Input type="date" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                          <FormField control={form.control} name="accountId" render={({ field }) => (<FormItem><FormLabel>Account</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Select an account" /></SelectTrigger></FormControl><SelectContent>{accounts.map(acc => (<SelectItem key={acc.id} value={acc.id}>{acc.name}</SelectItem>))}</SelectContent></Select><FormMessage /></FormItem>)} />
+                      </div>
+                      <FormField control={form.control} name="projectId" render={({ field }) => (<FormItem><FormLabel>Project (Optional)</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Link to a project" /></SelectTrigger></FormControl><SelectContent><SelectItem value="">None</SelectItem>{projects.map(project => (<SelectItem key={project.id} value={project.id}>{project.name}</SelectItem>))}</SelectContent></Select><FormMessage /></FormItem>)} />
+                      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                          <FormField control={form.control} name="clientId" render={({ field }) => (<FormItem className={transactionType === 'Expense' ? 'hidden' : ''}><FormLabel>Client (Optional)</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Link to a client" /></SelectTrigger></FormControl><SelectContent><SelectItem value="">None</SelectItem>{clients.map(client => (<SelectItem key={client.id} value={client.id}>{client.name}</SelectItem>))}</SelectContent></Select><FormMessage /></FormItem>)} />
+                          <FormField control={form.control} name="supplierId" render={({ field }) => (<FormItem className={transactionType === 'Income' ? 'hidden' : ''}><FormLabel>Supplier (Optional)</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Link to a supplier" /></SelectTrigger></FormControl><SelectContent><SelectItem value="">None</SelectItem>{suppliers.map(supplier => (<SelectItem key={supplier.id} value={supplier.id}>{supplier.name}</SelectItem>))}</SelectContent></Select><FormMessage /></FormItem>)} />
+                      </div>
+                      <FormField control={form.control} name="purchaseOrderId" render={({ field }) => (<FormItem className={transactionType === 'Income' ? 'hidden' : ''}><FormLabel>Purchase Order (Optional)</FormLabel><Select onValueChange={field.onChange} value={field.value || ''} disabled={!selectedSupplierId}><FormControl><SelectTrigger><SelectValue placeholder="Link to a PO" /></SelectTrigger></FormControl><SelectContent><SelectItem value="">None</SelectItem>{purchaseOrders.filter(po => po.supplierId === selectedSupplierId).map(po => (<SelectItem key={po.id} value={po.id}>{po.itemName} (...{po.id.slice(-5)})</SelectItem>))}</SelectContent></Select><FormMessage /></FormItem>)} />
+                      <DialogFooter>
+                          <Button type="submit" disabled={form.formState.isSubmitting}>{form.formState.isSubmitting ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Saving...</> : (transactionToEdit ? 'Save Changes' : 'Save Transaction')}</Button>
+                      </DialogFooter>
+                  </form>
+                  </Form>
+              </DialogContent>
+              </Dialog>
+            )}
+           </div>
         </CardHeader>
         <CardContent>
           <Table>
