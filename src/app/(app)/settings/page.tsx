@@ -2,7 +2,7 @@
 'use client';
 
 import { Card, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Users, Palette } from 'lucide-react';
+import { Users, Palette, Shapes } from 'lucide-react';
 import Link from 'next/link';
 import { useAuth } from '@/hooks/use-auth';
 import { useRouter } from 'next/navigation';
@@ -22,6 +22,13 @@ const settingsLinks = [
     title: 'Theme & Appearance',
     description: 'Customize the look and feel of the application.',
     icon: <Palette className="size-8" />,
+    disabled: false,
+  },
+  {
+    href: '/settings/categories',
+    title: 'Inventory Categories',
+    description: 'Manage categories for inventory items.',
+    icon: <Shapes className="size-8" />,
     disabled: false,
   },
 ];
@@ -44,6 +51,7 @@ export default function SettingsPage() {
                 <Skeleton className="h-5 w-80 mt-2" />
             </div>
             <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
+                <Skeleton className="h-24 w-full" />
                 <Skeleton className="h-24 w-full" />
                 <Skeleton className="h-24 w-full" />
             </div>

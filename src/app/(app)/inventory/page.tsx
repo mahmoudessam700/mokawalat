@@ -83,9 +83,14 @@ type InventoryItem = {
   status: 'In Stock' | 'Low Stock' | 'Out of Stock';
 };
 
+type Category = {
+  id: string;
+  name: string;
+};
+
 const inventoryFormSchema = z.object({
   name: z.string().min(2, 'Name must be at least 2 characters long.'),
-  category: z.string().min(2, 'Category is required.'),
+  category: z.string().min(1, 'Category is required.'),
   quantity: z.coerce.number().min(0, 'Quantity cannot be negative.'),
   warehouse: z.string().min(2, 'Warehouse is required.'),
   status: z.enum(['In Stock', 'Low Stock', 'Out of Stock']),
@@ -95,6 +100,7 @@ type InventoryFormValues = z.infer<typeof inventoryFormSchema>;
 
 export default function InventoryPage() {
   const [items, setItems] = useState<InventoryItem[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [itemToEdit, setItemToEdit] = useState<InventoryItem | null>(null);
@@ -105,12 +111,14 @@ export default function InventoryPage() {
   const { profile } = useAuth();
 
   useEffect(() => {
-    const q = query(
+    const unsubscribes: (() => void)[] = [];
+    
+    const qItems = query(
       collection(firestore, 'inventory'),
       orderBy('name', 'asc')
     );
-    const unsubscribe = onSnapshot(
-      q,
+    unsubscribes.push(onSnapshot(
+      qItems,
       (querySnapshot) => {
         const itemsData: InventoryItem[] = [];
         querySnapshot.forEach((doc) => {
@@ -128,9 +136,25 @@ export default function InventoryPage() {
         });
         setIsLoading(false);
       }
-    );
+    ));
 
-    return () => unsubscribe();
+    const qCategories = query(collection(firestore, 'inventoryCategories'), orderBy('name', 'asc'));
+    unsubscribes.push(onSnapshot(qCategories, (snapshot) => {
+        const categoriesData: Category[] = [];
+        snapshot.forEach((doc) => {
+            categoriesData.push({ id: doc.id, name: doc.data().name } as Category);
+        });
+        setCategories(categoriesData);
+    }, (error) => {
+        console.error('Error fetching categories:', error);
+        toast({
+            variant: 'destructive',
+            title: 'Error',
+            description: 'Could not load inventory categories.',
+        });
+    }));
+
+    return () => unsubscribes.forEach(unsub => unsub());
   }, [toast]);
 
   const form = useForm<InventoryFormValues>({
@@ -252,40 +276,35 @@ export default function InventoryPage() {
                     )}
                     />
                     <FormField
-                    control={form.control}
-                    name="category"
-                    render={({ field }) => (
+                      control={form.control}
+                      name="category"
+                      render={({ field }) => (
                         <FormItem>
-                        <FormLabel>Category</FormLabel>
-                        <Select
+                          <FormLabel>Category</FormLabel>
+                          <Select
                             onValueChange={field.onChange}
                             value={field.value}
-                        >
+                          >
                             <FormControl>
-                            <SelectTrigger>
+                              <SelectTrigger>
                                 <SelectValue placeholder="Select a category" />
-                            </SelectTrigger>
+                              </SelectTrigger>
                             </FormControl>
                             <SelectContent>
-                            <SelectItem value="Building Materials">
-                                Building Materials
-                            </SelectItem>
-                            <SelectItem value="Structural Steel">
-                                Structural Steel
-                            </SelectItem>
-                            <SelectItem value="Aggregates">Aggregates</SelectItem>
-                            <SelectItem value="Safety Gear">
-                                Safety Gear
-                            </SelectItem>
-                            <SelectItem value="Plumbing">Plumbing</SelectItem>
-                            <SelectItem value="Electrical">Electrical</SelectItem>
-                            <SelectItem value="Tools">Tools</SelectItem>
-                            <SelectItem value="Equipment">Equipment</SelectItem>
+                              {categories.length > 0 ? (
+                                categories.map((cat) => (
+                                  <SelectItem key={cat.id} value={cat.name}>
+                                    {cat.name}
+                                  </SelectItem>
+                                ))
+                              ) : (
+                                <SelectItem value="disabled" disabled>No categories found</SelectItem>
+                              )}
                             </SelectContent>
-                        </Select>
-                        <FormMessage />
+                          </Select>
+                          <FormMessage />
                         </FormItem>
-                    )}
+                      )}
                     />
                     <div className="grid grid-cols-2 gap-4">
                     <FormField
