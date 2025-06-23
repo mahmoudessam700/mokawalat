@@ -29,6 +29,7 @@ import {
   ClipboardCheck,
   Receipt,
   User as UserIcon,
+  ListChecks,
 } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
@@ -78,6 +79,7 @@ const menuItems = [
   { href: '/reports', label: 'Reports', icon: BarChart3 },
   { href: '/activity-log', label: 'Activity Log', icon: History },
   { href: '/iso-compliance', label: 'ISO Compliance', icon: CheckSquare },
+  { href: '/roadmap', label: 'Roadmap', icon: ListChecks },
 ];
 
 export function AppSidebar() {
