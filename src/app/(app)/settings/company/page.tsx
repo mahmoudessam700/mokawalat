@@ -1,0 +1,145 @@
+
+'use client';
+
+import { useState, useEffect } from 'react';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import Link from 'next/link';
+import Image from 'next/image';
+import { ArrowLeft, Building, Loader2 } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { Skeleton } from '@/components/ui/skeleton';
+import { useToast } from '@/hooks/use-toast';
+import { getCompanyProfile, updateCompanyProfile, companyProfileSchema, type CompanyProfileFormValues } from './actions';
+
+export default function CompanyProfilePage() {
+  const [profile, setProfile] = useState<CompanyProfileFormValues | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const { toast } = useToast();
+
+  const form = useForm<CompanyProfileFormValues>({
+    resolver: zodResolver(companyProfileSchema),
+    defaultValues: {
+      name: '',
+      address: '',
+      phone: '',
+      email: '',
+      logoUrl: '',
+    },
+  });
+
+  useEffect(() => {
+    async function fetchProfile() {
+      setIsLoading(true);
+      const data = await getCompanyProfile();
+      if (data) {
+        setProfile(data);
+        form.reset(data);
+      }
+      setIsLoading(false);
+    }
+    fetchProfile();
+  }, [form]);
+
+  async function onSubmit(values: CompanyProfileFormValues) {
+    const formData = new FormData();
+    Object.entries(values).forEach(([key, value]) => {
+      if (key !== 'logo' && value) {
+        formData.append(key, value as string);
+      }
+    });
+    
+    const logoInput = document.querySelector('input[type="file"][name="logo"]') as HTMLInputElement;
+    if (logoInput && logoInput.files && logoInput.files[0]) {
+      formData.append('logo', logoInput.files[0]);
+    }
+    
+    const result = await updateCompanyProfile(formData);
+    if (result.errors) {
+      toast({ variant: 'destructive', title: 'Error', description: result.message });
+    } else {
+      toast({ title: 'Success', description: result.message });
+      const data = await getCompanyProfile();
+      if (data) {
+          setProfile(data);
+          form.reset(data);
+      }
+    }
+  }
+
+  if (isLoading) {
+    return (
+      <div className="space-y-6">
+        <div className="flex items-center gap-4">
+          <Skeleton className="h-10 w-10" />
+          <div>
+            <Skeleton className="h-9 w-64" />
+            <Skeleton className="h-5 w-80 mt-2" />
+          </div>
+        </div>
+        <Card><CardContent className="p-6"><Skeleton className="h-96 w-full" /></CardContent></Card>
+      </div>
+    );
+  }
+
+  return (
+    <Form {...form}>
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <Button asChild variant="outline" size="icon">
+              <Link href="/settings">
+                <ArrowLeft />
+                <span className="sr-only">Back to Settings</span>
+              </Link>
+            </Button>
+            <div>
+              <h1 className="font-headline text-3xl font-bold tracking-tight">Company Profile</h1>
+              <p className="text-muted-foreground">Manage your company's information.</p>
+            </div>
+          </div>
+          <Button type="submit" disabled={form.formState.isSubmitting}>
+            {form.formState.isSubmitting ? <><Loader2 className="mr-2" />Saving...</> : 'Save Changes'}
+          </Button>
+        </div>
+        
+        <Card>
+          <CardHeader>
+            <CardTitle>Company Details</CardTitle>
+            <CardDescription>This information may be used on reports and invoices.</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-6">
+             <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
+                <div className="md:col-span-2 space-y-4">
+                  <FormField control={form.control} name="name" render={({ field }) => (<FormItem><FormLabel>Company Name</FormLabel><FormControl><Input placeholder="Your Company Name" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                  <FormField control={form.control} name="address" render={({ field }) => (<FormItem><FormLabel>Address</FormLabel><FormControl><Textarea placeholder="Company Address" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                  <div className="grid grid-cols-2 gap-4">
+                    <FormField control={form.control} name="phone" render={({ field }) => (<FormItem><FormLabel>Phone</FormLabel><FormControl><Input placeholder="Company Phone" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                    <FormField control={form.control} name="email" render={({ field }) => (<FormItem><FormLabel>Email</FormLabel><FormControl><Input type="email" placeholder="Company Email" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                  </div>
+                </div>
+                <div className="space-y-2">
+                    <FormLabel>Company Logo</FormLabel>
+                    <Card className="flex items-center justify-center p-4 aspect-square">
+                        {profile?.logoUrl ? (
+                            <Image src={profile.logoUrl} alt="Company Logo" width={150} height={150} className="object-contain" />
+                        ) : (
+                            <div className="text-center text-muted-foreground flex flex-col items-center gap-2">
+                                <Building className="size-12"/>
+                                <span>No logo uploaded</span>
+                            </div>
+                        )}
+                    </Card>
+                    <Input type="file" name="logo" accept="image/png, image/jpeg, image/gif" />
+                </div>
+             </div>
+          </CardContent>
+        </Card>
+      </form>
+    </Form>
+  );
+}

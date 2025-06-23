@@ -2,7 +2,7 @@
 'use client';
 
 import { Card, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Users, Palette, Shapes, Warehouse } from 'lucide-react';
+import { Users, Palette, Shapes, Warehouse, Building } from 'lucide-react';
 import Link from 'next/link';
 import { useAuth } from '@/hooks/use-auth';
 import { useRouter } from 'next/navigation';
@@ -10,6 +10,13 @@ import { useEffect } from 'react';
 import { Skeleton } from '@/components/ui/skeleton';
 
 const settingsLinks = [
+   {
+    href: '/settings/company',
+    title: 'Company Profile',
+    description: 'Manage your company name, logo, and details.',
+    icon: <Building className="size-8" />,
+    disabled: false,
+  },
   {
     href: '/settings/users',
     title: 'User Management',

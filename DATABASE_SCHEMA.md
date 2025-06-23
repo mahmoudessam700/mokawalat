@@ -22,6 +22,20 @@ Stores authentication information and application-specific roles for each user.
     -   `email` (string): The user's email address.
     -   `role` (string): The user's role within the application (`admin` or `user`).
 
+### `company`
+
+Stores global company profile information. This collection should only ever contain one document with the ID `main`.
+
+-   **Document ID**: `main`
+-   **Fields**:
+    -   `name` (string): The company's official name.
+    -   `address` (string, optional): The company's physical address.
+    -   `phone` (string, optional): The company's primary phone number.
+    -   `email` (string, optional): The company's primary email address.
+    -   `logoUrl` (string, optional): A public URL to the company logo in Firebase Storage.
+    -   `logoPath` (string, optional): The full path to the logo file in Firebase Storage.
+    -   `updatedAt` (Timestamp): The timestamp when the profile was last updated.
+
 ### `projects`
 
 Contains all information related to construction projects.
