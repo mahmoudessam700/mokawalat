@@ -294,7 +294,7 @@ const roadmapPhases = [
                 "Create a detailed document for the Firebase Firestore and Realtime Database structure, describing each collection, document, and field, as well as the relationships between them.",
                 "Document Firebase Security Rules.",
             ],
-            completed: false,
+            completed: true,
         },
         {
             title: "6.3. User Manual:",
