@@ -1,106 +1,155 @@
 rules_version = '2';
+
 service cloud.firestore {
   match /databases/{database}/documents {
-  
-    // Default deny all
-    match /{document=**} {
-      allow read, write: if false;
-    }
-    
-    // Allow users to read their own profile
-    match /users/{userId} {
-      allow read: if request.auth != null;
-      allow write: if request.auth.uid == userId || get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
-    }
-    
-    // Allow admins to read all user profiles
-    match /users/{userId} {
-      allow read: if get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+
+    // Helper function to check if user is authenticated
+    function isAuthenticated() {
+      return request.auth != null;
     }
 
-    // Projects: readable by any user, writable only by admins
+    // Helper function to check if user is an admin
+    function isAdmin() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+    }
+
+    // Users:
+    // - Read: Authenticated users can read their own profile.
+    // - Write: Authenticated users can only create their own profile. Admins can edit any profile.
+    match /users/{userId} {
+      allow read: if isAuthenticated() && request.auth.uid == userId;
+      allow create: if isAuthenticated() && request.auth.uid == userId;
+      allow update: if isAdmin();
+    }
+    
+    // Projects:
+    // - Read: Any authenticated user can read projects.
+    // - Write: Only admins can create, update, delete projects.
     match /projects/{projectId} {
-      allow read: if request.auth != null;
-      allow create, update, delete: if get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+      allow read: if isAuthenticated();
+      allow write: if isAdmin();
 
+      // Daily Logs Subcollection:
+      // - Read: Any authenticated user can read logs.
+      // - Create: Any authenticated user can create a log.
+      // - Write (Update/Delete): Only admins can modify/delete logs.
       match /dailyLogs/{logId} {
-        allow read, create: if request.auth != null;
+        allow read, create: if isAuthenticated();
+        allow update, delete: if isAdmin();
       }
       
+      // Documents Subcollection:
+      // - Read: Any authenticated user can read document details.
+      // - Create, Delete: Any authenticated user can manage documents.
       match /documents/{documentId} {
-        allow read, create, delete: if request.auth != null;
+        allow read, create, delete: if isAuthenticated();
       }
     }
     
-    // Employees: readable by any user, writable only by admins
+    // Employees:
+    // - Read: Any authenticated user can read employee data.
+    // - Write: Only admins can manage employees.
     match /employees/{employeeId} {
-       allow read: if request.auth != null;
-       allow create, update, delete: if get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+      allow read: if isAuthenticated();
+      allow write: if isAdmin();
     }
 
-    // Clients: readable by any user, writable only by admins
-    match /clients/{clientId} {
-       allow read: if request.auth != null;
-       allow create, update, delete: if get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
-       
-       // Interactions and Contracts can be managed by any authenticated user
-       match /interactions/{interactionId} {
-        allow read, create: if request.auth != null;
-       }
-       match /contracts/{contractId} {
-        allow read, create, delete: if request.auth != null;
-       }
-    }
-
-    // Suppliers: readable by any user, writable only by admins
+    // Suppliers:
+    // - Read: Any authenticated user can read supplier data.
+    // - Write: Only admins can manage suppliers.
     match /suppliers/{supplierId} {
-       allow read: if request.auth != null;
-       allow create, update, delete: if get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
-
-       match /contracts/{contractId} {
-        allow read, create, delete: if request.auth != null;
-       }
+      allow read: if isAuthenticated();
+      allow write: if isAdmin();
+      
+      // Contracts Subcollection:
+      // - Read: Authenticated users can read.
+      // - Write: Admins can write.
+      match /contracts/{contractId} {
+        allow read: if isAuthenticated();
+        allow write: if isAdmin();
+      }
     }
     
-    // Inventory: readable by any user, writable only by admins
+    // Inventory:
+    // - Read: Any authenticated user can read inventory data.
+    // - Write: Only admins can manage inventory items.
     match /inventory/{itemId} {
-       allow read: if request.auth != null;
-       allow create, update, delete: if get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+      allow read: if isAuthenticated();
+      allow write: if isAdmin();
     }
-
-     // Inventory Categories: readable by any user, writable only by admins
+    
+    // Inventory Categories:
+    // - Read: Any authenticated user can read categories.
+    // - Write: Only admins can manage categories.
     match /inventoryCategories/{categoryId} {
-       allow read: if request.auth != null;
-       allow create, update, delete: if get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+        allow read: if isAuthenticated();
+        allow write: if isAdmin();
     }
-    
-    // Procurement: readable by any user, writable only by admins
+
+    // Procurement:
+    // - Read: Any authenticated user can read procurement data.
+    // - Write: Only admins can manage procurement requests.
     match /procurement/{requestId} {
-       allow read: if request.auth != null;
-       allow create, update, delete: if get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+      allow read: if isAuthenticated();
+      allow write: if isAdmin();
     }
-    
-    // Material Requests: readable by any user, writable by admins
+
+    // Material Requests:
+    // - Read: Authenticated users can read requests.
+    // - Create: Authenticated users can create requests.
+    // - Update: Admins can update requests.
     match /materialRequests/{requestId} {
-       allow read, create: if request.auth != null;
-       allow update: if get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
-    }
-
-    // Financials: readable by any user, writable by admins
-    match /transactions/{transactionId} {
-       allow read: if request.auth != null;
-       allow create, update, delete: if get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
-    }
-    match /accounts/{accountId} {
-       allow read: if request.auth != null;
-       allow create, update, delete: if get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+      allow read, create: if isAuthenticated();
+      allow update, delete: if isAdmin();
     }
     
-    // Activity Log: readable by any user, only server/admins can write
-    match /activityLog/{logId} {
-       allow read: if request.auth != null;
-       allow create: if get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+    // Clients:
+    // - Read: Authenticated users can read.
+    // - Write: Admins can create/update/delete clients.
+    match /clients/{clientId} {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin();
+      
+      // Interactions Subcollection:
+      // - Read, Create: Authenticated users can log interactions.
+      // - Update, Delete: Only admins can modify/delete past interactions.
+      match /interactions/{interactionId} {
+        allow read, create: if isAuthenticated();
+        allow update, delete: if isAdmin();
+      }
+      
+      // Contracts Subcollection:
+      // - Read: Authenticated users can read.
+      // - Write: Admins can write.
+      match /contracts/{contractId} {
+        allow read: if isAuthenticated();
+        allow write: if isAdmin();
+      }
+    }
+    
+    // Accounts:
+    // - Read: Authenticated users can read bank accounts.
+    // - Write: Only admins can manage bank accounts.
+    match /accounts/{accountId} {
+        allow read: if isAuthenticated();
+        allow write: if isAdmin();
     }
 
+    // Transactions:
+    // - Read: Authenticated users can read transactions.
+    // - Write: Only admins can manage transactions.
+    match /transactions/{transactionId} {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin();
+    }
+    
+    // Activity Log:
+    // - Read: Any authenticated user can read the log.
+    // - Create: Any authenticated user can create log entries (via server actions).
+    // - Write: No one can update/delete logs to ensure audit trail integrity.
+    match /activityLog/{logId} {
+      allow read, create: if isAuthenticated();
+      allow update, delete: if false;
+    }
   }
 }
