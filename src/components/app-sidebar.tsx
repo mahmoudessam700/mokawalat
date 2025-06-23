@@ -23,7 +23,6 @@ import {
   CheckSquare,
   Settings,
   LogOut,
-  Map,
   ClipboardList,
   History,
   Wrench,
@@ -66,7 +65,6 @@ import { Button } from './ui/button';
 const menuItems = [
   { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { href: '/approvals', label: 'Approvals', icon: ClipboardCheck },
-  { href: '/roadmap', label: 'Roadmap', icon: Map },
   { href: '/projects', label: 'Projects', icon: Briefcase },
   { href: '/employees', label: 'Employees', icon: Users },
   { href: '/suppliers', label: 'Suppliers', icon: Truck },
