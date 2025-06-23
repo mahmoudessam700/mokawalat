@@ -642,17 +642,19 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
                         </CardHeader>
                         <CardContent>
                             {assignedTeam.length > 0 ? (
-                                <ul className="space-y-4">
+                                <ul className="space-y-2">
                                     {assignedTeam.map(member => (
-                                        <li key={member.id} className="flex items-center gap-4">
-                                            <Avatar>
-                                                <AvatarImage src={`https://placehold.co/40x40.png`} alt={member.name} data-ai-hint="profile picture" />
-                                                <AvatarFallback>{member.name.split(' ').map(n => n[0]).join('')}</AvatarFallback>
-                                            </Avatar>
-                                            <div>
-                                                <p className="font-semibold">{member.name}</p>
-                                                <p className="text-sm text-muted-foreground">{member.role}</p>
-                                            </div>
+                                        <li key={member.id}>
+                                            <Link href={`/employees/${member.id}`} className="flex items-center gap-4 rounded-md p-2 -m-2 hover:bg-accent transition-colors">
+                                                <Avatar>
+                                                    <AvatarImage src={`https://placehold.co/40x40.png`} alt={member.name} data-ai-hint="profile picture" />
+                                                    <AvatarFallback>{member.name.split(' ').map(n => n[0]).join('')}</AvatarFallback>
+                                                </Avatar>
+                                                <div>
+                                                    <p className="font-semibold text-foreground">{member.name}</p>
+                                                    <p className="text-sm text-muted-foreground">{member.role}</p>
+                                                </div>
+                                            </Link>
                                         </li>
                                     ))}
                                 </ul>
