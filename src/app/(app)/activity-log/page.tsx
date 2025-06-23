@@ -37,6 +37,7 @@ import {
   ListChecks,
   Search,
   Wrench,
+  Receipt,
 } from 'lucide-react';
 
 type Activity = {
@@ -63,6 +64,7 @@ const activityIcons: { [key: string]: React.ReactNode } = {
   TASK_STATUS_CHANGED: <ListChecks className="size-4" />,
   TASK_DELETED: <Trash2 className="size-4" />,
   DOCUMENT_DELETED: <Trash2 className="size-4" />,
+  INVOICE_CREATED: <Receipt className="size-4" />,
   DEFAULT: <Bell className="size-4" />,
 };
 
@@ -82,6 +84,7 @@ const activityTypes = [
     "PO_CREATED",
     "CONTRACT_ADDED",
     "MATERIAL_REQUESTED",
+    "INVOICE_CREATED",
 ];
 
 const formatActivityType = (type: string) => {
