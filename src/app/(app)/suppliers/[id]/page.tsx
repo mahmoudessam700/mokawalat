@@ -31,7 +31,8 @@ import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useToast } from '@/hooks/use-toast';
-import { addContract, deleteContract } from '../actions';
+import { addContract, deleteContract } from './actions';
+import { SupplierAiSummary } from './supplier-ai-summary';
 
 
 type SupplierStatus = 'Active' | 'Inactive';
@@ -105,22 +106,6 @@ const formatCurrency = (value: number) => {
   return `LE ${formatter.format(value)}`;
 };
 
-
-function StarRatingDisplay({ rating = 0 }: { rating?: number }) {
-    return (
-        <div className="flex items-center gap-1">
-        {[1, 2, 3, 4, 5].map((star) => (
-            <Star
-            key={star}
-            className={cn(
-                'size-5',
-                rating >= star ? 'text-yellow-400 fill-yellow-400' : 'text-muted-foreground/30'
-            )}
-            />
-        ))}
-        </div>
-    );
-}
 
 export default function SupplierDetailPage({ params }: { params: { id: string } }) {
   const [supplier, setSupplier] = useState<Supplier | null>(null);
@@ -318,29 +303,15 @@ export default function SupplierDetailPage({ params }: { params: { id: string } 
                             </div>
                         </CardContent>
                     </Card>
-                    <Card className="lg:col-span-2">
-                        <CardHeader className="flex-row items-start justify-between">
-                            <CardTitle>Performance Evaluation</CardTitle>
-                            {profile?.role === 'admin' && <EvaluateSupplierDialog supplier={supplier} />}
-                        </CardHeader>
-                        <CardContent className="space-y-3">
-                            {supplier.rating ? (
-                                <>
-                                    <div className="flex items-center gap-2">
-                                        <StarRatingDisplay rating={supplier.rating} />
-                                        <span className="text-sm text-muted-foreground">({supplier.rating.toFixed(1)} / 5.0)</span>
-                                    </div>
-                                    {supplier.evaluationNotes && (
-                                        <p className="text-sm text-muted-foreground whitespace-pre-wrap pt-2 border-t border-dashed">
-                                            {supplier.evaluationNotes}
-                                        </p>
-                                    )}
-                                </>
-                            ) : (
-                                <p className="text-sm text-muted-foreground">No evaluation has been recorded yet.</p>
-                            )}
-                        </CardContent>
-                    </Card>
+                     <div className="lg:col-span-2">
+                        <SupplierAiSummary
+                            supplierId={supplier.id}
+                            supplierName={supplier.name}
+                            headerActions={
+                                profile?.role === 'admin' ? <EvaluateSupplierDialog supplier={supplier} /> : null
+                            }
+                        />
+                    </div>
                 </div>
             </TabsContent>
             <TabsContent value="contracts" className="pt-4">

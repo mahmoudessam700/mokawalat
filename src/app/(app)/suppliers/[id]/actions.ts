@@ -6,6 +6,7 @@ import { collection, addDoc, doc, deleteDoc, updateDoc, serverTimestamp, setDoc,
 import { z } from 'zod';
 import { revalidatePath } from 'next/cache';
 import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
+import { summarizeSupplierPerformance } from '@/ai/flows/summarize-supplier-performance';
 
 const supplierFormSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters long."),
@@ -217,4 +218,25 @@ export async function deleteContract(supplierId: string, contractId: string) {
     console.error('Error deleting contract:', error);
     return { success: false, message: 'Failed to delete contract.' };
   }
+}
+
+
+export async function getSupplierPerformanceSummary(supplierId: string) {
+    if (!supplierId) {
+        return { error: true, message: 'Supplier ID is required.', data: null };
+    }
+
+    try {
+        const result = await summarizeSupplierPerformance({ supplierId });
+        
+        if (result.summary) {
+             return { error: false, message: 'Summary generated.', data: result };
+        } else {
+            return { error: true, message: 'AI could not generate a summary.', data: null };
+        }
+
+    } catch(error) {
+        console.error('Error generating supplier performance summary:', error);
+        return { error: true, message: 'An unexpected error occurred while generating the summary.', data: null };
+    }
 }
