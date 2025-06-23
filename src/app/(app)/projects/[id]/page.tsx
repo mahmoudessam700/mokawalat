@@ -7,7 +7,7 @@ import { firestore } from '@/lib/firebase';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
-import { ArrowLeft, Briefcase, Calendar, DollarSign, Activity, Users, ShoppingCart, PackagePlus, PackageCheck, PackageX, PackageSearch, Lightbulb, TrendingUp, MapPin, BookText, ExternalLink } from 'lucide-react';
+import { ArrowLeft, Briefcase, Calendar, DollarSign, Activity, Users, ShoppingCart, PackagePlus, PackageCheck, PackageX, PackageSearch, Lightbulb, TrendingUp, MapPin, BookText, ExternalLink, FileText, PlusCircle, Trash2 } from 'lucide-react';
 import { format, formatDistanceToNow } from 'date-fns';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
@@ -23,13 +23,14 @@ import {
 } from '@/components/ui/table';
 import { useAuth } from '@/hooks/use-auth';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useToast } from '@/hooks/use-toast';
-import { addMaterialRequest, updateMaterialRequestStatus, materialRequestFormSchema, type MaterialRequestFormValues, addDailyLog } from '../actions';
+import { addMaterialRequest, updateMaterialRequestStatus, materialRequestFormSchema, type MaterialRequestFormValues, addDailyLog, addProjectDocument, deleteProjectDocument } from '../actions';
 import { Loader2 } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ProjectAiAssistant } from './project-ai-assistant';
@@ -97,6 +98,14 @@ type DailyLog = {
     photoUrl?: string;
 };
 
+type Document = {
+  id: string;
+  title: string;
+  fileUrl: string;
+  fileName: string;
+  createdAt: Timestamp;
+};
+
 const statusVariant: {
   [key in ProjectStatus]: 'secondary' | 'default' | 'outline' | 'destructive';
 } = {
@@ -132,6 +141,12 @@ const dailyLogFormSchema = z.object({
 });
 type DailyLogFormValues = z.infer<typeof dailyLogFormSchema>;
 
+const documentFormSchema = z.object({
+  title: z.string().min(3, 'Document title must be at least 3 characters long.'),
+  file: z.instanceof(FileList).refine(files => files.length > 0, 'A file is required.'),
+});
+type DocumentFormValues = z.infer<typeof documentFormSchema>;
+
 export default function ProjectDetailPage({ params }: { params: { id: string } }) {
   const [project, setProject] = useState<Project | null>(null);
   const [employees, setEmployees] = useState<Employee[]>([]);
@@ -140,9 +155,13 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
   const [dailyLogs, setDailyLogs] = useState<DailyLog[]>([]);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [inventoryItems, setInventoryItems] = useState<InventoryItem[]>([]);
+  const [documents, setDocuments] = useState<Document[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isRequestDialogOpen, setIsRequestDialogOpen] = useState(false);
+  const [isDocumentDialogOpen, setIsDocumentDialogOpen] = useState(false);
+  const [documentToDelete, setDocumentToDelete] = useState<Document | null>(null);
+  const [isDeletingDocument, setIsDeletingDocument] = useState(false);
   const { profile } = useAuth();
   const { toast } = useToast();
   
@@ -154,7 +173,6 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
 
     const unsubscribes: (() => void)[] = [];
 
-    // Subscribe to project document
     const projectRef = doc(firestore, 'projects', projectId);
     unsubscribes.push(onSnapshot(projectRef, (doc) => {
         if (doc.exists()) {
@@ -169,38 +187,30 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
         setIsLoading(false);
     }));
 
-    // Subscribe to employees collection
     const employeesQuery = query(collection(firestore, 'employees'));
     unsubscribes.push(onSnapshot(employeesQuery, (snapshot) => {
-        const employeesData: Employee[] = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data()} as Employee));
-        setEmployees(employeesData);
+        setEmployees(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data()} as Employee)));
     }));
     
-    // Subscribe to related procurements
     const procurementsQuery = query(collection(firestore, 'procurement'), where('projectId', '==', projectId));
     unsubscribes.push(onSnapshot(procurementsQuery, (snapshot) => {
-        const procurementsData: ProcurementRequest[] = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data()} as ProcurementRequest));
-        setProcurements(procurementsData);
+        setProcurements(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data()} as ProcurementRequest)));
     }, (err) => {
         console.error('Error fetching procurements:', err);
     }));
     
-    // Subscribe to material requests for this project
     const materialRequestsQuery = query(collection(firestore, 'materialRequests'), where('projectId', '==', projectId), orderBy('requestedAt', 'desc'));
     unsubscribes.push(onSnapshot(materialRequestsQuery, (snapshot) => {
-        const requestsData: MaterialRequest[] = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as MaterialRequest));
-        setMaterialRequests(requestsData);
+        setMaterialRequests(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as MaterialRequest)));
     }, (err) => {
         console.error('Error fetching material requests:', err);
     }));
 
-    // Subscribe to daily logs for this project
     const dailyLogsQuery = query(collection(firestore, 'projects', projectId, 'dailyLogs'), orderBy('createdAt', 'desc'));
     unsubscribes.push(onSnapshot(dailyLogsQuery, (snapshot) => {
         setDailyLogs(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as DailyLog)));
     }));
 
-    // Subscribe to transactions for this project
     const transactionsQuery = query(collection(firestore, 'transactions'), where('projectId', '==', projectId), orderBy('date', 'desc'));
     unsubscribes.push(onSnapshot(transactionsQuery, (snapshot) => {
         setTransactions(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Transaction)));
@@ -208,13 +218,15 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
         console.error('Error fetching transactions for project:', err);
     }));
 
-    // Fetch all inventory items for the dropdown
     const inventoryQuery = query(collection(firestore, 'inventory'), where('quantity', '>', 0), orderBy('name', 'asc'));
     unsubscribes.push(onSnapshot(inventoryQuery, (snapshot) => {
-        const itemsData: InventoryItem[] = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as InventoryItem));
-        setInventoryItems(itemsData);
+        setInventoryItems(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as InventoryItem)));
     }));
 
+    const documentsQuery = query(collection(firestore, 'projects', projectId, 'documents'), orderBy('createdAt', 'desc'));
+    unsubscribes.push(onSnapshot(documentsQuery, (snapshot) => {
+        setDocuments(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Document)));
+    }));
 
     return () => unsubscribes.forEach(unsub => unsub());
 
@@ -238,6 +250,11 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
   const dailyLogForm = useForm<DailyLogFormValues>({
     resolver: zodResolver(dailyLogFormSchema),
     defaultValues: { notes: '' },
+  });
+
+  const documentForm = useForm<DocumentFormValues>({
+    resolver: zodResolver(documentFormSchema),
+    defaultValues: { title: '' },
   });
 
   async function onMaterialRequestSubmit(values: MaterialRequestFormValues) {
@@ -280,6 +297,40 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
       if (fileInput) fileInput.value = '';
     }
   }
+
+  async function onDocumentSubmit(values: DocumentFormValues) {
+    const formData = new FormData();
+    formData.append('title', values.title);
+    if (values.file && values.file.length > 0) {
+        formData.append('file', values.file[0]);
+    }
+
+    const result = await addProjectDocument(projectId, formData);
+    if (result.errors) {
+      toast({ variant: 'destructive', title: 'Error', description: result.message });
+      if (result.errors.file) {
+        documentForm.setError('file', { type: 'server', message: result.errors.file[0] });
+      }
+    } else {
+      toast({ title: 'Success', description: result.message });
+      documentForm.reset();
+      setIsDocumentDialogOpen(false);
+    }
+  }
+
+  async function handleDeleteDocument() {
+    if (!documentToDelete) return;
+    setIsDeletingDocument(true);
+    const result = await deleteProjectDocument(projectId, documentToDelete.id);
+    if (result.success) {
+      toast({ title: 'Success', description: result.message });
+    } else {
+      toast({ variant: 'destructive', title: 'Error', description: result.message });
+    }
+    setIsDeletingDocument(false);
+    setDocumentToDelete(null);
+  }
+
 
   async function handleRequestStatusUpdate(requestId: string, status: 'Approved' | 'Rejected') {
     const result = await updateMaterialRequestStatus(requestId, status);
@@ -350,6 +401,7 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
   }
 
   return (
+    <>
     <div className="space-y-6">
         <div className="flex items-center gap-4">
             <Button asChild variant="outline" size="icon">
@@ -372,6 +424,7 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
             <TabsList>
                 <TabsTrigger value="overview">Overview</TabsTrigger>
                 <TabsTrigger value="team-materials">Team & Materials</TabsTrigger>
+                <TabsTrigger value="documents">Documents</TabsTrigger>
                 <TabsTrigger value="daily-logs">Daily Logs</TabsTrigger>
                 <TabsTrigger value="procurement">Procurement</TabsTrigger>
                 <TabsTrigger value="financials">Financials</TabsTrigger>
@@ -588,6 +641,39 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
                     </Card>
                 </div>
             </TabsContent>
+            <TabsContent value="documents" className="pt-4">
+                 <Card>
+                    <CardHeader className="flex-row items-center justify-between">
+                        <div>
+                            <CardTitle>Project Documents</CardTitle>
+                            <CardDescription>All documents related to this project.</CardDescription>
+                        </div>
+                        <Dialog open={isDocumentDialogOpen} onOpenChange={setIsDocumentDialogOpen}>
+                            <DialogTrigger asChild><Button><PlusCircle className="mr-2" /> Add Document</Button></DialogTrigger>
+                            <DialogContent>
+                                <DialogHeader>
+                                    <DialogTitle>Add New Document</DialogTitle>
+                                    <DialogDescription>Upload a new document for this project.</DialogDescription>
+                                </DialogHeader>
+                                <Form {...documentForm}>
+                                    <form onSubmit={documentForm.handleSubmit(onDocumentSubmit)} className="space-y-4 py-4">
+                                        <FormField control={documentForm.control} name="title" render={({ field }) => (<FormItem><FormLabel>Document Title</FormLabel><FormControl><Input placeholder="e.g., Architectural Blueprints" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                                        <FormField control={documentForm.control} name="file" render={() => (<FormItem><FormLabel>File</FormLabel><FormControl><Input type="file" {...documentForm.register('file')} /></FormControl><FormMessage /></FormItem>)} />
+                                        <DialogFooter><Button type="submit" disabled={documentForm.formState.isSubmitting}>{documentForm.formState.isSubmitting ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Uploading...</> : 'Save Document'}</Button></DialogFooter>
+                                    </form>
+                                </Form>
+                            </DialogContent>
+                        </Dialog>
+                    </CardHeader>
+                    <CardContent>
+                        {documents.length > 0 ? (
+                            <Table><TableHeader><TableRow><TableHead>Title</TableHead><TableHead>Date Added</TableHead><TableHead className="text-right">Actions</TableHead></TableRow></TableHeader><TableBody>{documents.map(doc => (<TableRow key={doc.id}><TableCell className="font-medium">{doc.title}</TableCell><TableCell>{doc.createdAt ? format(doc.createdAt.toDate(), 'PPP') : 'N/A'}</TableCell><TableCell className="text-right"><div className="flex items-center justify-end gap-2"><Button asChild variant="outline" size="icon" className="h-8 w-8"><Link href={doc.fileUrl} target="_blank" rel="noopener noreferrer"><ExternalLink className="size-4" /><span className="sr-only">View Document</span></Link></Button><Button variant="ghost" size="icon" className="text-destructive hover:text-destructive h-8 w-8" onClick={() => setDocumentToDelete(doc)}><Trash2 className="size-4" /></Button></div></TableCell></TableRow>))}</TableBody></Table>
+                        ) : (
+                            <div className="flex flex-col items-center justify-center gap-2 py-8 text-center text-muted-foreground"><FileText className="size-12" /><p>No documents have been uploaded for this project yet.</p></div>
+                        )}
+                    </CardContent>
+                </Card>
+            </TabsContent>
             <TabsContent value="daily-logs" className="pt-4">
                 <Card>
                     <CardHeader>
@@ -774,5 +860,15 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
             </TabsContent>
         </Tabs>
     </div>
+    <AlertDialog open={!!documentToDelete} onOpenChange={(open) => !open && setDocumentToDelete(null)}>
+        <AlertDialogContent>
+            <AlertDialogHeader><AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle><AlertDialogDescription>This action cannot be undone. This will permanently delete the document "{documentToDelete?.title}".</AlertDialogDescription></AlertDialogHeader>
+            <AlertDialogFooter>
+                <AlertDialogCancel onClick={() => setDocumentToDelete(null)}>Cancel</AlertDialogCancel>
+                <AlertDialogAction onClick={handleDeleteDocument} disabled={isDeletingDocument} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">{isDeletingDocument ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Deleting...</> : <><Trash2 className="mr-2 h-4 w-4" /> Delete</>}</AlertDialogAction>
+            </AlertDialogFooter>
+        </AlertDialogContent>
+    </AlertDialog>
+    </>
   );
 }

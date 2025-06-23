@@ -6,7 +6,7 @@ import { collection, addDoc, serverTimestamp, doc, deleteDoc, updateDoc, getDoc,
 import { z } from 'zod';
 import { revalidatePath } from 'next/cache';
 import { analyzeProjectRisks, ProjectRiskAnalysisInput, type ProjectRiskAnalysisOutput } from '@/ai/flows/project-risk-analysis';
-import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
 import { summarizeDailyLogs, type SummarizeDailyLogsOutput } from '@/ai/flows/summarize-daily-logs';
 
 const projectFormSchema = z.object({
@@ -415,5 +415,85 @@ export async function getDailyLogSummary(projectId: string): Promise<AiLogSummar
       data: null,
       error: true,
     };
+  }
+}
+
+const documentFormSchema = z.object({
+  title: z.string().min(3, 'Document title must be at least 3 characters long.'),
+});
+
+export type DocumentFormValues = z.infer<typeof documentFormSchema>;
+
+export async function addProjectDocument(projectId: string, formData: FormData) {
+  if (!projectId) {
+    return { message: 'Project ID is required.', errors: { _server: ['Project ID is missing.'] } };
+  }
+
+  const formValues = {
+      title: formData.get('title'),
+  }
+
+  const validatedFields = documentFormSchema.safeParse(formValues);
+  if (!validatedFields.success) {
+    return { errors: validatedFields.error.flatten().fieldErrors, message: 'Invalid data provided.' };
+  }
+  
+  const file = formData.get('file') as File | null;
+  if (!file || file.size === 0) {
+      return { message: 'A document file is required.', errors: { file: ['Please select a file to upload.'] } };
+  }
+
+  try {
+    const newDocRef = doc(collection(firestore, 'projects', projectId, 'documents'));
+    const filePath = `projects/${projectId}/documents/${newDocRef.id}/${file.name}`;
+    const storageRef = ref(storage, filePath);
+    await uploadBytes(storageRef, file);
+    const fileUrl = await getDownloadURL(storageRef);
+    
+    const documentData = {
+      ...validatedFields.data,
+      fileUrl,
+      filePath,
+      fileName: file.name,
+      fileType: file.type,
+      fileSize: file.size,
+      createdAt: serverTimestamp(),
+    };
+    
+    await setDoc(newDocRef, documentData);
+
+    revalidatePath(`/projects/${projectId}`);
+    return { message: 'Document added successfully.', errors: null };
+  } catch (error) {
+    console.error('Error adding project document:', error);
+    return { message: 'Failed to add document.', errors: { _server: ['An unexpected error occurred.'] } };
+  }
+}
+
+export async function deleteProjectDocument(projectId: string, documentId: string) {
+  if (!projectId || !documentId) {
+    return { success: false, message: 'Project and Document ID are required.' };
+  }
+
+  try {
+    const docRef = doc(firestore, 'projects', projectId, 'documents', documentId);
+    const docSnap = await getDoc(docRef);
+
+    if (docSnap.exists()) {
+        const docData = docSnap.data();
+        if (docData.filePath) {
+            const fileRef = ref(storage, docData.filePath);
+            await deleteObject(fileRef).catch(err => {
+                console.error("Failed to delete document file from storage:", err);
+            });
+        }
+    }
+
+    await deleteDoc(docRef);
+    revalidatePath(`/projects/${projectId}`);
+    return { success: true, message: 'Document deleted successfully.' };
+  } catch (error) {
+    console.error('Error deleting document:', error);
+    return { success: false, message: 'Failed to delete document.' };
   }
 }
