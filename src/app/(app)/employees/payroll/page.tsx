@@ -14,13 +14,43 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useState, useEffect, useMemo } from 'react';
 import { useToast } from '@/hooks/use-toast';
-import { collection, onSnapshot, query, where, orderBy } from 'firebase/firestore';
+import { collection, onSnapshot, query, where, orderBy, type Timestamp } from 'firebase/firestore';
 import { firestore } from '@/lib/firebase';
 import { Skeleton } from '@/components/ui/skeleton';
 import Link from 'next/link';
 import { useAuth } from '@/hooks/use-auth';
-import { ArrowLeft, Users, DollarSign } from 'lucide-react';
+import { ArrowLeft, Users, DollarSign, Loader2, CalendarClock } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog';
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from '@/components/ui/form';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { Input } from '@/components/ui/input';
+import { useForm } from 'react-hook-form';
+import { z } from 'zod';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { runPayroll } from './actions';
+import { format } from 'date-fns';
 
 type Employee = {
   id: string;
@@ -29,6 +59,20 @@ type Employee = {
   department: string;
   salary: number;
 };
+
+type Account = {
+  id: string;
+  name: string;
+};
+
+const runPayrollSchema = z.object({
+  accountId: z.string().min(1, 'A bank account is required to run payroll.'),
+  payrollDate: z.string().refine((date) => !isNaN(Date.parse(date)), {
+    message: 'Please select a valid date.',
+  }),
+});
+
+type RunPayrollFormValues = z.infer<typeof runPayrollSchema>;
 
 const formatCurrency = (value: number) => {
     const formatter = new Intl.NumberFormat('en-US', {
@@ -39,10 +83,20 @@ const formatCurrency = (value: number) => {
 
 export default function PayrollSummaryPage() {
   const [employees, setEmployees] = useState<Employee[]>([]);
+  const [accounts, setAccounts] = useState<Account[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
   const { toast } = useToast();
   const { profile, isLoading: isAuthLoading } = useAuth();
   const router = useRouter();
+
+  const form = useForm<RunPayrollFormValues>({
+    resolver: zodResolver(runPayrollSchema),
+    defaultValues: {
+      accountId: '',
+      payrollDate: format(new Date(), 'yyyy-MM-dd'),
+    },
+  });
 
   useEffect(() => {
     if (!isAuthLoading && profile?.role !== 'admin') {
@@ -57,14 +111,16 @@ export default function PayrollSummaryPage() {
 
   useEffect(() => {
     if (profile?.role !== 'admin') return;
+    
+    const unsubscribes: (() => void)[] = [];
 
-    // Query for employees who have a salary defined and greater than 0
-    const q = query(
+    const qEmployees = query(
         collection(firestore, 'employees'), 
+        where('status', '==', 'Active'),
         where('salary', '>', 0),
         orderBy('salary', 'desc')
     );
-    const unsubscribe = onSnapshot(q, (querySnapshot) => {
+    unsubscribes.push(onSnapshot(qEmployees, (querySnapshot) => {
       const employeesData: Employee[] = [];
       querySnapshot.forEach((doc) => {
         employeesData.push({ id: doc.id, ...doc.data() } as Employee);
@@ -79,14 +135,29 @@ export default function PayrollSummaryPage() {
             description: 'Failed to fetch payroll data. You may need to create a Firestore index.',
         });
         setIsLoading(false);
-    });
+    }));
 
-    return () => unsubscribe();
+    const qAccounts = query(collection(firestore, 'accounts'), orderBy('name', 'asc'));
+    unsubscribes.push(onSnapshot(qAccounts, (snapshot) => {
+        setAccounts(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Account)));
+    }));
+
+    return () => unsubscribes.forEach(unsub => unsub());
   }, [toast, profile]);
 
   const totalPayroll = useMemo(() => {
     return employees.reduce((acc, employee) => acc + (employee.salary || 0), 0);
   }, [employees]);
+
+  async function onRunPayrollSubmit(values: RunPayrollFormValues) {
+    const result = await runPayroll(values);
+    if (result.errors) {
+      toast({ variant: 'destructive', title: 'Error', description: result.message });
+    } else {
+      toast({ title: 'Success', description: result.message });
+      setIsDialogOpen(false);
+    }
+  }
 
   if (isAuthLoading || profile?.role !== 'admin') {
     return (
@@ -118,16 +189,76 @@ export default function PayrollSummaryPage() {
                 Payroll Summary
               </h1>
               <p className="text-muted-foreground">
-                A summary of monthly salary expenses for all employees.
+                A summary of monthly salary expenses for all active employees.
               </p>
             </div>
         </div>
+        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+            <DialogTrigger asChild>
+                <Button disabled={employees.length === 0 || accounts.length === 0}>
+                    <CalendarClock className="mr-2"/> Run Monthly Payroll
+                </Button>
+            </DialogTrigger>
+            <DialogContent>
+                <DialogHeader>
+                    <DialogTitle>Confirm Payroll Run</DialogTitle>
+                    <DialogDescription>
+                        This will create {employees.length} expense transactions totaling <strong>{formatCurrency(totalPayroll)}</strong>. This action cannot be undone.
+                    </DialogDescription>
+                </DialogHeader>
+                 <Form {...form}>
+                    <form onSubmit={form.handleSubmit(onRunPayrollSubmit)} className="space-y-4 py-4">
+                        <FormField
+                            control={form.control}
+                            name="accountId"
+                            render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel>Payment Account</FormLabel>
+                                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                    <FormControl>
+                                        <SelectTrigger>
+                                        <SelectValue placeholder="Select an account to pay from" />
+                                        </SelectTrigger>
+                                    </FormControl>
+                                    <SelectContent>
+                                        {accounts.map(account => (
+                                            <SelectItem key={account.id} value={account.id}>{account.name}</SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                    </Select>
+                                    <FormMessage />
+                                </FormItem>
+                            )}
+                        />
+                        <FormField
+                            control={form.control}
+                            name="payrollDate"
+                            render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel>Payroll Date</FormLabel>
+                                    <FormControl>
+                                        <Input type="date" {...field} />
+                                    </FormControl>
+                                    <FormMessage />
+                                </FormItem>
+                            )}
+                        />
+                        <DialogFooter>
+                            <Button variant="outline" onClick={() => setIsDialogOpen(false)}>Cancel</Button>
+                            <Button type="submit" disabled={form.formState.isSubmitting} className="bg-destructive hover:bg-destructive/90">
+                                {form.formState.isSubmitting ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Processing...</> : 'Confirm & Run Payroll'}
+                            </Button>
+                        </DialogFooter>
+                    </form>
+                </Form>
+            </DialogContent>
+        </Dialog>
       </div>
 
       <Card>
         <CardHeader>
             <CardTitle>Employee Salaries</CardTitle>
-            <CardDescription>A list of all employees with defined salaries, sorted by highest salary.</CardDescription>
+            <CardDescription>A list of all active employees with defined salaries, sorted by highest salary.</CardDescription>
         </CardHeader>
         <CardContent>
           <Table>
@@ -163,7 +294,7 @@ export default function PayrollSummaryPage() {
                   <TableCell colSpan={4} className="h-24 text-center">
                     <div className="flex flex-col items-center justify-center gap-2 text-muted-foreground">
                         <Users className="size-12" />
-                        No employees with salaries found.
+                        No active employees with salaries found.
                     </div>
                   </TableCell>
                 </TableRow>
