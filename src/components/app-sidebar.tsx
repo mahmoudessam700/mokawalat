@@ -110,7 +110,7 @@ export function AppSidebar() {
       <SidebarHeader>
         <div className="flex items-center gap-2">
           <Logo className="size-8 text-primary" />
-          <span className="font-headline text-xl font-semibold">Mokawalat</span>
+          <span className="font-headline text-xl font-semibold">Mokawalat ERP</span>
         </div>
       </SidebarHeader>
       <SidebarContent className="flex flex-col p-2">

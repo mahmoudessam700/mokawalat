@@ -17,7 +17,7 @@ const lexend = Lexend({
 });
 
 export const metadata: Metadata = {
-  title: 'ElitePlan',
+  title: 'Mokawalat ERP',
   description: 'Comprehensive ERP for Large Construction Companies',
 };
 
