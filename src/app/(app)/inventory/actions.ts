@@ -30,6 +30,7 @@ export async function addInventoryItem(values: InventoryFormValues) {
     const itemRef = await addDoc(collection(firestore, 'inventory'), {
       ...validatedFields.data,
       name_lowercase: validatedFields.data.name.toLowerCase(),
+      createdAt: serverTimestamp(),
     });
     
     await addDoc(collection(firestore, 'activityLog'), {
