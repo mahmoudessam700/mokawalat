@@ -1,3 +1,4 @@
+
 'use server';
 
 /**
@@ -14,12 +15,12 @@ import { firestore } from '@/lib/firebase';
 import { collection, getDocs, orderBy, query, type Timestamp } from 'firebase/firestore';
 import { format } from 'date-fns';
 
-export const SummarizeDailyLogsInputSchema = z.object({
+const SummarizeDailyLogsInputSchema = z.object({
   projectId: z.string().describe('The ID of the project to summarize logs for.'),
 });
 export type SummarizeDailyLogsInput = z.infer<typeof SummarizeDailyLogsInputSchema>;
 
-export const SummarizeDailyLogsOutputSchema = z.object({
+const SummarizeDailyLogsOutputSchema = z.object({
   summary: z
     .string()
     .describe('A concise summary of the project\'s status based on the daily logs, highlighting key progress, blockers, and overall sentiment.'),

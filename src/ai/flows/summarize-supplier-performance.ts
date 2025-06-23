@@ -1,3 +1,4 @@
+
 'use server';
 
 /**
@@ -14,12 +15,12 @@ import { firestore } from '@/lib/firebase';
 import { collection, getDocs, query, orderBy, Timestamp, doc, getDoc, where } from 'firebase/firestore';
 import { format } from 'date-fns';
 
-export const SummarizeSupplierPerformanceInputSchema = z.object({
+const SummarizeSupplierPerformanceInputSchema = z.object({
   supplierId: z.string().describe('The ID of the supplier to summarize.'),
 });
 export type SummarizeSupplierPerformanceInput = z.infer<typeof SummarizeSupplierPerformanceInputSchema>;
 
-export const SummarizeSupplierPerformanceOutputSchema = z.object({
+const SummarizeSupplierPerformanceOutputSchema = z.object({
   summary: z
     .string()
     .describe('A concise summary of the supplier\'s performance, highlighting reliability, contract history, and overall sentiment based on evaluations.'),

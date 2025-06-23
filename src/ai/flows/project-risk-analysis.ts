@@ -1,3 +1,4 @@
+
 'use server';
 /**
  * @fileOverview An AI agent that analyzes construction projects for potential risks.
@@ -10,7 +11,7 @@
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
 
-export const ProjectRiskAnalysisInputSchema = z.object({
+const ProjectRiskAnalysisInputSchema = z.object({
   name: z.string().describe('The name of the construction project.'),
   description: z.string().describe('A detailed description of the project.'),
   budget: z.number().describe('The total budget for the project in the local currency.'),
@@ -24,7 +25,7 @@ const RiskSchema = z.object({
     mitigation: z.string().describe('A practical, actionable suggestion to mitigate this specific risk.'),
 });
 
-export const ProjectRiskAnalysisOutputSchema = z.object({
+const ProjectRiskAnalysisOutputSchema = z.object({
   risks: z.array(RiskSchema).describe('An array of potential risks identified for the project.'),
 });
 export type ProjectRiskAnalysisOutput = z.infer<typeof ProjectRiskAnalysisOutputSchema>;

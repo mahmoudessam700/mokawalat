@@ -1,3 +1,4 @@
+
 'use server';
 
 /**
@@ -11,7 +12,7 @@
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
 
-export const SummarizeClientInteractionsInputSchema = z.object({
+const SummarizeClientInteractionsInputSchema = z.object({
   interactionLog: z
     .string()
     .describe('A chronological log of all interactions with a client, including dates, types, and notes.'),
@@ -20,7 +21,7 @@ export type SummarizeClientInteractionsInput = z.infer<
   typeof SummarizeClientInteractionsInputSchema
 >;
 
-export const SummarizeClientInteractionsOutputSchema = z.object({
+const SummarizeClientInteractionsOutputSchema = z.object({
   summary: z
     .string()
     .describe('A concise summary of the client relationship based on the interaction history, highlighting key events, recent topics, and overall sentiment.'),
