@@ -1,81 +1,71 @@
-
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-
+    
     function isAdmin() {
+      // Checks if the requesting user has an 'admin' role in the /users collection.
       return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
     }
 
+    function isAuthenticated() {
+      // Checks if the user is signed in.
+      return request.auth != null;
+    }
+
+    // Users collection rules
     match /users/{userId} {
-      allow read, write: if request.auth.uid == userId || isAdmin();
+      // A user can read their own profile, an admin can read any profile.
+      allow get: if isAuthenticated() && (request.auth.uid == userId || isAdmin());
+      // Only admins can list all users.
+      allow list: if isAuthenticated() && isAdmin();
+      // A user can create their own profile document on signup.
+      allow create: if request.auth.uid == userId;
+      // Only an admin can update user roles.
+      allow update: if isAuthenticated() && isAdmin();
+      // Nobody can delete user profiles for data integrity.
+      allow delete: if false;
+    }
+
+    // General collections: authenticated users can read, admins can write.
+    match /{collection}/{docId} 
+      where collection in ['projects', 'employees', 'suppliers', 'inventory', 'inventoryCategories', 'warehouses', 'procurement', 'accounts', 'clients', 'transactions', 'materialRequests'] {
+        allow read: if isAuthenticated();
+        allow write: if isAuthenticated() && isAdmin();
+    }
+
+    // Activity Log: Can only be created. Cannot be read, updated, or deleted.
+    match /activityLog/{logId} {
+        allow create: if isAuthenticated();
+        allow read, update, delete: if false;
     }
     
-    match /projects/{projectId} {
-      allow read: if request.auth.uid != null;
-      allow write: if request.auth.uid != null && isAdmin();
-      
-      match /dailyLogs/{logId} {
-        allow read: if request.auth.uid != null;
-        allow create: if request.auth.uid != null;
-      }
+    // --- Subcollection Rules ---
 
-      match /documents/{docId} {
-        allow read: if request.auth.uid != null;
-        allow create, delete: if request.auth.uid != null && isAdmin();
-      }
+    // Project subcollections: tasks, documents, daily logs
+    match /projects/{projectId}/{subCollection}/{docId} where subCollection in ['tasks', 'documents', 'dailyLogs'] {
+      // Anyone authenticated can read subcollection items.
+      allow read: if isAuthenticated();
+      // Any authenticated user can create/update (e.g., add a log, update a task status).
+      allow create, update: if isAuthenticated();
+      // Only admins can delete.
+      allow delete: if isAuthenticated() && isAdmin();
+    }
+
+    // Client subcollections
+    match /clients/{clientId}/interactions/{interactionId} {
+      // Authenticated users can read and write interactions.
+      allow read, write: if isAuthenticated();
+    }
+    match /clients/{clientId}/contracts/{contractId} {
+      // Authenticated users can read contracts, but only admins can write them.
+      allow read: if isAuthenticated();
+      allow write: if isAuthenticated() && isAdmin();
     }
     
-    match /clients/{clientId} {
-      allow read, write: if request.auth.uid != null;
-      
-      match /interactions/{interactionId} {
-        allow read, create: if request.auth.uid != null;
-      }
-
-      match /contracts/{contractId} {
-        allow read: if request.auth.uid != null;
-        allow create, delete: if request.auth.uid != null && isAdmin();
-      }
-    }
-
-    match /suppliers/{supplierId} {
-      allow read, write: if request.auth.uid != null;
-
-      match /contracts/{contractId} {
-        allow read: if request.auth.uid != null;
-        allow create, delete: if request.auth.uid != null && isAdmin();
-      }
-    }
-
-    match /activityLog/{logId} { allow read: if request.auth.uid != null; }
-    match /accounts/{accountId} { 
-      allow read: if request.auth.uid != null;
-      allow write: if request.auth.uid != null && isAdmin();
-    }
-    match /employees/{employeeId} {
-      allow read: if request.auth.uid != null;
-      allow write: if request.auth.uid != null && isAdmin();
-    }
-    match /inventory/{itemId} {
-      allow read: if request.auth.uid != null;
-      allow write: if request.auth.uid != null && isAdmin();
-    }
-    match /inventoryCategories/{categoryId} {
-      allow read: if request.auth.uid != null;
-      allow write: if request.auth.uid != null && isAdmin();
-    }
-    match /materialRequests/{requestId} {
-      allow read: if request.auth.uid != null;
-      allow write: if request.auth.uid != null && isAdmin();
-    }
-    match /procurement/{procurementId} {
-      allow read: if request.auth.uid != null;
-      allow write: if request.auth.uid != null && isAdmin();
-    }
-    match /transactions/{transactionId} {
-      allow read: if request.auth.uid != null;
-      allow write: if request.auth.uid != null && isAdmin();
+    // Supplier subcollections
+    match /suppliers/{supplierId}/contracts/{contractId} {
+        allow read: if isAuthenticated();
+        allow write: if isAuthenticated() && isAdmin();
     }
   }
 }
