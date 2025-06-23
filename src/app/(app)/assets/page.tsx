@@ -136,6 +136,13 @@ export default function AssetsPage() {
   const [categoryFilter, setCategoryFilter] = useState('All');
   const [statusFilter, setStatusFilter] = useState('All');
   const [maintenanceFilter, setMaintenanceFilter] = useState('All');
+  
+  const [isClient, setIsClient] = useState(false);
+
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
+
 
   useEffect(() => {
     const qAssets = query(collection(firestore, 'assets'), orderBy('name', 'asc'));
@@ -187,6 +194,8 @@ export default function AssetsPage() {
   });
 
   useEffect(() => {
+    if (!isClient) return;
+
     if (assetToEdit) {
       form.reset({
         ...assetToEdit,
@@ -200,7 +209,7 @@ export default function AssetsPage() {
         purchaseDate: new Date().toISOString().split('T')[0],
       });
     }
-  }, [assetToEdit, form]);
+  }, [assetToEdit, form, isClient]);
 
   async function onSubmit(values: AssetFormValues) {
     const result = assetToEdit
