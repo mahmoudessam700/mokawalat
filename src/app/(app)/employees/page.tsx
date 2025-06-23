@@ -68,6 +68,7 @@ type Employee = {
   role: string;
   department: string;
   status: 'Active' | 'On Leave' | 'Inactive';
+  salary?: number;
 };
 
 const employeeFormSchema = z.object({
@@ -76,6 +77,7 @@ const employeeFormSchema = z.object({
   role: z.string().min(1, "Role is required."),
   department: z.string().min(1, "Department is required."),
   status: z.enum(["Active", "On Leave", "Inactive"]),
+  salary: z.coerce.number().optional(),
 });
 
 type EmployeeFormValues = z.infer<typeof employeeFormSchema>;
@@ -135,6 +137,7 @@ export default function EmployeesPage() {
       role: '',
       department: '',
       status: 'Active',
+      salary: undefined,
     },
   });
 
@@ -323,6 +326,25 @@ export default function EmployeesPage() {
                         </FormItem>
                     )}
                     />
+                    <FormField
+                      control={form.control}
+                      name="salary"
+                      render={({ field }) => (
+                          <FormItem>
+                          <FormLabel>Salary (LE) (Optional)</FormLabel>
+                          <FormControl>
+                              <Input
+                                type="number"
+                                placeholder="e.g., 8000"
+                                {...field}
+                                value={field.value ?? ''}
+                                onChange={(e) => field.onChange(e.target.value === '' ? undefined : +e.target.value)}
+                              />
+                          </FormControl>
+                          <FormMessage />
+                          </FormItem>
+                      )}
+                    />
                     <DialogFooter>
                     <Button type="submit" disabled={form.formState.isSubmitting}>
                         {form.formState.isSubmitting ? (
@@ -508,5 +530,3 @@ export default function EmployeesPage() {
     </>
   );
 }
-
-    

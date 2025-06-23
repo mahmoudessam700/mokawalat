@@ -12,6 +12,7 @@ const employeeFormSchema = z.object({
   role: z.string().min(1, "Role is required."),
   department: z.string().min(1, "Department is required."),
   status: z.enum(["Active", "On Leave", "Inactive"]),
+  salary: z.coerce.number().optional(),
 });
 
 export type EmployeeFormValues = z.infer<typeof employeeFormSchema>;

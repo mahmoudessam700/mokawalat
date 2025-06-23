@@ -7,7 +7,7 @@ import { firestore } from '@/lib/firebase';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
-import { ArrowLeft, User, Mail, Briefcase, Building, CheckCircle, ListTodo, Users } from 'lucide-react';
+import { ArrowLeft, User, Mail, Briefcase, Building, CheckCircle, ListTodo, Users, DollarSign } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -20,6 +20,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { format } from 'date-fns';
+import { useAuth } from '@/hooks/use-auth';
 
 type EmployeeStatus = 'Active' | 'On Leave' | 'Inactive';
 type ProjectStatus = 'In Progress' | 'Planning' | 'Completed' | 'On Hold';
@@ -31,6 +32,7 @@ type Employee = {
   role: string;
   department: string;
   status: EmployeeStatus;
+  salary?: number;
 };
 
 type Project = {
@@ -55,12 +57,20 @@ const projectStatusVariant: {
   'On Hold': 'destructive',
 };
 
+const formatCurrency = (value: number) => {
+    const formatter = new Intl.NumberFormat('en-US', {
+      minimumFractionDigits: 0,
+    });
+    return `LE ${formatter.format(value)}`;
+};
+
 
 export default function EmployeeDetailPage({ params }: { params: { id: string } }) {
   const [employee, setEmployee] = useState<Employee | null>(null);
   const [projects, setProjects] = useState<Project[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const { profile } = useAuth();
   const employeeId = params.id;
 
   useEffect(() => {
@@ -181,6 +191,12 @@ export default function EmployeeDetailPage({ params }: { params: { id: string } 
                         <CheckCircle className="size-4 text-muted-foreground" />
                         <Badge variant={statusVariant[employee.status]}>{employee.status}</Badge>
                     </div>
+                    {profile?.role === 'admin' && employee.salary && (
+                        <div className="flex items-center gap-4 border-t pt-4">
+                            <DollarSign className="size-4 text-muted-foreground" />
+                            <span className="text-sm">{formatCurrency(employee.salary)} / month</span>
+                        </div>
+                    )}
                 </CardContent>
             </Card>
 
