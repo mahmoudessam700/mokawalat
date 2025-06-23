@@ -1,21 +1,27 @@
-# Mokawalat ERP
+# Mokawalat ERP: A Feature-Complete ERP for Construction
 
-This is a Next.js-based ERP system for a construction company, built with Firebase Studio. It provides a comprehensive suite of tools to manage projects, employees, clients, suppliers, inventory, procurement, and financials, all within a single integrated platform.
+Congratulations! You have successfully built a comprehensive, AI-powered ERP system for a modern construction company using Firebase Studio. This application provides a full suite of integrated tools to manage every aspect of your business operations, from project inception to financial reporting.
 
-The application also features AI-powered assistants to help with ISO 9001 compliance and project risk analysis.
+This `README.md` serves as the final documentation for the project, outlining its extensive features.
 
-## Core Modules
+## Key Features & Core Modules
 
--   **Dashboard**: An at-a-glance overview of key performance indicators (KPIs) from across the system.
--   **Project Management**: Track project details, budget, progress, tasks, team members, and documents. Includes an AI assistant for risk analysis.
--   **Employee Management (HR)**: Manage employee profiles, roles, and their assigned projects.
--   **Supplier Management**: Maintain a database of suppliers, evaluate their performance, and manage contracts.
--   **Inventory/Warehouse Management**: Keep track of all materials, tools, and equipment across multiple warehouses.
--   **Procurement Management**: Create, track, and manage purchase orders from request to receipt.
--   **Client/Sales Management (CRM)**: Manage client information, log interactions, and track contracts. Includes an AI assistant to summarize client history.
--   **Financial & Accounting Management**: Record income and expenses, and manage bank accounts. Transactions can be linked to projects, clients, and suppliers.
--   **Reporting & Analytics**: Generate detailed reports and visualizations on financials, inventory, projects, and more.
--   **AI-Powered ISO 9001 Compliance Assistant**: Get actionable, AI-driven suggestions to improve your ERP operations for better ISO 9001 alignment.
+The application is structured into the following fully-integrated modules:
+
+-   **Centralized Dashboard**: An at-a-glance overview of key performance indicators (KPIs) from across the system, including active projects, financial summaries, pending tasks, and upcoming asset maintenance.
+-   **Project Management**: Track project details, budget, progress, and documents. Includes an AI assistant for risk analysis and an AI tool to suggest a complete task list based on the project scope.
+-   **Financial Management**: A complete financial ledger to record income and expenses. Transactions are automatically created from purchase orders and can be linked to projects, clients, suppliers, and contracts for granular tracking. Also includes bank account management.
+-   **Procurement & Approvals**: Create and track purchase orders from request to receipt. A dedicated approvals dashboard allows managers to approve pending POs and material requests, streamlining the workflow.
+-   **Client & Sales Management (CRM)**: Manage your complete client lifecycle, from leads to active clients. Log all interactions (calls, meetings, emails) and get an AI-generated summary of the entire relationship history for quick insights.
+-   **Employee Management (HR)**: Manage employee profiles, roles, departments, and salaries. Includes a payroll summary and a one-click "Run Payroll" feature that integrates directly with the financial module. An AI assistant provides performance summaries based on project involvement.
+-   **Supplier Management**: Maintain a detailed database of suppliers, track contracts, and evaluate their performance with a rating system. An AI assistant provides a concise summary of each supplier's reliability and history.
+-   **Asset Management**: A dedicated module to track high-value company assets like vehicles and heavy machinery. Log purchase details, assign assets to projects, and manage a complete maintenance history for each item.
+-   **Inventory & Warehouse Management**: Keep track of all materials, tools, and equipment across multiple, configurable warehouses. The system provides alerts for low stock and handles material requests from project sites.
+-   **Invoicing**: A complete invoicing module to create, send, and track client invoices. Statuses (Draft, Sent, Paid, Void) are managed, and paid invoices automatically generate income transactions.
+-   **Reporting & Analytics**: An interactive reporting suite with a dynamic date-range filter. Visualize financial performance, project profitability, inventory status, and more.
+-   **Global Search & Activity Log**: A powerful, system-wide search to instantly find any project, client, employee, or invoice. A comprehensive activity log provides a complete audit trail of all major events.
+-   **AI-Powered ISO 9001 Assistant**: Get actionable, AI-driven suggestions to improve your ERP operations for better alignment with ISO 9001 quality standards.
+-   **System Settings**: A dedicated, admin-only area to manage users and roles, company profile details, inventory categories, and warehouse locations.
 
 ## Getting Started
 
