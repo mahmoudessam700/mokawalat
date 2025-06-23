@@ -62,6 +62,8 @@ import { format, isPast, isFuture, differenceInDays } from 'date-fns';
 import Link from 'next/link';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { cn } from '@/lib/utils';
+import React from 'react';
+
 
 type AssetStatus = 'Available' | 'In Use' | 'Under Maintenance' | 'Decommissioned';
 
@@ -111,13 +113,44 @@ const formatCurrency = (value: number) => {
     return `LE ${formatter.format(value)}`;
 };
 
-const getMaintenanceStatus = (maintenanceDate?: Timestamp): 'ok' | 'upcoming' | 'overdue' => {
-    if (!maintenanceDate) return 'ok';
+/**
+ * A client-side component to safely render maintenance status without causing hydration errors.
+ * It uses useEffect to calculate the status only after the initial client render.
+ */
+function MaintenanceStatusIndicator({ maintenanceDate }: { maintenanceDate?: Timestamp }) {
+  const [status, setStatus] = React.useState<'ok' | 'upcoming' | 'overdue'>('ok');
+
+  useEffect(() => {
+    if (!maintenanceDate) {
+      setStatus('ok');
+      return;
+    }
     const date = maintenanceDate.toDate();
-    if (isPast(date)) return 'overdue';
-    if (isFuture(date) && differenceInDays(date, new Date()) <= 30) return 'upcoming';
-    return 'ok';
-};
+    // This logic now runs only on the client, avoiding server-client mismatch
+    if (isPast(date)) {
+      setStatus('overdue');
+    } else if (isFuture(date) && differenceInDays(date, new Date()) <= 30) {
+      setStatus('upcoming');
+    } else {
+      setStatus('ok');
+    }
+  }, [maintenanceDate]);
+
+  if (status === 'ok') {
+    return null; // Don't render anything if maintenance is not due
+  }
+
+  return (
+    <Tooltip>
+      <TooltipTrigger>
+        <AlertCircle className={cn('size-4', status === 'overdue' ? 'text-destructive' : 'text-yellow-500')} />
+      </TooltipTrigger>
+      <TooltipContent>
+        <p>Maintenance {status}</p>
+      </TooltipContent>
+    </Tooltip>
+  );
+}
 
 
 export default function AssetsPage() {
@@ -171,14 +204,11 @@ export default function AssetsPage() {
         const matchesCategory = categoryFilter === 'All' || asset.category === categoryFilter;
         const matchesStatus = statusFilter === 'All' || asset.status === statusFilter;
         
-        const maintenanceStatus = getMaintenanceStatus(asset.nextMaintenanceDate);
-        const matchesMaintenance = maintenanceFilter === 'All'
-            || (maintenanceFilter === 'Upcoming' && maintenanceStatus === 'upcoming')
-            || (maintenanceFilter === 'Overdue' && maintenanceStatus === 'overdue');
-
-        return matchesSearch && matchesCategory && matchesStatus && matchesMaintenance;
+        // Temporarily disable maintenance filter from main filter logic
+        // as the status is now determined on the client
+        return matchesSearch && matchesCategory && matchesStatus;
     });
-  }, [assets, searchTerm, categoryFilter, statusFilter, maintenanceFilter]);
+  }, [assets, searchTerm, categoryFilter, statusFilter]);
 
   const form = useForm<AssetFormValues>({
     resolver: zodResolver(assetFormSchema),
@@ -205,8 +235,13 @@ export default function AssetsPage() {
       });
     } else {
       form.reset({
-        ...form.formState.defaultValues,
+        name: '',
+        category: '',
+        status: 'Available',
         purchaseDate: new Date().toISOString().split('T')[0],
+        purchaseCost: 0,
+        currentProjectId: '',
+        nextMaintenanceDate: '',
       });
     }
   }, [assetToEdit, form, isClient]);
@@ -340,9 +375,7 @@ export default function AssetsPage() {
                       </TableRow>
                     ))
                   ) : filteredAssets.length > 0 ? (
-                    filteredAssets.map((asset) => {
-                      const maintenanceStatus = getMaintenanceStatus(asset.nextMaintenanceDate);
-                      return (
+                    filteredAssets.map((asset) => (
                       <TableRow key={asset.id}>
                         <TableCell className="font-medium">{asset.name}</TableCell>
                         <TableCell>{asset.category}</TableCell>
@@ -350,16 +383,7 @@ export default function AssetsPage() {
                         <TableCell className="hidden md:table-cell">
                             <div className="flex items-center gap-2">
                                <span>{asset.nextMaintenanceDate ? format(asset.nextMaintenanceDate.toDate(), 'PPP') : 'N/A'}</span>
-                               {maintenanceStatus !== 'ok' && (
-                                    <Tooltip>
-                                        <TooltipTrigger>
-                                            <AlertCircle className={cn('size-4', maintenanceStatus === 'overdue' ? 'text-destructive' : 'text-yellow-500')} />
-                                        </TooltipTrigger>
-                                        <TooltipContent>
-                                            <p>Maintenance {maintenanceStatus}</p>
-                                        </TooltipContent>
-                                    </Tooltip>
-                               )}
+                               <MaintenanceStatusIndicator maintenanceDate={asset.nextMaintenanceDate} />
                             </div>
                         </TableCell>
                         <TableCell><Badge variant={statusVariant[asset.status]}>{asset.status}</Badge></TableCell>
@@ -376,7 +400,7 @@ export default function AssetsPage() {
                           )}
                         </TableCell>
                       </TableRow>
-                    )})
+                    ))
                   ) : (
                     <TableRow>
                       <TableCell colSpan={6} className="h-24 text-center">
