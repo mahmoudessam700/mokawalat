@@ -1,11 +1,12 @@
 
 'use server';
 
-import { firestore } from '@/lib/firebase';
-import { collection, addDoc, serverTimestamp, doc, deleteDoc, updateDoc, getDoc } from 'firebase/firestore';
+import { firestore, storage } from '@/lib/firebase';
+import { collection, addDoc, serverTimestamp, doc, deleteDoc, updateDoc, getDoc, setDoc, runTransaction } from 'firebase/firestore';
 import { z } from 'zod';
 import { revalidatePath } from 'next/cache';
 import { analyzeProjectRisks, ProjectRiskAnalysisInput, type ProjectRiskAnalysisOutput } from '@/ai/flows/project-risk-analysis';
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 
 const projectFormSchema = z.object({
   name: z.string().min(3, 'Project name must be at least 3 characters long.'),
@@ -27,8 +28,6 @@ const assignTeamFormSchema = z.object({
 
 const dailyLogFormSchema = z.object({
   notes: z.string().min(10, 'Log notes must be at least 10 characters long.').max(2000),
-  authorId: z.string(),
-  authorEmail: z.string().email(),
 });
 
 export type ProjectFormValues = z.infer<typeof projectFormSchema>;
@@ -201,33 +200,64 @@ export async function getProjectRiskAnalysis(projectId: string): Promise<AiAnaly
   }
 }
 
-export async function addDailyLog(projectId: string, values: DailyLogFormValues) {
-  if (!projectId) {
-    return { message: 'Project ID is required.', errors: { _server: ['Project ID is missing.'] } };
-  }
+export async function addDailyLog(projectId: string, author: { uid: string, email: string }, formData: FormData) {
+    if (!projectId) {
+        return { message: 'Project ID is required.', errors: { _server: ['Project ID is missing.'] } };
+    }
+    if (!author?.uid || !author.email) {
+        return { message: 'Author information is missing.', errors: { _server: ['Authentication error.'] } };
+    }
 
-  const validatedFields = dailyLogFormSchema.safeParse(values);
-
-  if (!validatedFields.success) {
-    return {
-      errors: validatedFields.error.flatten().fieldErrors,
-      message: 'Invalid data provided.',
+    const formValues = {
+        notes: formData.get('notes'),
     };
-  }
+    const validatedFields = dailyLogFormSchema.safeParse(formValues);
 
-  try {
-    const logData = {
-      ...validatedFields.data,
-      createdAt: serverTimestamp(),
-    };
-    await addDoc(collection(firestore, 'projects', projectId, 'dailyLogs'), logData);
+    if (!validatedFields.success) {
+        return {
+            errors: validatedFields.error.flatten().fieldErrors,
+            message: 'Invalid data provided.',
+        };
+    }
 
-    revalidatePath(`/projects/${projectId}`);
-    return { message: 'Daily log added successfully.', errors: null };
-  } catch (error) {
-    console.error('Error adding daily log:', error);
-    return { message: 'Failed to add daily log.', errors: { _server: ['An unexpected error occurred.'] } };
-  }
+    const photo = formData.get('photo') as File | null;
+    
+    if (photo && photo.size > 5 * 1024 * 1024) { // 5MB limit
+      return { message: 'File is too large.', errors: { photo: ['Photo must be less than 5MB.'] } };
+    }
+    if (photo && photo.size > 0 && !['image/jpeg', 'image/png', 'image/webp'].includes(photo.type)) {
+      return { message: 'Invalid file type.', errors: { photo: ['Please upload a JPG, PNG, or WEBP image.'] } };
+    }
+
+    try {
+        const newLogRef = doc(collection(firestore, 'projects', projectId, 'dailyLogs'));
+        let photoUrl = '';
+        let photoPath = '';
+
+        if (photo && photo.size > 0) {
+            photoPath = `projects/${projectId}/dailyLogs/${newLogRef.id}/${photo.name}`;
+            const storageRef = ref(storage, photoPath);
+            await uploadBytes(storageRef, photo);
+            photoUrl = await getDownloadURL(storageRef);
+        }
+
+        const logData = {
+            notes: validatedFields.data.notes,
+            authorId: author.uid,
+            authorEmail: author.email,
+            createdAt: serverTimestamp(),
+            photoUrl,
+            photoPath,
+        };
+        
+        await setDoc(newLogRef, logData);
+
+        revalidatePath(`/projects/${projectId}`);
+        return { message: 'Daily log added successfully.', errors: null };
+    } catch (error) {
+        console.error('Error adding daily log:', error);
+        return { message: 'Failed to add daily log.', errors: { _server: ['An unexpected error occurred.'] } };
+    }
 }
 
 
@@ -294,44 +324,49 @@ export async function updateMaterialRequestStatus(requestId: string, newStatus: 
   const requestRef = doc(firestore, 'materialRequests', requestId);
 
   try {
+    await runTransaction(firestore, async (transaction) => {
+        const requestSnapshot = await transaction.get(requestRef);
+        if (!requestSnapshot.exists()) {
+          throw new Error("Request not found.");
+        }
+        const requestData = requestSnapshot.data();
+
+        if (requestData.status !== 'Pending') {
+            throw new Error("This request has already been actioned.");
+        }
+    
+        if (newStatus === 'Approved') {
+            const itemRef = doc(firestore, 'inventory', requestData.itemId);
+            const itemDoc = await transaction.get(itemRef);
+    
+            if (!itemDoc.exists()) {
+                throw new Error("Inventory item not found.");
+            }
+            
+            const currentQuantity = itemDoc.data().quantity;
+            const newQuantity = currentQuantity - requestData.quantity;
+    
+            if (newQuantity < 0) {
+                throw new Error(`Insufficient stock for ${itemDoc.data().name}. Required: ${requestData.quantity}, Available: ${currentQuantity}.`);
+            }
+            
+            let newItemStatus: 'In Stock' | 'Low Stock' | 'Out of Stock';
+            if (newQuantity <= 0) {
+                newItemStatus = 'Out of Stock';
+            } else if (newQuantity <= 10) {
+                newItemStatus = 'Low Stock';
+            } else {
+                newItemStatus = 'In Stock';
+            }
+    
+            transaction.update(itemRef, { quantity: newQuantity, status: newItemStatus });
+        }
+        
+        transaction.update(requestRef, { status: newStatus });
+    });
+    
     const requestSnapshot = await getDoc(requestRef);
-    if (!requestSnapshot.exists()) {
-      throw new Error("Request not found.");
-    }
-    const requestData = requestSnapshot.data();
-    const projectId = requestData.projectId;
-
-    if (newStatus === 'Approved') {
-        const itemRef = doc(firestore, 'inventory', requestData.itemId);
-        const itemDoc = await getDoc(itemRef);
-
-        if (!itemDoc.exists()) {
-            throw new Error("Inventory item not found.");
-        }
-        
-        const currentQuantity = itemDoc.data().quantity;
-        const newQuantity = currentQuantity - requestData.quantity;
-
-        if (newQuantity < 0) {
-            throw new Error(`Insufficient stock for ${itemDoc.data().name}. Required: ${requestData.quantity}, Available: ${currentQuantity}.`);
-        }
-        
-        let newItemStatus: 'In Stock' | 'Low Stock' | 'Out of Stock';
-        if (newQuantity <= 0) {
-            newItemStatus = 'Out of Stock';
-        } else if (newQuantity <= 10) {
-            newItemStatus = 'Low Stock';
-        } else {
-            newItemStatus = 'In Stock';
-        }
-
-        await updateDoc(itemRef, { quantity: newQuantity, status: newItemStatus });
-        await updateDoc(requestRef, { status: 'Approved' });
-
-    } else { // 'Rejected'
-        await updateDoc(requestRef, { status: 'Rejected' });
-    }
-
+    const projectId = requestSnapshot.data()?.projectId;
     if (projectId) {
         revalidatePath(`/projects/${projectId}`);
     }

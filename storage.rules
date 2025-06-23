@@ -1,12 +1,14 @@
 rules_version = '2';
-
 service firebase.storage {
   match /b/{bucket}/o {
-    // Only authenticated users can read files
-    // Only admins can write files
-    match /{allPaths=**} {
-      allow read: if request.auth != null;
-      allow write: if request.auth != null && get(/databases/(default)/documents/users/$(request.auth.uid)).data.role == 'admin';
+    // Allow read/write access to contract files only for authenticated users
+    match /contracts/{entityType}/{entityId}/{contractId}/{fileName} {
+      allow read, write: if request.auth != null;
+    }
+
+    // Allow read/write access to daily log photos only for authenticated users
+    match /projects/{projectId}/dailyLogs/{logId}/{fileName} {
+      allow read, write: if request.auth != null;
     }
   }
 }

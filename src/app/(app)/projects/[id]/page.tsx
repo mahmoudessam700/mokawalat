@@ -7,7 +7,7 @@ import { firestore } from '@/lib/firebase';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
-import { ArrowLeft, Briefcase, Calendar, DollarSign, Activity, Users, ShoppingCart, PackagePlus, PackageCheck, PackageX, PackageSearch, Lightbulb, TrendingUp, MapPin, BookText } from 'lucide-react';
+import { ArrowLeft, Briefcase, Calendar, DollarSign, Activity, Users, ShoppingCart, PackagePlus, PackageCheck, PackageX, PackageSearch, Lightbulb, TrendingUp, MapPin, BookText, ExternalLink } from 'lucide-react';
 import { format, formatDistanceToNow } from 'date-fns';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
@@ -93,6 +93,7 @@ type DailyLog = {
     authorId: string;
     authorEmail: string;
     createdAt: Timestamp;
+    photoUrl?: string;
 };
 
 const statusVariant: {
@@ -126,6 +127,7 @@ const formatCurrency = (value: number) => {
 
 const dailyLogFormSchema = z.object({
   notes: z.string().min(10, 'Log notes must be at least 10 characters long.').max(2000),
+  photo: z.instanceof(FileList).optional(),
 });
 type DailyLogFormValues = z.infer<typeof dailyLogFormSchema>;
 
@@ -253,17 +255,28 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
       toast({ variant: 'destructive', title: 'Error', description: 'You must be logged in to post a log.' });
       return;
     }
+    
+    const formData = new FormData();
+    formData.append('notes', values.notes);
+    if (values.photo && values.photo.length > 0) {
+        formData.append('photo', values.photo[0]);
+    }
+
     const result = await addDailyLog(projectId, { 
-        ...values, 
-        authorId: profile.uid, 
-        authorEmail: profile.email 
-    });
+        uid: profile.uid, 
+        email: profile.email 
+    }, formData);
 
     if (result.errors) {
+      if (result.errors.photo) {
+        dailyLogForm.setError('photo', { type: 'server', message: result.errors.photo[0] });
+      }
       toast({ variant: 'destructive', title: 'Error', description: result.message });
     } else {
       toast({ title: 'Success', description: result.message });
       dailyLogForm.reset();
+      const fileInput = document.getElementById('daily-log-photo') as HTMLInputElement;
+      if (fileInput) fileInput.value = '';
     }
   }
 
@@ -601,6 +614,24 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
                                         </FormItem>
                                     )}
                                 />
+                                <FormField
+                                    control={dailyLogForm.control}
+                                    name="photo"
+                                    render={() => (
+                                        <FormItem>
+                                            <FormLabel>Attach Photo (Optional, max 5MB)</FormLabel>
+                                            <FormControl>
+                                                <Input 
+                                                id="daily-log-photo"
+                                                type="file" 
+                                                accept="image/png, image/jpeg, image/webp" 
+                                                {...dailyLogForm.register('photo')} 
+                                                />
+                                            </FormControl>
+                                            <FormMessage />
+                                        </FormItem>
+                                    )}
+                                />
                                 <div className="flex justify-end">
                                     <Button type="submit" disabled={!profile || dailyLogForm.formState.isSubmitting}>
                                         {dailyLogForm.formState.isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
@@ -626,6 +657,21 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
                                                 </p>
                                             </div>
                                             <p className="mt-2 text-sm whitespace-pre-wrap">{log.notes}</p>
+                                            {log.photoUrl && (
+                                                <div className="mt-4 relative group">
+                                                    <a href={log.photoUrl} target="_blank" rel="noopener noreferrer" className="block">
+                                                        <img 
+                                                          src={log.photoUrl} 
+                                                          alt="Daily log photo" 
+                                                          className="max-h-60 w-auto rounded-lg object-cover transition-opacity group-hover:opacity-80" 
+                                                          data-ai-hint="construction site"
+                                                        />
+                                                        <div className="absolute inset-0 bg-black/20 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity rounded-lg">
+                                                            <ExternalLink className="text-white size-8" />
+                                                        </div>
+                                                    </a>
+                                                </div>
+                                            )}
                                         </div>
                                     </div>
                                 ))
