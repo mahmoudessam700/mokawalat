@@ -21,7 +21,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { Bar, BarChart, CartesianGrid, Pie, PieChart, XAxis, YAxis, Legend, ResponsiveContainer } from 'recharts';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
-import { Calendar as CalendarIcon, DollarSign } from 'lucide-react';
+import { Calendar as CalendarIcon, DollarSign, Briefcase, Contact } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
 import { subDays, format } from 'date-fns';
@@ -48,11 +48,13 @@ type Employee = {
 type Client = {
   id: string;
   status: 'Lead' | 'Active' | 'Inactive';
+  createdAt: Timestamp;
 };
 type Project = {
     id: string;
     name: string;
     budget: number;
+    startDate: Timestamp;
 };
 
 
@@ -158,8 +160,8 @@ export default function ReportsPage() {
     return () => unsubscribes.forEach(unsub => unsub());
   }, [toast]);
 
-  const financialData = useMemo(() => {
-    const filteredTransactions = transactions.filter(t => {
+  const filteredTransactions = useMemo(() => {
+    return transactions.filter(t => {
         if (!date || !t.date) return false; // if no date range or transaction date, exclude
         const transactionDate = t.date.toDate();
         // Set time to 00:00:00 for the 'from' date and 23:59:59 for the 'to' date for inclusive range
@@ -177,7 +179,9 @@ export default function ReportsPage() {
         }
         return false; // No date range selected
     });
+  }, [transactions, date]);
 
+  const financialChartData = useMemo(() => {
     const totals = filteredTransactions.reduce((acc, t) => {
       if (t.type === 'Income') acc.income += t.amount;
       else if (t.type === 'Expense') acc.expense += t.amount;
@@ -188,7 +192,31 @@ export default function ReportsPage() {
       { type: 'Income', total: totals.income, fill: 'var(--color-income)' },
       { type: 'Expense', total: totals.expense, fill: 'var(--color-expense)' },
     ];
-  }, [transactions, date]);
+  }, [filteredTransactions]);
+
+  const periodMetrics = useMemo(() => {
+    const from = date?.from ? new Date(new Date(date.from).setHours(0, 0, 0, 0)) : null;
+    const to = date?.to ? new Date(new Date(date.to).setHours(23, 59, 59, 999)) : null;
+
+    if (!from || !to) return { projects: 0, clients: 0 };
+
+    const newProjects = projects.filter(p => {
+        if (!p.startDate) return false;
+        const projectDate = p.startDate.toDate();
+        return projectDate >= from && projectDate <= to;
+    }).length;
+
+    const newClients = clients.filter(c => {
+        if (!c.createdAt) return false;
+        const clientDate = c.createdAt.toDate();
+        return clientDate >= from && clientDate <= to;
+    }).length;
+
+    return {
+        projects: newProjects,
+        clients: newClients,
+    }
+}, [projects, clients, date]);
   
   const inventoryStatusData = useMemo(() => {
     const statusCounts = inventory.reduce((acc, item) => {
@@ -305,6 +333,37 @@ export default function ReportsPage() {
             </Popover>
         </div>
       </div>
+
+       <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
+        <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Transactions in Period</CardTitle>
+                <DollarSign className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+                {isLoading ? <Skeleton className="h-8 w-16" /> : <div className="text-2xl font-bold">{filteredTransactions.length}</div>}
+            </CardContent>
+        </Card>
+        <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Projects Started</CardTitle>
+                <Briefcase className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+                {isLoading ? <Skeleton className="h-8 w-16" /> : <div className="text-2xl font-bold">{periodMetrics.projects}</div>}
+            </CardContent>
+        </Card>
+        <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">New Clients Acquired</CardTitle>
+                <Contact className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+                {isLoading ? <Skeleton className="h-8 w-16" /> : <div className="text-2xl font-bold">{periodMetrics.clients}</div>}
+            </CardContent>
+        </Card>
+      </div>
+
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
           <Card>
            <CardHeader>
@@ -314,7 +373,7 @@ export default function ReportsPage() {
            <CardContent className="pl-2">
              {isLoading ? <Skeleton className="h-[250px] w-full" /> : (
                 <ChartContainer config={chartConfig} className="h-[250px] w-full">
-                <BarChart data={financialData} layout="vertical" margin={{ left: 20 }}>
+                <BarChart data={financialChartData} layout="vertical" margin={{ left: 20 }}>
                     <CartesianGrid horizontal={false} />
                     <YAxis
                     dataKey="type"
