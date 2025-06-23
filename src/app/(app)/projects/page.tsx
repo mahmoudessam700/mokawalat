@@ -170,12 +170,10 @@ export default function ProjectsPage() {
       }
     ));
     
-    const qClients = query(collection(firestore, 'clients'), where('status', '==', 'Active'), orderBy('name', 'asc'));
+    const qClients = query(collection(firestore, 'clients'), where('status', '==', 'Active'));
     unsubscribes.push(onSnapshot(qClients, (snapshot) => {
-        const clientsData: Client[] = [];
-        snapshot.forEach(doc => {
-            clientsData.push({ id: doc.id, ...doc.data()} as Client);
-        });
+        const clientsData: Client[] = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Client));
+        clientsData.sort((a, b) => a.name.localeCompare(b.name));
         setClients(clientsData);
     }));
 
