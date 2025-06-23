@@ -19,7 +19,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { CheckCircle2, ClipboardCheck, Loader2, MoreHorizontal, PlusCircle, Send, Trash2, XCircle } from 'lucide-react';
+import { CheckCircle2, ClipboardCheck, Loader2, MoreHorizontal, PlusCircle, Send, Trash2, XCircle, Search } from 'lucide-react';
 import {
   Card,
   CardContent,
@@ -109,6 +109,8 @@ const procurementFormSchema = z.object({
 
 type ProcurementFormValues = z.infer<typeof procurementFormSchema>;
 
+const requestStatuses: RequestStatus[] = ['Pending', 'Approved', 'Rejected', 'Ordered', 'Received'];
+
 export default function ProcurementPage() {
   const [requests, setRequests] = useState<PurchaseOrder[]>([]);
   const [projects, setProjects] = useState<Project[]>([]);
@@ -122,6 +124,11 @@ export default function ProcurementPage() {
   const [isDeleting, setIsDeleting] = useState(false);
   const { toast } = useToast();
   const { profile } = useAuth();
+  
+  const [searchTerm, setSearchTerm] = useState('');
+  const [statusFilter, setStatusFilter] = useState('All');
+  const [projectFilter, setProjectFilter] = useState('All');
+  const [supplierFilter, setSupplierFilter] = useState('All');
 
   useEffect(() => {
     const qRequests = query(collection(firestore, 'procurement'), orderBy('requestedAt', 'desc'));
@@ -159,6 +166,17 @@ export default function ProcurementPage() {
 
   const projectNames = useMemo(() => new Map(projects.map(p => [p.id, p.name])), [projects]);
   const supplierNames = useMemo(() => new Map(suppliers.map(s => [s.id, s.name])), [suppliers]);
+
+  const filteredRequests = useMemo(() => {
+    return requests.filter(req => {
+        const lowercasedTerm = searchTerm.toLowerCase();
+        const matchesSearch = !searchTerm || req.itemName.toLowerCase().includes(lowercasedTerm);
+        const matchesStatus = statusFilter === 'All' || req.status === statusFilter;
+        const matchesProject = projectFilter === 'All' || req.projectId === projectFilter;
+        const matchesSupplier = supplierFilter === 'All' || req.supplierId === supplierFilter;
+        return matchesSearch && matchesStatus && matchesProject && matchesSupplier;
+    });
+  }, [requests, searchTerm, statusFilter, projectFilter, supplierFilter]);
 
   const form = useForm<ProcurementFormValues>({
     resolver: zodResolver(procurementFormSchema),
@@ -355,8 +373,57 @@ export default function ProcurementPage() {
 
       <Card>
         <CardHeader>
-          <CardTitle>Purchase Orders</CardTitle>
-          <CardDescription>A list of all purchase orders in the system.</CardDescription>
+          <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+            <div>
+              <CardTitle>Purchase Orders</CardTitle>
+              <CardDescription>A list of all purchase orders in the system.</CardDescription>
+            </div>
+            <div className="flex flex-col items-stretch gap-2 md:flex-row md:items-center">
+              <div className="relative w-full md:w-auto">
+                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                <Input
+                  type="search"
+                  placeholder="Search by item name..."
+                  className="w-full pl-8 md:w-[200px]"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                />
+              </div>
+              <Select value={statusFilter} onValueChange={setStatusFilter}>
+                <SelectTrigger className="w-full md:w-[150px]">
+                  <SelectValue placeholder="Filter by status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="All">All Statuses</SelectItem>
+                  {requestStatuses.map(status => (
+                    <SelectItem key={status} value={status}>{status}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Select value={projectFilter} onValueChange={setProjectFilter}>
+                <SelectTrigger className="w-full md:w-[180px]">
+                  <SelectValue placeholder="Filter by project" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="All">All Projects</SelectItem>
+                  {projects.map(project => (
+                    <SelectItem key={project.id} value={project.id}>{project.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+               <Select value={supplierFilter} onValueChange={setSupplierFilter}>
+                <SelectTrigger className="w-full md:w-[180px]">
+                  <SelectValue placeholder="Filter by supplier" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="All">All Suppliers</SelectItem>
+                  {suppliers.map(supplier => (
+                    <SelectItem key={supplier.id} value={supplier.id}>{supplier.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
         </CardHeader>
         <CardContent>
           <Table>
@@ -384,8 +451,8 @@ export default function ProcurementPage() {
                     <TableCell><Button aria-haspopup="true" size="icon" variant="ghost" disabled><MoreHorizontal className="h-4 w-4" /></Button></TableCell>
                   </TableRow>
                 ))
-              ) : requests.length > 0 ? (
-                requests.map((request) => (
+              ) : filteredRequests.length > 0 ? (
+                filteredRequests.map((request) => (
                   <TableRow key={request.id}>
                     <TableCell className="font-medium">{request.itemName}</TableCell>
                     <TableCell>{request.quantity}</TableCell>
@@ -463,7 +530,7 @@ export default function ProcurementPage() {
               ) : (
                 <TableRow>
                   <TableCell colSpan={7} className="h-24 text-center">
-                    No purchase orders found. Create one to get started.
+                    {requests.length > 0 ? "No purchase orders match the current filters." : "No purchase orders found. Create one to get started."}
                   </TableCell>
                 </TableRow>
               )}
