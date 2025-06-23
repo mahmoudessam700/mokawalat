@@ -5,7 +5,7 @@ import { collection, addDoc, serverTimestamp, doc, deleteDoc, updateDoc } from '
 import { z } from 'zod';
 import { revalidatePath } from 'next/cache';
 
-export const warehouseFormSchema = z.object({
+const warehouseFormSchema = z.object({
   name: z.string().min(2, "Warehouse name must be at least 2 characters long."),
   location: z.string().optional(),
 });

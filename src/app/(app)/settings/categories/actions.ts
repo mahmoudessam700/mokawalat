@@ -6,7 +6,7 @@ import { collection, addDoc, serverTimestamp, doc, deleteDoc, updateDoc } from '
 import { z } from 'zod';
 import { revalidatePath } from 'next/cache';
 
-export const categoryFormSchema = z.object({
+const categoryFormSchema = z.object({
   name: z.string().min(2, "Category name must be at least 2 characters long."),
 });
 

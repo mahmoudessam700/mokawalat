@@ -40,15 +40,21 @@ import {
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { useForm } from 'react-hook-form';
+import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useState, useEffect } from 'react';
-import { addWarehouse, deleteWarehouse, updateWarehouse, warehouseFormSchema, type WarehouseFormValues } from './actions';
+import { addWarehouse, deleteWarehouse, updateWarehouse, type WarehouseFormValues } from './actions';
 import { useToast } from '@/hooks/use-toast';
 import { collection, onSnapshot, query, orderBy } from 'firebase/firestore';
 import { firestore } from '@/lib/firebase';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useAuth } from '@/hooks/use-auth';
 import Link from 'next/link';
+
+const warehouseFormSchema = z.object({
+  name: z.string().min(2, "Warehouse name must be at least 2 characters long."),
+  location: z.string().optional(),
+});
 
 type Warehouse = {
   id: string;

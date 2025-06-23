@@ -31,7 +31,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useToast } from '@/hooks/use-toast';
 import { addMaterialRequest, updateMaterialRequestStatus } from '../../material-requests/actions';
-import { addDailyLog, addProjectDocument, deleteProjectDocument, addTask, type TaskFormValues, taskFormSchema, updateTaskStatus, deleteTask, suggestTasksForProject } from '../actions';
+import { addDailyLog, addProjectDocument, deleteProjectDocument, addTask, type TaskFormValues, updateTaskStatus, deleteTask, suggestTasksForProject } from '../actions';
 import { Loader2 } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ProjectAiAssistant } from './project-ai-assistant';
@@ -91,6 +91,11 @@ type MaterialRequest = {
   status: 'Pending' | 'Approved' | 'Rejected';
   requestedAt: Timestamp;
 };
+
+const taskFormSchema = z.object({
+  name: z.string().min(3, "Task name must be at least 3 characters long."),
+  dueDate: z.string().optional(),
+});
 
 const materialRequestFormSchema = z.object({
   itemId: z.string().min(1, 'Please select an item.'),

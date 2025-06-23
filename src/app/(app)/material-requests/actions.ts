@@ -6,7 +6,7 @@ import { collection, addDoc, serverTimestamp, doc, updateDoc, runTransaction, ge
 import { z } from 'zod';
 import { revalidatePath } from 'next/cache';
 
-export const materialRequestFormSchema = z.object({
+const materialRequestFormSchema = z.object({
   itemId: z.string().min(1, 'Please select an item.'),
   quantity: z.coerce.number().min(1, 'Quantity must be at least 1.'),
 });

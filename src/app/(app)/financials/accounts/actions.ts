@@ -5,7 +5,7 @@ import { collection, addDoc, serverTimestamp, doc, deleteDoc, updateDoc, query, 
 import { z } from 'zod';
 import { revalidatePath } from 'next/cache';
 
-export const accountFormSchema = z.object({
+const accountFormSchema = z.object({
   name: z.string().min(2, "Account name must be at least 2 characters long."),
   bankName: z.string().min(2, "Bank name is required."),
   accountNumber: z.string().optional(),

@@ -11,7 +11,7 @@ import { firestore, storage } from '@/lib/firebase';
 import { collection, addDoc, serverTimestamp, doc, deleteDoc, updateDoc, getDoc, setDoc, runTransaction, getDocs, writeBatch } from 'firebase/firestore';
 import { z } from 'zod';
 import { revalidatePath } from 'next/cache';
-import { analyzeProjectRisks, type ProjectRiskAnalysisInput, type ProjectRiskAnalysisOutput } from '@/ai/flows/project-risk-analysis';
+import { analyzeProjectRisks, type ProjectRiskAnalysisOutput } from '@/ai/flows/project-risk-analysis';
 import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
 import { summarizeDailyLogs, type SummarizeDailyLogsOutput } from '@/ai/flows/summarize-daily-logs';
 import { suggestProjectTasks } from '@/ai/flows/suggest-project-tasks';
@@ -38,7 +38,7 @@ const dailyLogFormSchema = z.object({
   notes: z.string().min(10, 'Log notes must be at least 10 characters long.').max(2000),
 });
 
-export const taskFormSchema = z.object({
+const taskFormSchema = z.object({
   name: z.string().min(3, "Task name must be at least 3 characters long."),
   dueDate: z.string().optional(),
 });
@@ -231,7 +231,7 @@ export async function getProjectRiskAnalysis(projectId: string): Promise<AiAnaly
     }
 
     const projectData = projectDoc.data();
-    const analysisInput: ProjectRiskAnalysisInput = {
+    const analysisInput = {
       name: projectData.name,
       description: projectData.description || 'No description provided.',
       budget: projectData.budget,

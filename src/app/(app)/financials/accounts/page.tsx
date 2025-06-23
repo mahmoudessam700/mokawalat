@@ -43,13 +43,20 @@ import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useState, useEffect, useMemo } from 'react';
-import { addAccount, deleteAccount, updateAccount, accountFormSchema, type AccountFormValues } from './actions';
+import { addAccount, deleteAccount, updateAccount, type AccountFormValues } from './actions';
 import { useToast } from '@/hooks/use-toast';
 import { collection, onSnapshot, query, orderBy, type Timestamp } from 'firebase/firestore';
 import { firestore } from '@/lib/firebase';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useAuth } from '@/hooks/use-auth';
 import Link from 'next/link';
+
+const accountFormSchema = z.object({
+  name: z.string().min(2, "Account name must be at least 2 characters long."),
+  bankName: z.string().min(2, "Bank name is required."),
+  accountNumber: z.string().optional(),
+  initialBalance: z.coerce.number(),
+});
 
 type Account = {
   id: string;

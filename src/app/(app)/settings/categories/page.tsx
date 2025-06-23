@@ -44,13 +44,17 @@ import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useState, useEffect } from 'react';
-import { addCategory, deleteCategory, updateCategory, categoryFormSchema, type CategoryFormValues } from './actions';
+import { addCategory, deleteCategory, updateCategory, type CategoryFormValues } from './actions';
 import { useToast } from '@/hooks/use-toast';
 import { collection, onSnapshot, query, orderBy } from 'firebase/firestore';
 import { firestore } from '@/lib/firebase';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useAuth } from '@/hooks/use-auth';
 import Link from 'next/link';
+
+const categoryFormSchema = z.object({
+  name: z.string().min(2, "Category name must be at least 2 characters long."),
+});
 
 type Category = {
   id: string;
