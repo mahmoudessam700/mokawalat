@@ -220,35 +220,35 @@ const roadmapPhases = [
   {
     title: "Phase 5: Testing",
     objective: "Ensure the application is error-free, performs efficiently, all functions meet requirements, and it complies with ISO 9001 quality standards.",
-    completed: false,
+    completed: true,
     subTasks: [
       {
         title: "5.1. Unit Testing:",
         details: [
           "Write tests for individual functions and components to ensure they work correctly in isolation.",
         ],
-        completed: false,
+        completed: true,
       },
       {
         title: "5.2. Integration Testing:",
         details: [
           "Test how different modules interact with each other (e.g., when an item is added to inventory, does it reflect in the procurement list?).",
         ],
-        completed: false,
+        completed: true,
       },
       {
         title: "5.3. UI Testing:",
         details: [
           "Verify that all UI elements work as expected and that the design displays correctly on various devices.",
         ],
-        completed: false,
+        completed: true,
       },
       {
         title: "5.4. Performance Testing:",
         details: [
           "Evaluate the application's response speed, especially when handling large amounts of data or a high number of concurrent users.",
         ],
-        completed: false,
+        completed: true,
       },
       {
         title: "5.5. Security Testing:",
@@ -256,7 +256,7 @@ const roadmapPhases = [
           "Check for potential security vulnerabilities and test the permissions system to ensure users cannot access unauthorized data or functions.",
           "Ensure all security measures comply with ISO 9001 data protection standards.",
         ],
-        completed: false,
+        completed: true,
       },
       {
         title: "5.6. ISO 9001 Compliance Testing:",
@@ -264,14 +264,14 @@ const roadmapPhases = [
           "Thoroughly review all forms and processes to ensure they provide necessary documentation, clear process tracking, and are auditable.",
           "Ensure all workflows within the application contribute to quality objectives.",
         ],
-        completed: false,
+        completed: true,
       },
       {
         title: "5.7. User Acceptance Testing (UAT):",
         details: [
           "Involve end-users from various departments to test the application and provide feedback and suggestions.",
         ],
-        completed: false,
+        completed: true,
       }
     ]
   },
