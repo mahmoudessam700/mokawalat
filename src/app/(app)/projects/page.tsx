@@ -74,6 +74,7 @@ import {
   query,
   orderBy,
   Timestamp,
+  where,
 } from 'firebase/firestore';
 import { firestore } from '@/lib/firebase';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -95,6 +96,12 @@ type Project = {
   status: ProjectStatus;
   teamMemberIds?: string[];
   progress?: number;
+  clientId?: string;
+};
+
+type Client = {
+    id: string;
+    name: string;
 };
 
 const statusVariant: {
@@ -118,12 +125,14 @@ const projectFormSchema = z.object({
     }),
   status: z.enum(['Planning', 'In Progress', 'Completed', 'On Hold']),
   progress: z.coerce.number().min(0).max(100).optional(),
+  clientId: z.string().optional(),
 });
 
 type ProjectFormValues = z.infer<typeof projectFormSchema>;
 
 export default function ProjectsPage() {
   const [projects, setProjects] = useState<Project[]>([]);
+  const [clients, setClients] = useState<Client[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [projectToEdit, setProjectToEdit] = useState<Project | null>(null);
@@ -136,12 +145,14 @@ export default function ProjectsPage() {
   const { profile } = useAuth();
 
   useEffect(() => {
-    const q = query(
+    const unsubscribes: (() => void)[] = [];
+
+    const qProjects = query(
       collection(firestore, 'projects'),
       orderBy('startDate', 'desc')
     );
-    const unsubscribe = onSnapshot(
-      q,
+    unsubscribes.push(onSnapshot(
+      qProjects,
       (querySnapshot) => {
         const projectsData: Project[] = [];
         querySnapshot.forEach((doc) => {
@@ -159,9 +170,18 @@ export default function ProjectsPage() {
         });
         setIsLoading(false);
       }
-    );
+    ));
+    
+    const qClients = query(collection(firestore, 'clients'), where('status', '==', 'Active'), orderBy('name', 'asc'));
+    unsubscribes.push(onSnapshot(qClients, (snapshot) => {
+        const clientsData: Client[] = [];
+        snapshot.forEach(doc => {
+            clientsData.push({ id: doc.id, ...doc.data()} as Client);
+        });
+        setClients(clientsData);
+    }));
 
-    return () => unsubscribe();
+    return () => unsubscribes.forEach(unsub => unsub());
   }, [toast]);
   
   const filteredProjects = useMemo(() => {
@@ -172,6 +192,8 @@ export default function ProjectsPage() {
         return matchesSearch && matchesStatus;
     });
   }, [projects, searchTerm, statusFilter]);
+  
+  const clientNames = useMemo(() => new Map(clients.map(c => [c.id, c.name])), [clients]);
 
   const form = useForm<ProjectFormValues>({
     resolver: zodResolver(projectFormSchema),
@@ -183,6 +205,7 @@ export default function ProjectsPage() {
       startDate: '',
       status: 'Planning',
       progress: 0,
+      clientId: '',
     },
   });
 
@@ -194,6 +217,7 @@ export default function ProjectsPage() {
         description: projectToEdit.description || '',
         location: projectToEdit.location || '',
         progress: projectToEdit.progress || 0,
+        clientId: projectToEdit.clientId || '',
       });
     } else {
       form.reset(form.formState.defaultValues);
@@ -321,6 +345,34 @@ export default function ProjectsPage() {
                         <FormMessage />
                         </FormItem>
                     )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="clientId"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Client (Optional)</FormLabel>
+                          <Select
+                            onValueChange={field.onChange}
+                            value={field.value}
+                          >
+                            <FormControl>
+                              <SelectTrigger>
+                                <SelectValue placeholder="Link to a client" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              <SelectItem value="">None</SelectItem>
+                              {clients.map((client) => (
+                                <SelectItem key={client.id} value={client.id}>
+                                  {client.name}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                          <FormMessage />
+                        </FormItem>
+                      )}
                     />
                     <FormField
                       control={form.control}
@@ -475,6 +527,7 @@ export default function ProjectsPage() {
             <TableHeader>
               <TableRow>
                 <TableHead>Project Name</TableHead>
+                <TableHead>Client</TableHead>
                 <TableHead className="hidden md:table-cell">
                   Start Date
                 </TableHead>
@@ -494,6 +547,7 @@ export default function ProjectsPage() {
                     <TableCell>
                       <Skeleton className="h-4 w-[250px]" />
                     </TableCell>
+                    <TableCell><Skeleton className="h-4 w-[120px]" /></TableCell>
                     <TableCell className="hidden md:table-cell">
                       <Skeleton className="h-4 w-[100px]" />
                     </TableCell>
@@ -527,6 +581,7 @@ export default function ProjectsPage() {
                     <TableCell className="font-medium">
                       {project.name}
                     </TableCell>
+                    <TableCell>{project.clientId ? clientNames.get(project.clientId) || 'N/A' : 'N/A'}</TableCell>
                     <TableCell className="hidden md:table-cell">
                       {project.startDate
                         ? format(project.startDate.toDate(), 'PPP')
@@ -591,7 +646,7 @@ export default function ProjectsPage() {
                 ))
               ) : (
                 <TableRow>
-                  <TableCell colSpan={7} className="h-24 text-center">
+                  <TableCell colSpan={8} className="h-24 text-center">
                     No projects found for the current filter.
                   </TableCell>
                 </TableRow>

@@ -38,6 +38,7 @@ import React from 'react';
 
 type ClientStatus = 'Lead' | 'Active' | 'Inactive';
 type InteractionType = 'Call' | 'Email' | 'Meeting' | 'Note';
+type ProjectStatus = 'In Progress' | 'Planning' | 'Completed' | 'On Hold';
 
 type Client = {
   id: string;
@@ -71,11 +72,27 @@ type Transaction = {
   date: Timestamp;
 };
 
+type Project = {
+  id: string;
+  name: string;
+  status: ProjectStatus;
+  budget: number;
+};
+
 
 const statusVariant: { [key in ClientStatus]: 'default' | 'secondary' | 'destructive' } = {
   Lead: 'default',
   Active: 'secondary',
   Inactive: 'destructive',
+};
+
+const projectStatusVariant: {
+  [key in ProjectStatus]: 'secondary' | 'default' | 'outline' | 'destructive';
+} = {
+  'In Progress': 'secondary',
+  Planning: 'default',
+  Completed: 'outline',
+  'On Hold': 'destructive',
 };
 
 const interactionIcons: { [key in InteractionType]: React.ReactNode } = {
@@ -194,6 +211,7 @@ export default function ClientDetailPage({ params }: { params: { id: string } })
   const [interactions, setInteractions] = useState<Interaction[]>([]);
   const [contracts, setContracts] = useState<Contract[]>([]);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [projects, setProjects] = useState<Project[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isInteractionFormOpen, setIsInteractionFormOpen] = useState(false);
@@ -243,6 +261,12 @@ export default function ClientDetailPage({ params }: { params: { id: string } })
         console.error('Error fetching transactions:', err);
     }));
 
+    const projectsQuery = query(collection(firestore, 'projects'), where('clientId', '==', clientId), orderBy('name', 'asc'));
+    unsubscribes.push(onSnapshot(projectsQuery, (snapshot) => {
+        setProjects(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Project)));
+    }, (err) => {
+        console.error('Error fetching projects for client:', err);
+    }));
 
     const timer = setTimeout(() => setIsLoading(false), 1500);
     unsubscribes.push(() => clearTimeout(timer));
@@ -362,6 +386,7 @@ export default function ClientDetailPage({ params }: { params: { id: string } })
         <Tabs defaultValue="overview">
             <TabsList>
                 <TabsTrigger value="overview">Overview</TabsTrigger>
+                <TabsTrigger value="projects">Projects</TabsTrigger>
                 <TabsTrigger value="interactions">Interactions</TabsTrigger>
                 <TabsTrigger value="contracts">Contracts</TabsTrigger>
                 <TabsTrigger value="financials">Financials</TabsTrigger>
@@ -383,6 +408,53 @@ export default function ClientDetailPage({ params }: { params: { id: string } })
                         <ClientAiSummary clientId={client.id} clientName={client.name} />
                     </div>
                 </div>
+            </TabsContent>
+            <TabsContent value="projects" className="pt-4">
+                <Card>
+                    <CardHeader>
+                        <CardTitle>Linked Projects</CardTitle>
+                        <CardDescription>All projects associated with this client.</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        {projects.length > 0 ? (
+                            <Table>
+                                <TableHeader>
+                                    <TableRow>
+                                        <TableHead>Project Name</TableHead>
+                                        <TableHead>Status</TableHead>
+                                        <TableHead className="text-right">Budget</TableHead>
+                                        <TableHead className="text-right">Action</TableHead>
+                                    </TableRow>
+                                </TableHeader>
+                                <TableBody>
+                                    {projects.map(project => (
+                                        <TableRow key={project.id}>
+                                            <TableCell className="font-medium">{project.name}</TableCell>
+                                            <TableCell>
+                                                <Badge variant={projectStatusVariant[project.status]}>
+                                                    {project.status}
+                                                </Badge>
+                                            </TableCell>
+                                            <TableCell className="text-right">{formatCurrency(project.budget)}</TableCell>
+                                            <TableCell className="text-right">
+                                                <Button asChild variant="outline" size="sm">
+                                                    <Link href={`/projects/${project.id}`}>
+                                                        View Project
+                                                    </Link>
+                                                </Button>
+                                            </TableCell>
+                                        </TableRow>
+                                    ))}
+                                </TableBody>
+                            </Table>
+                        ) : (
+                            <div className="flex flex-col items-center justify-center gap-2 py-8 text-center text-muted-foreground">
+                                <Briefcase className="size-12" />
+                                <p>No projects are linked to this client yet.</p>
+                            </div>
+                        )}
+                    </CardContent>
+                </Card>
             </TabsContent>
             <TabsContent value="interactions" className="pt-4">
                  <Card>

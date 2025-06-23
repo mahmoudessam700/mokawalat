@@ -21,6 +21,7 @@ const projectFormSchema = z.object({
     }),
   status: z.enum(['Planning', 'In Progress', 'Completed', 'On Hold']),
   progress: z.coerce.number().min(0).max(100).optional(),
+  clientId: z.string().optional(),
 });
 
 const assignTeamFormSchema = z.object({
