@@ -118,6 +118,7 @@ export default function DashboardPage() {
   const [clientCount, setClientCount] = useState(0);
   const [supplierCount, setSupplierCount] = useState(0);
   const [inventoryCount, setInventoryCount] = useState(0);
+  const [assetCount, setAssetCount] = useState(0);
   const [monthlyFinancials, setMonthlyFinancials] = useState({
     revenue: 0,
     expenses: 0,
@@ -191,6 +192,13 @@ export default function DashboardPage() {
     unsubscribes.push(
         onSnapshot(qSuppliers, (snapshot) => {
             setSupplierCount(snapshot.size);
+        })
+    );
+
+    const qAssets = query(collection(firestore, 'assets'));
+    unsubscribes.push(
+        onSnapshot(qAssets, (snapshot) => {
+            setAssetCount(snapshot.size);
         })
     );
 
@@ -292,8 +300,8 @@ export default function DashboardPage() {
         setRecentActivities(activitiesData);
     }));
 
-    const qAssets = query(collection(firestore, 'assets'), where('nextMaintenanceDate', '!=', null), orderBy('nextMaintenanceDate', 'asc'));
-    unsubscribes.push(onSnapshot(qAssets, (snapshot) => {
+    const qMaintenanceAssets = query(collection(firestore, 'assets'), where('nextMaintenanceDate', '!=', null), orderBy('nextMaintenanceDate', 'asc'));
+    unsubscribes.push(onSnapshot(qMaintenanceAssets, (snapshot) => {
         const now = new Date();
         const thirtyDaysFromNow = addDays(now, 30);
         const maintenance = snapshot.docs
@@ -438,14 +446,14 @@ export default function DashboardPage() {
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Inventory Items</CardTitle>
-            <Warehouse className="size-5 text-muted-foreground" />
+            <CardTitle className="text-sm font-medium">Total Assets</CardTitle>
+            <Wrench className="size-5 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             {isLoading ? (
               <Skeleton className="h-8 w-24" />
             ) : (
-              <div className="text-2xl font-bold">{inventoryCount}</div>
+              <div className="text-2xl font-bold">{assetCount}</div>
             )}
           </CardContent>
         </Card>
