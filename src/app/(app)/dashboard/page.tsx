@@ -248,7 +248,7 @@ export default function DashboardPage() {
             id: doc.id,
             title: `PO for ${data.quantity}x ${data.itemName}`,
             type: 'Purchase Order',
-            link: '/procurement',
+            link: `/procurement/${doc.id}`,
           };
         });
         setProcurementTasks(tasks);
