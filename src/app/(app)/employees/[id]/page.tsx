@@ -21,6 +21,7 @@ import {
 } from '@/components/ui/table';
 import { format } from 'date-fns';
 import { useAuth } from '@/hooks/use-auth';
+import { EmployeeAiSummary } from './employee-ai-summary';
 
 type EmployeeStatus = 'Active' | 'On Leave' | 'Inactive';
 type ProjectStatus = 'In Progress' | 'Planning' | 'Completed' | 'On Hold';
@@ -165,86 +166,84 @@ export default function EmployeeDetailPage({ params }: { params: { id: string } 
         </div>
 
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-           <Card className="lg:col-span-1">
-                <CardHeader>
-                    <div className="flex flex-col items-center gap-4">
-                        <Avatar className="h-24 w-24">
-                            <AvatarImage src={`https://placehold.co/100x100.png`} data-ai-hint="profile picture" />
-                            <AvatarFallback>{employee.name.split(' ').map(n => n[0]).join('')}</AvatarFallback>
-                        </Avatar>
-                        <div className="text-center">
-                            <CardTitle>{employee.name}</CardTitle>
-                            <CardDescription>{employee.role}</CardDescription>
+           <div className="lg:col-span-1 space-y-6">
+                <Card>
+                    <CardHeader>
+                        <div className="flex flex-col items-center gap-4">
+                            <Avatar className="h-24 w-24">
+                                <AvatarImage src={`https://placehold.co/100x100.png`} data-ai-hint="profile picture" />
+                                <AvatarFallback>{employee.name.split(' ').map(n => n[0]).join('')}</AvatarFallback>
+                            </Avatar>
+                            <div className="text-center">
+                                <CardTitle>{employee.name}</CardTitle>
+                                <CardDescription>{employee.role}</CardDescription>
+                            </div>
                         </div>
-                    </div>
-                </CardHeader>
-                <CardContent className="space-y-4 pt-4 border-t">
-                     <div className="flex items-center gap-4">
-                        <Mail className="size-4 text-muted-foreground" />
-                        <a href={`mailto:${employee.email}`} className="text-sm hover:underline">{employee.email}</a>
-                    </div>
-                     <div className="flex items-center gap-4">
-                        <Building className="size-4 text-muted-foreground" />
-                        <span className="text-sm">{employee.department}</span>
-                    </div>
-                    <div className="flex items-center gap-4">
-                        <CheckCircle className="size-4 text-muted-foreground" />
-                        <Badge variant={statusVariant[employee.status]}>{employee.status}</Badge>
-                    </div>
-                    {profile?.role === 'admin' && employee.salary && (
-                        <div className="flex items-center gap-4 border-t pt-4">
-                            <DollarSign className="size-4 text-muted-foreground" />
-                            <span className="text-sm">{formatCurrency(employee.salary)} / month</span>
+                    </CardHeader>
+                    <CardContent className="space-y-4 pt-4 border-t">
+                        <div className="flex items-center gap-4">
+                            <Mail className="size-4 text-muted-foreground" />
+                            <a href={`mailto:${employee.email}`} className="text-sm hover:underline">{employee.email}</a>
                         </div>
-                    )}
-                </CardContent>
-            </Card>
-
-            <Card className="lg:col-span-2">
-                 <CardHeader>
-                    <CardTitle>Assigned Projects</CardTitle>
-                    <CardDescription>A list of all projects this employee is assigned to.</CardDescription>
-                </CardHeader>
-                <CardContent>
-                    {projects.length > 0 ? (
-                        <Table>
-                            <TableHeader>
-                                <TableRow>
-                                    <TableHead>Project Name</TableHead>
-                                    <TableHead>Start Date</TableHead>
-                                    <TableHead>Status</TableHead>
-                                    <TableHead className="text-right">Action</TableHead>
-                                </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                                {projects.map(project => (
-                                    <TableRow key={project.id}>
-                                        <TableCell className="font-medium">{project.name}</TableCell>
-                                        <TableCell>{project.startDate ? format(project.startDate.toDate(), 'PPP') : 'N/A'}</TableCell>
-                                        <TableCell>
-                                            <Badge variant={projectStatusVariant[project.status]}>
-                                                {project.status}
-                                            </Badge>
-                                        </TableCell>
-                                        <TableCell className="text-right">
-                                            <Button asChild variant="outline" size="sm">
-                                                <Link href={`/projects/${project.id}`}>
-                                                    View Project
-                                                </Link>
-                                            </Button>
-                                        </TableCell>
+                        <div className="flex items-center gap-4">
+                            <Building className="size-4 text-muted-foreground" />
+                            <span className="text-sm">{employee.department}</span>
+                        </div>
+                        <div className="flex items-center gap-4">
+                            <CheckCircle className="size-4 text-muted-foreground" />
+                            <Badge variant={statusVariant[employee.status]}>{employee.status}</Badge>
+                        </div>
+                        {profile?.role === 'admin' && employee.salary && (
+                            <div className="flex items-center gap-4 border-t pt-4">
+                                <DollarSign className="size-4 text-muted-foreground" />
+                                <span className="text-sm">{formatCurrency(employee.salary)} / month</span>
+                            </div>
+                        )}
+                    </CardContent>
+                </Card>
+                <Card>
+                    <CardHeader>
+                        <CardTitle>Assigned Projects</CardTitle>
+                        <CardDescription>A list of all projects this employee is assigned to.</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        {projects.length > 0 ? (
+                            <Table>
+                                <TableHeader>
+                                    <TableRow>
+                                        <TableHead>Project Name</TableHead>
+                                        <TableHead>Status</TableHead>
                                     </TableRow>
-                                ))}
-                            </TableBody>
-                        </Table>
-                    ) : (
-                        <div className="flex flex-col items-center justify-center gap-2 py-8 text-center text-muted-foreground">
-                            <ListTodo className="size-12" />
-                            <p>This employee is not assigned to any projects yet.</p>
-                        </div>
-                    )}
-                </CardContent>
-            </Card>
+                                </TableHeader>
+                                <TableBody>
+                                    {projects.map(project => (
+                                        <TableRow key={project.id}>
+                                            <TableCell className="font-medium">
+                                                <Link href={`/projects/${project.id}`} className="hover:underline">
+                                                    {project.name}
+                                                </Link>
+                                            </TableCell>
+                                            <TableCell>
+                                                <Badge variant={projectStatusVariant[project.status]}>
+                                                    {project.status}
+                                                </Badge>
+                                            </TableCell>
+                                        </TableRow>
+                                    ))}
+                                </TableBody>
+                            </Table>
+                        ) : (
+                            <div className="flex flex-col items-center justify-center gap-2 py-8 text-center text-muted-foreground">
+                                <ListTodo className="size-12" />
+                                <p>This employee is not assigned to any projects yet.</p>
+                            </div>
+                        )}
+                    </CardContent>
+                </Card>
+           </div>
+            <div className="lg:col-span-2">
+                <EmployeeAiSummary employeeId={employee.id} employeeName={employee.name} />
+            </div>
         </div>
     </div>
   );
