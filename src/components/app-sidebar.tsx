@@ -27,6 +27,7 @@ import {
   ClipboardList,
   History,
   Wrench,
+  ClipboardCheck,
 } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
@@ -53,6 +54,7 @@ import { Skeleton } from './ui/skeleton';
 
 const menuItems = [
   { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
+  { href: '/approvals', label: 'Approvals', icon: ClipboardCheck },
   { href: '/roadmap', label: 'Roadmap', icon: Map },
   { href: '/projects', label: 'Projects', icon: Briefcase },
   { href: '/employees', label: 'Employees', icon: Users },
