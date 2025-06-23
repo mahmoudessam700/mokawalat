@@ -30,7 +30,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useToast } from '@/hooks/use-toast';
-import { addMaterialRequest, updateMaterialRequestStatus } from '../../material-requests/actions';
+import { addMaterialRequest } from '../../material-requests/actions';
 import { addDailyLog, addProjectDocument, deleteProjectDocument, addTask, type TaskFormValues, updateTaskStatus, deleteTask, suggestTasksForProject } from '../actions';
 import { Loader2 } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -40,6 +40,7 @@ import { z } from 'zod';
 import { Textarea } from '@/components/ui/textarea';
 import { ProjectLogSummary } from './project-log-summary';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { updateMaterialRequestStatus } from '../../material-requests/actions';
 
 type ProjectStatus = 'In Progress' | 'Planning' | 'Completed' | 'On Hold';
 type TaskStatus = 'To Do' | 'In Progress' | 'Done';

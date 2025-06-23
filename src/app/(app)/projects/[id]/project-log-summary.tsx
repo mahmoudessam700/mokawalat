@@ -6,9 +6,12 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { AlertCircle, Loader2, Sparkles, Lightbulb } from 'lucide-react';
 import { getDailyLogSummary } from '../actions';
-import type { SummarizeDailyLogsOutput } from '@/ai/flows/summarize-daily-logs';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Skeleton } from '@/components/ui/skeleton';
+
+interface SummarizeDailyLogsOutput {
+  summary: string;
+}
 
 interface ProjectLogSummaryProps {
   projectId: string;

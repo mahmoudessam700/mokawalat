@@ -13,7 +13,7 @@ import { z } from 'zod';
 import { revalidatePath } from 'next/cache';
 import { analyzeProjectRisks, type ProjectRiskAnalysisOutput } from '@/ai/flows/project-risk-analysis';
 import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
-import { summarizeDailyLogs, type SummarizeDailyLogsOutput } from '@/ai/flows/summarize-daily-logs';
+import { summarizeDailyLogs } from '@/ai/flows/summarize-daily-logs';
 import { suggestProjectTasks } from '@/ai/flows/suggest-project-tasks';
 
 const projectFormSchema = z.object({
@@ -357,7 +357,7 @@ export async function addDailyLog(projectId: string, author: { uid: string, emai
 
 export interface AiLogSummaryState {
     message: string | null;
-    data: SummarizeDailyLogsOutput | null;
+    data: { summary: string } | null;
     error: boolean;
 }
 

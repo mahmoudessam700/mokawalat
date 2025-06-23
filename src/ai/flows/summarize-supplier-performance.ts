@@ -6,7 +6,6 @@
  *
  * - summarizeSupplierPerformance - A function that generates a summary of supplier performance.
  * - SummarizeSupplierPerformanceInput - The input type for the summarizeSupplierPerformance function.
- * - SummarizeSupplierPerformanceOutput - The return type for the summarizeSupplierPerformance function.
  */
 
 import {ai} from '@/ai/genkit';
@@ -25,7 +24,7 @@ const SummarizeSupplierPerformanceOutputSchema = z.object({
     .string()
     .describe('A concise summary of the supplier\'s performance, highlighting reliability, contract history, and overall sentiment based on evaluations.'),
 });
-export type SummarizeSupplierPerformanceOutput = z.infer<
+type SummarizeSupplierPerformanceOutput = z.infer<
   typeof SummarizeSupplierPerformanceOutputSchema
 >;
 

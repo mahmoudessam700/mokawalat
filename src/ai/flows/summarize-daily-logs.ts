@@ -6,7 +6,6 @@
  *
  * - summarizeDailyLogs - A function that generates a summary of daily logs for a project.
  * - SummarizeDailyLogsInput - The input type for the summarizeDailyLogs function.
- * - SummarizeDailyLogsOutput - The return type for the summarizeDailyLogs function.
  */
 
 import {ai} from '@/ai/genkit';
@@ -25,7 +24,7 @@ const SummarizeDailyLogsOutputSchema = z.object({
     .string()
     .describe('A concise summary of the project\'s status based on the daily logs, highlighting key progress, blockers, and overall sentiment.'),
 });
-export type SummarizeDailyLogsOutput = z.infer<typeof SummarizeDailyLogsOutputSchema>;
+type SummarizeDailyLogsOutput = z.infer<typeof SummarizeDailyLogsOutputSchema>;
 
 export async function summarizeDailyLogs(
   input: SummarizeDailyLogsInput
