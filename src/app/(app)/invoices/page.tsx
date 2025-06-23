@@ -43,7 +43,7 @@ import { useForm, useFieldArray } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useState, useEffect, useMemo } from 'react';
-import { addInvoice, updateInvoiceStatus, invoiceFormSchema, type InvoiceFormValues } from './actions';
+import { addInvoice, updateInvoiceStatus } from './actions';
 import { useToast } from '@/hooks/use-toast';
 import { collection, onSnapshot, query, orderBy, Timestamp } from 'firebase/firestore';
 import { firestore } from '@/lib/firebase';
@@ -80,6 +80,26 @@ const formatCurrency = (value: number) => {
     });
     return `LE ${formatter.format(value)}`;
 };
+
+const lineItemSchema = z.object({
+  description: z.string().min(1, "Description is required."),
+  quantity: z.coerce.number().min(0.01, "Quantity must be greater than 0."),
+  unitPrice: z.coerce.number().min(0, "Unit price must be a non-negative number."),
+});
+
+const invoiceFormSchema = z.object({
+  clientId: z.string().min(1, "A client is required."),
+  projectId: z.string().optional(),
+  issueDate: z.string().refine((date) => !isNaN(Date.parse(date)), {
+    message: 'Please select a valid issue date.',
+  }),
+  dueDate: z.string().refine((date) => !isNaN(Date.parse(date)), {
+    message: 'Please select a valid due date.',
+  }),
+  lineItems: z.array(lineItemSchema).min(1, "At least one line item is required."),
+});
+
+type InvoiceFormValues = z.infer<typeof invoiceFormSchema>;
 
 export default function InvoicesPage() {
   const [invoices, setInvoices] = useState<Invoice[]>([]);
