@@ -280,9 +280,11 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
         console.error('Error fetching procurements:', err);
     }));
     
-    const materialRequestsQuery = query(collection(firestore, 'materialRequests'), where('projectId', '==', projectId), orderBy('requestedAt', 'desc'));
+    const materialRequestsQuery = query(collection(firestore, 'materialRequests'), where('projectId', '==', projectId));
     unsubscribes.push(onSnapshot(materialRequestsQuery, (snapshot) => {
-        setMaterialRequests(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as MaterialRequest)));
+        const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as MaterialRequest));
+        data.sort((a,b) => (b.requestedAt?.toMillis() || 0) - (a.requestedAt?.toMillis() || 0));
+        setMaterialRequests(data);
     }, (err) => {
         console.error('Error fetching material requests:', err);
     }));

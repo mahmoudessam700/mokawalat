@@ -117,14 +117,14 @@ export default function PayrollSummaryPage() {
     const qEmployees = query(
         collection(firestore, 'employees'), 
         where('status', '==', 'Active'),
-        where('salary', '>', 0),
-        orderBy('salary', 'desc')
+        where('salary', '>', 0)
     );
     unsubscribes.push(onSnapshot(qEmployees, (querySnapshot) => {
       const employeesData: Employee[] = [];
       querySnapshot.forEach((doc) => {
         employeesData.push({ id: doc.id, ...doc.data() } as Employee);
       });
+      employeesData.sort((a,b) => (b.salary || 0) - (a.salary || 0));
       setEmployees(employeesData);
       setIsLoading(false);
     }, (error) => {
