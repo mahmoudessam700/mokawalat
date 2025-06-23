@@ -30,7 +30,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useToast } from '@/hooks/use-toast';
-import { addMaterialRequest, updateMaterialRequestStatus, materialRequestFormSchema, type MaterialRequestFormValues } from '../../material-requests/actions';
+import { addMaterialRequest, updateMaterialRequestStatus } from '../../material-requests/actions';
 import { addDailyLog, addProjectDocument, deleteProjectDocument, addTask, type TaskFormValues, taskFormSchema, updateTaskStatus, deleteTask } from '../actions';
 import { Loader2 } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -85,6 +85,13 @@ type MaterialRequest = {
   status: 'Pending' | 'Approved' | 'Rejected';
   requestedAt: Timestamp;
 };
+
+const materialRequestFormSchema = z.object({
+  itemId: z.string().min(1, 'Please select an item.'),
+  quantity: z.coerce.number().min(1, 'Quantity must be at least 1.'),
+});
+type MaterialRequestFormValues = z.infer<typeof materialRequestFormSchema>;
+
 
 type Transaction = {
   id: string;

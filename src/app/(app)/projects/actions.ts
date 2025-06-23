@@ -5,7 +5,7 @@ import { firestore, storage } from '@/lib/firebase';
 import { collection, addDoc, serverTimestamp, doc, deleteDoc, updateDoc, getDoc, setDoc, runTransaction, getDocs } from 'firebase/firestore';
 import { z } from 'zod';
 import { revalidatePath } from 'next/cache';
-import { analyzeProjectRisks, ProjectRiskAnalysisInput, type ProjectRiskAnalysisOutput } from '@/ai/flows/project-risk-analysis';
+import { analyzeProjectRisks, type ProjectRiskAnalysisInput, type ProjectRiskAnalysisOutput } from '@/ai/flows/project-risk-analysis';
 import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
 import { summarizeDailyLogs, type SummarizeDailyLogsOutput } from '@/ai/flows/summarize-daily-logs';
 
