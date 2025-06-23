@@ -51,6 +51,8 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { format } from 'date-fns';
 import { useAuth } from '@/hooks/use-auth';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import Link from 'next/link';
+
 
 type InvoiceStatus = 'Draft' | 'Sent' | 'Paid' | 'Void';
 
@@ -273,7 +275,11 @@ export default function InvoicesPage() {
               {isLoading ? (Array.from({ length: 5 }).map((_, index) => (<TableRow key={index}><TableCell colSpan={7}><Skeleton className="h-8 w-full"/></TableCell></TableRow>)))
               : filteredInvoices.length > 0 ? (filteredInvoices.map((invoice) => (
                 <TableRow key={invoice.id}>
-                    <TableCell className="font-mono">{invoice.invoiceNumber}</TableCell>
+                    <TableCell className="font-mono">
+                      <Link href={`/invoices/${invoice.id}`} className="hover:underline">
+                        {invoice.invoiceNumber}
+                      </Link>
+                    </TableCell>
                     <TableCell>{clientMap.get(invoice.clientId) || 'N/A'}</TableCell>
                     <TableCell>{format(invoice.issueDate.toDate(), 'PPP')}</TableCell>
                     <TableCell>{format(invoice.dueDate.toDate(), 'PPP')}</TableCell>
