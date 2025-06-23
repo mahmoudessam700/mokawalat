@@ -7,7 +7,7 @@ import { firestore } from '@/lib/firebase';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
-import { ArrowLeft, Briefcase, Calendar, DollarSign, Activity, Users, ShoppingCart, PackagePlus, PackageCheck, PackageX, PackageSearch, Lightbulb, TrendingUp, MapPin, BookText, ExternalLink, FileText, PlusCircle, Trash2 } from 'lucide-react';
+import { ArrowLeft, Briefcase, Calendar, DollarSign, Activity, Users, ShoppingCart, PackagePlus, PackageCheck, PackageX, PackageSearch, Lightbulb, TrendingUp, MapPin, BookText, ExternalLink, FileText, PlusCircle, Trash2, ListChecks, CheckCheck, MoreHorizontal } from 'lucide-react';
 import { format, formatDistanceToNow } from 'date-fns';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
@@ -30,7 +30,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useToast } from '@/hooks/use-toast';
-import { addMaterialRequest, updateMaterialRequestStatus, materialRequestFormSchema, type MaterialRequestFormValues, addDailyLog, addProjectDocument, deleteProjectDocument } from '../actions';
+import { addMaterialRequest, updateMaterialRequestStatus, materialRequestFormSchema, type MaterialRequestFormValues, addDailyLog, addProjectDocument, deleteProjectDocument, addTask, type TaskFormValues, taskFormSchema, updateTaskStatus, deleteTask } from '../actions';
 import { Loader2 } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ProjectAiAssistant } from './project-ai-assistant';
@@ -38,8 +38,10 @@ import { Progress } from '@/components/ui/progress';
 import { z } from 'zod';
 import { Textarea } from '@/components/ui/textarea';
 import { ProjectLogSummary } from './project-log-summary';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 
 type ProjectStatus = 'In Progress' | 'Planning' | 'Completed' | 'On Hold';
+type TaskStatus = 'To Do' | 'In Progress' | 'Done';
 
 export type Project = {
   id: string;
@@ -58,6 +60,14 @@ type Employee = {
     name: string;
     email: string;
     role: string;
+};
+
+type Task = {
+  id: string;
+  name: string;
+  status: TaskStatus;
+  dueDate?: Timestamp;
+  createdAt: Timestamp;
 };
 
 type ProcurementRequest = {
@@ -115,6 +125,14 @@ const statusVariant: {
   'On Hold': 'destructive',
 };
 
+const taskStatusVariant: {
+  [key in TaskStatus]: 'default' | 'secondary' | 'outline';
+} = {
+  'To Do': 'outline',
+  'In Progress': 'default',
+  'Done': 'secondary',
+};
+
 const procurementStatusVariant: { [key in ProcurementRequest['status']]: 'default' | 'secondary' | 'destructive' | 'outline' } = {
   Pending: 'default',
   Approved: 'secondary',
@@ -150,6 +168,7 @@ type DocumentFormValues = z.infer<typeof documentFormSchema>;
 export default function ProjectDetailPage({ params }: { params: { id: string } }) {
   const [project, setProject] = useState<Project | null>(null);
   const [employees, setEmployees] = useState<Employee[]>([]);
+  const [tasks, setTasks] = useState<Task[]>([]);
   const [procurements, setProcurements] = useState<ProcurementRequest[]>([]);
   const [materialRequests, setMaterialRequests] = useState<MaterialRequest[]>([]);
   const [dailyLogs, setDailyLogs] = useState<DailyLog[]>([]);
@@ -159,9 +178,12 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isRequestDialogOpen, setIsRequestDialogOpen] = useState(false);
+  const [isTaskDialogOpen, setIsTaskDialogOpen] = useState(false);
   const [isDocumentDialogOpen, setIsDocumentDialogOpen] = useState(false);
   const [documentToDelete, setDocumentToDelete] = useState<Document | null>(null);
+  const [taskToDelete, setTaskToDelete] = useState<Task | null>(null);
   const [isDeletingDocument, setIsDeletingDocument] = useState(false);
+  const [isDeletingTask, setIsDeletingTask] = useState(false);
   const { profile } = useAuth();
   const { toast } = useToast();
   
@@ -190,6 +212,11 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
     const employeesQuery = query(collection(firestore, 'employees'));
     unsubscribes.push(onSnapshot(employeesQuery, (snapshot) => {
         setEmployees(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data()} as Employee)));
+    }));
+
+    const tasksQuery = query(collection(firestore, 'projects', projectId, 'tasks'), orderBy('createdAt', 'desc'));
+    unsubscribes.push(onSnapshot(tasksQuery, (snapshot) => {
+        setTasks(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data()} as Task)));
     }));
     
     const procurementsQuery = query(collection(firestore, 'procurement'), where('projectId', '==', projectId));
@@ -247,6 +274,11 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
     },
   });
 
+  const taskForm = useForm<TaskFormValues>({
+    resolver: zodResolver(taskFormSchema),
+    defaultValues: { name: '', dueDate: ''},
+  });
+
   const dailyLogForm = useForm<DailyLogFormValues>({
     resolver: zodResolver(dailyLogFormSchema),
     defaultValues: { notes: '' },
@@ -265,6 +297,17 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
       toast({ title: 'Success', description: result.message });
       requestForm.reset();
       setIsRequestDialogOpen(false);
+    }
+  }
+
+  async function onTaskSubmit(values: TaskFormValues) {
+    const result = await addTask(projectId, values);
+    if (result.errors) {
+      toast({ variant: 'destructive', title: 'Error', description: result.message });
+    } else {
+      toast({ title: 'Success', description: result.message });
+      taskForm.reset();
+      setIsTaskDialogOpen(false);
     }
   }
 
@@ -331,6 +374,18 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
     setDocumentToDelete(null);
   }
 
+  async function handleDeleteTask() {
+    if (!taskToDelete) return;
+    setIsDeletingTask(true);
+    const result = await deleteTask(projectId, taskToDelete.id);
+    if (result.success) {
+      toast({ title: 'Success', description: result.message });
+    } else {
+      toast({ variant: 'destructive', title: 'Error', description: result.message });
+    }
+    setIsDeletingTask(false);
+    setTaskToDelete(null);
+  }
 
   async function handleRequestStatusUpdate(requestId: string, status: 'Approved' | 'Rejected') {
     const result = await updateMaterialRequestStatus(requestId, status);
@@ -338,6 +393,13 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
         toast({ title: 'Success', description: result.message });
     } else {
         toast({ variant: 'destructive', title: 'Error', description: result.message });
+    }
+  }
+  
+  async function handleTaskStatusUpdate(taskId: string, status: TaskStatus) {
+    const result = await updateTaskStatus(projectId, taskId, status);
+    if (!result.success) {
+      toast({ variant: 'destructive', title: 'Error', description: result.message });
     }
   }
 
@@ -423,6 +485,7 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
         <Tabs defaultValue="overview">
             <TabsList>
                 <TabsTrigger value="overview">Overview</TabsTrigger>
+                <TabsTrigger value="tasks">Tasks</TabsTrigger>
                 <TabsTrigger value="team-materials">Team & Materials</TabsTrigger>
                 <TabsTrigger value="documents">Documents</TabsTrigger>
                 <TabsTrigger value="daily-logs">Daily Logs</TabsTrigger>
@@ -486,6 +549,36 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
                                 </div>
                             </div>
                         </div>
+                    </CardContent>
+                </Card>
+            </TabsContent>
+            <TabsContent value="tasks" className="pt-4">
+                <Card>
+                    <CardHeader className="flex-row items-center justify-between">
+                        <div>
+                            <CardTitle>Project Tasks</CardTitle>
+                            <CardDescription>All tasks required to complete the project.</CardDescription>
+                        </div>
+                        <Dialog open={isTaskDialogOpen} onOpenChange={setIsTaskDialogOpen}>
+                            <DialogTrigger asChild><Button><PlusCircle className="mr-2" /> Add Task</Button></DialogTrigger>
+                            <DialogContent>
+                                <DialogHeader><DialogTitle>Add New Task</DialogTitle></DialogHeader>
+                                <Form {...taskForm}>
+                                    <form onSubmit={taskForm.handleSubmit(onTaskSubmit)} className="space-y-4 py-4">
+                                        <FormField control={taskForm.control} name="name" render={({ field }) => (<FormItem><FormLabel>Task Name</FormLabel><FormControl><Input placeholder="e.g., Lay building foundations" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                                        <FormField control={taskForm.control} name="dueDate" render={({ field }) => (<FormItem><FormLabel>Due Date (Optional)</FormLabel><FormControl><Input type="date" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                                        <DialogFooter><Button type="submit" disabled={taskForm.formState.isSubmitting}>{taskForm.formState.isSubmitting ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Saving...</> : 'Save Task'}</Button></DialogFooter>
+                                    </form>
+                                </Form>
+                            </DialogContent>
+                        </Dialog>
+                    </CardHeader>
+                    <CardContent>
+                        {tasks.length > 0 ? (
+                            <Table><TableHeader><TableRow><TableHead>Task</TableHead><TableHead>Due Date</TableHead><TableHead>Status</TableHead><TableHead className="text-right">Actions</TableHead></TableRow></TableHeader><TableBody>{tasks.map(task => (<TableRow key={task.id}><TableCell className="font-medium">{task.name}</TableCell><TableCell>{task.dueDate ? format(task.dueDate.toDate(), 'PPP') : 'N/A'}</TableCell><TableCell><Badge variant={taskStatusVariant[task.status]}>{task.status}</Badge></TableCell><TableCell className="text-right"><DropdownMenu><DropdownMenuTrigger asChild><Button variant="ghost" size="icon" className="h-8 w-8"><MoreHorizontal className="h-4 w-4" /></Button></DropdownMenuTrigger><DropdownMenuContent align="end"><DropdownMenuLabel>Actions</DropdownMenuLabel><DropdownMenuItem onSelect={() => handleTaskStatusUpdate(task.id, 'To Do')} disabled={task.status === 'To Do'}>To Do</DropdownMenuItem><DropdownMenuItem onSelect={() => handleTaskStatusUpdate(task.id, 'In Progress')} disabled={task.status === 'In Progress'}>In Progress</DropdownMenuItem><DropdownMenuItem onSelect={() => handleTaskStatusUpdate(task.id, 'Done')} disabled={task.status === 'Done'}>Done</DropdownMenuItem><DropdownMenuSeparator /><DropdownMenuItem className="text-destructive" onSelect={() => setTaskToDelete(task)}><Trash2 className="mr-2 h-4 w-4" />Delete</DropdownMenuItem></DropdownMenuContent></DropdownMenu></TableCell></TableRow>))}</TableBody></Table>
+                        ) : (
+                            <div className="flex flex-col items-center justify-center gap-2 py-8 text-center text-muted-foreground"><ListChecks className="size-12" /><p>No tasks have been added for this project yet.</p></div>
+                        )}
                     </CardContent>
                 </Card>
             </TabsContent>
@@ -866,6 +959,15 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
             <AlertDialogFooter>
                 <AlertDialogCancel onClick={() => setDocumentToDelete(null)}>Cancel</AlertDialogCancel>
                 <AlertDialogAction onClick={handleDeleteDocument} disabled={isDeletingDocument} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">{isDeletingDocument ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Deleting...</> : <><Trash2 className="mr-2 h-4 w-4" /> Delete</>}</AlertDialogAction>
+            </AlertDialogFooter>
+        </AlertDialogContent>
+    </AlertDialog>
+    <AlertDialog open={!!taskToDelete} onOpenChange={(open) => !open && setTaskToDelete(null)}>
+        <AlertDialogContent>
+            <AlertDialogHeader><AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle><AlertDialogDescription>This action cannot be undone. This will permanently delete the task "{taskToDelete?.name}".</AlertDialogDescription></AlertDialogHeader>
+            <AlertDialogFooter>
+                <AlertDialogCancel onClick={() => setTaskToDelete(null)}>Cancel</AlertDialogCancel>
+                <AlertDialogAction onClick={handleDeleteTask} disabled={isDeletingTask} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">{isDeletingTask ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Deleting...</> : <><Trash2 className="mr-2 h-4 w-4" /> Delete</>}</AlertDialogAction>
             </AlertDialogFooter>
         </AlertDialogContent>
     </AlertDialog>

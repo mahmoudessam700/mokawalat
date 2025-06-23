@@ -81,7 +81,6 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { format } from 'date-fns';
 import Link from 'next/link';
 import { useAuth } from '@/hooks/use-auth';
-import { Slider } from '@/components/ui/slider';
 import { Progress } from '@/components/ui/progress';
 
 type ProjectStatus = 'In Progress' | 'Planning' | 'Completed' | 'On Hold';
@@ -124,7 +123,6 @@ const projectFormSchema = z.object({
       message: 'Please select a valid date.',
     }),
   status: z.enum(['Planning', 'In Progress', 'Completed', 'On Hold']),
-  progress: z.coerce.number().min(0).max(100).optional(),
   clientId: z.string().optional(),
 });
 
@@ -204,7 +202,6 @@ export default function ProjectsPage() {
       budget: 0,
       startDate: '',
       status: 'Planning',
-      progress: 0,
       clientId: '',
     },
   });
@@ -216,7 +213,6 @@ export default function ProjectsPage() {
         startDate: projectToEdit.startDate ? format(projectToEdit.startDate.toDate(), 'yyyy-MM-dd') : '',
         description: projectToEdit.description || '',
         location: projectToEdit.location || '',
-        progress: projectToEdit.progress || 0,
         clientId: projectToEdit.clientId || '',
       });
     } else {
@@ -449,24 +445,6 @@ export default function ProjectsPage() {
                         <FormMessage />
                         </FormItem>
                     )}
-                    />
-                    <FormField
-                      control={form.control}
-                      name="progress"
-                      render={({ field }) => (
-                          <FormItem>
-                              <FormLabel>Progress ({field.value || 0}%)</FormLabel>
-                              <FormControl>
-                                  <Slider
-                                      defaultValue={[field.value || 0]}
-                                      onValueChange={(value) => field.onChange(value[0])}
-                                      max={100}
-                                      step={1}
-                                  />
-                              </FormControl>
-                              <FormMessage />
-                          </FormItem>
-                      )}
                     />
                     <DialogFooter>
                     <Button type="submit" disabled={form.formState.isSubmitting}>

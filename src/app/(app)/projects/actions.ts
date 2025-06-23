@@ -2,7 +2,7 @@
 'use server';
 
 import { firestore, storage } from '@/lib/firebase';
-import { collection, addDoc, serverTimestamp, doc, deleteDoc, updateDoc, getDoc, setDoc, runTransaction } from 'firebase/firestore';
+import { collection, addDoc, serverTimestamp, doc, deleteDoc, updateDoc, getDoc, setDoc, runTransaction, getDocs } from 'firebase/firestore';
 import { z } from 'zod';
 import { revalidatePath } from 'next/cache';
 import { analyzeProjectRisks, ProjectRiskAnalysisInput, type ProjectRiskAnalysisOutput } from '@/ai/flows/project-risk-analysis';
@@ -20,7 +20,6 @@ const projectFormSchema = z.object({
       message: 'Please select a valid date.',
     }),
   status: z.enum(['Planning', 'In Progress', 'Completed', 'On Hold']),
-  progress: z.coerce.number().min(0).max(100).optional(),
   clientId: z.string().optional(),
 });
 
@@ -32,15 +31,40 @@ const dailyLogFormSchema = z.object({
   notes: z.string().min(10, 'Log notes must be at least 10 characters long.').max(2000),
 });
 
+export const taskFormSchema = z.object({
+  name: z.string().min(3, "Task name must be at least 3 characters long."),
+  dueDate: z.string().optional(),
+});
+
 export type ProjectFormValues = z.infer<typeof projectFormSchema>;
 export type AssignTeamFormValues = z.infer<typeof assignTeamFormSchema>;
 export type DailyLogFormValues = z.infer<typeof dailyLogFormSchema>;
+export type TaskFormValues = z.infer<typeof taskFormSchema>;
 
 
 export interface AiAnalysisState {
     message: string | null;
     data: ProjectRiskAnalysisOutput | null;
     error: boolean;
+}
+
+async function recalculateProjectProgress(projectId: string) {
+  const tasksRef = collection(firestore, 'projects', projectId, 'tasks');
+  const tasksSnapshot = await getDocs(tasksRef);
+  
+  if (tasksSnapshot.empty) {
+    const projectRef = doc(firestore, 'projects', projectId);
+    await updateDoc(projectRef, { progress: 0 });
+    return;
+  }
+  
+  const totalTasks = tasksSnapshot.size;
+  const completedTasks = tasksSnapshot.docs.filter(doc => doc.data().status === 'Done').length;
+  
+  const progress = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
+  
+  const projectRef = doc(firestore, 'projects', projectId);
+  await updateDoc(projectRef, { progress });
 }
 
 export async function addProject(values: ProjectFormValues) {
@@ -57,7 +81,7 @@ export async function addProject(values: ProjectFormValues) {
     const data = {
         ...validatedFields.data,
         name_lowercase: validatedFields.data.name.toLowerCase(),
-        progress: validatedFields.data.progress || 0,
+        progress: 0, // Progress starts at 0
         startDate: new Date(validatedFields.data.startDate),
         createdAt: serverTimestamp(),
     };
@@ -101,7 +125,6 @@ export async function updateProject(projectId: string, values: ProjectFormValues
         await updateDoc(projectRef, {
             ...validatedFields.data,
             name_lowercase: validatedFields.data.name.toLowerCase(),
-            progress: validatedFields.data.progress || 0,
             startDate: new Date(validatedFields.data.startDate),
         });
         revalidatePath('/projects');
@@ -497,4 +520,66 @@ export async function deleteProjectDocument(projectId: string, documentId: strin
     console.error('Error deleting document:', error);
     return { success: false, message: 'Failed to delete document.' };
   }
+}
+
+// Task Management Actions
+export async function addTask(projectId: string, values: TaskFormValues) {
+    if (!projectId) {
+        return { message: 'Project ID is required.', errors: { _server: ['Project ID not provided.'] } };
+    }
+
+    const validatedFields = taskFormSchema.safeParse(values);
+    if (!validatedFields.success) {
+        return { errors: validatedFields.error.flatten().fieldErrors, message: 'Invalid data provided.' };
+    }
+
+    try {
+        await addDoc(collection(firestore, 'projects', projectId, 'tasks'), {
+            ...validatedFields.data,
+            dueDate: validatedFields.data.dueDate ? new Date(validatedFields.data.dueDate) : null,
+            status: 'To Do',
+            createdAt: serverTimestamp(),
+        });
+
+        await recalculateProjectProgress(projectId);
+        revalidatePath(`/projects/${projectId}`);
+        return { message: 'Task added successfully.', errors: null };
+    } catch (error) {
+        console.error('Error adding task:', error);
+        return { message: 'Failed to add task.', errors: { _server: ['An unexpected error occurred.'] } };
+    }
+}
+
+export async function updateTaskStatus(projectId: string, taskId: string, status: 'To Do' | 'In Progress' | 'Done') {
+    if (!projectId || !taskId) {
+        return { success: false, message: 'Project and Task ID are required.' };
+    }
+
+    try {
+        const taskRef = doc(firestore, 'projects', projectId, 'tasks', taskId);
+        await updateDoc(taskRef, { status });
+
+        await recalculateProjectProgress(projectId);
+        revalidatePath(`/projects/${projectId}`);
+        return { success: true, message: 'Task status updated.' };
+    } catch (error) {
+        console.error('Error updating task status:', error);
+        return { success: false, message: 'Failed to update task status.' };
+    }
+}
+
+export async function deleteTask(projectId: string, taskId: string) {
+    if (!projectId || !taskId) {
+        return { success: false, message: 'Project and Task ID are required.' };
+    }
+
+    try {
+        await deleteDoc(doc(firestore, 'projects', projectId, 'tasks', taskId));
+        await recalculateProjectProgress(projectId);
+        revalidatePath(`/projects/${projectId}`);
+        return { success: true, message: 'Task deleted successfully.' };
+    } catch (error) {
+        console.error('Error deleting task:', error);
+        return { success: false, message: 'Failed to delete task.' };
+    }
 }
