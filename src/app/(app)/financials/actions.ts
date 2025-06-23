@@ -17,6 +17,7 @@ const transactionFormSchema = z.object({
   projectId: z.string().optional(),
   clientId: z.string().optional(),
   supplierId: z.string().optional(),
+  purchaseOrderId: z.string().optional(),
 });
 
 export type TransactionFormValues = z.infer<typeof transactionFormSchema>;
@@ -49,6 +50,10 @@ export async function addTransaction(values: TransactionFormValues) {
     revalidatePath('/financials/accounts');
     if (validatedFields.data.clientId) revalidatePath(`/clients/${validatedFields.data.clientId}`);
     if (validatedFields.data.supplierId) revalidatePath(`/suppliers/${validatedFields.data.supplierId}`);
+    if (validatedFields.data.purchaseOrderId) {
+        revalidatePath(`/procurement/${validatedFields.data.purchaseOrderId}`);
+        revalidatePath('/procurement');
+    }
     return { message: 'Transaction added successfully.', errors: null };
   } catch (error) {
     console.error('Error adding transaction:', error);
@@ -80,6 +85,10 @@ export async function updateTransaction(transactionId: string, values: Transacti
     revalidatePath('/financials/accounts');
     if (validatedFields.data.clientId) revalidatePath(`/clients/${validatedFields.data.clientId}`);
     if (validatedFields.data.supplierId) revalidatePath(`/suppliers/${validatedFields.data.supplierId}`);
+    if (validatedFields.data.purchaseOrderId) {
+        revalidatePath(`/procurement/${validatedFields.data.purchaseOrderId}`);
+        revalidatePath('/procurement');
+    }
     return { message: 'Transaction updated successfully.', errors: null };
   } catch (error) {
     console.error('Error updating transaction:', error);
@@ -98,6 +107,7 @@ export async function deleteTransaction(transactionId: string) {
     revalidatePath('/financials/accounts');
     revalidatePath('/clients');
     revalidatePath('/suppliers');
+    revalidatePath('/procurement');
     return { success: true, message: 'Transaction deleted successfully.' };
   } catch (error) {
     console.error('Error deleting transaction:', error);

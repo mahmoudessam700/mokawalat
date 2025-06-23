@@ -74,12 +74,14 @@ type Transaction = {
   projectId?: string;
   clientId?: string;
   supplierId?: string;
+  purchaseOrderId?: string;
 };
 
 type Project = { id: string; name: string; };
 type Client = { id: string; name: string; };
 type Supplier = { id: string; name: string; };
 type Account = { id: string; name: string; initialBalance: number; };
+type PurchaseOrder = { id: string; itemName: string; supplierId: string; };
 
 
 const transactionFormSchema = z.object({
@@ -93,6 +95,7 @@ const transactionFormSchema = z.object({
   projectId: z.string().optional(),
   clientId: z.string().optional(),
   supplierId: z.string().optional(),
+  purchaseOrderId: z.string().optional(),
 });
 
 type TransactionFormValues = z.infer<typeof transactionFormSchema>;
@@ -110,6 +113,7 @@ export default function FinancialsPage() {
   const [clients, setClients] = useState<Client[]>([]);
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
   const [accounts, setAccounts] = useState<Account[]>([]);
+  const [purchaseOrders, setPurchaseOrders] = useState<PurchaseOrder[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isFormDialogOpen, setIsFormDialogOpen] = useState(false);
   const [transactionToEdit, setTransactionToEdit] = useState<Transaction | null>(null);
@@ -153,6 +157,11 @@ export default function FinancialsPage() {
         setAccounts(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Account)));
     }));
 
+    const qPOs = query(collection(firestore, 'procurement'), orderBy('requestedAt', 'desc'));
+    unsubscribes.push(onSnapshot(qPOs, (snapshot) => {
+        setPurchaseOrders(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as PurchaseOrder)));
+    }));
+
 
     return () => unsubscribes.forEach(unsub => unsub());
   }, [toast]);
@@ -188,8 +197,9 @@ export default function FinancialsPage() {
       clients: new Map(clients.map(c => [c.id, c.name])),
       suppliers: new Map(suppliers.map(s => [s.id, s.name])),
       accounts: new Map(accounts.map(a => [a.id, a.name])),
+      purchaseOrders: new Map(purchaseOrders.map(p => [p.id, p.itemName]))
     }
-  }, [projects, clients, suppliers, accounts]);
+  }, [projects, clients, suppliers, accounts, purchaseOrders]);
 
 
   const form = useForm<TransactionFormValues>({
@@ -203,8 +213,12 @@ export default function FinancialsPage() {
       projectId: '',
       clientId: '',
       supplierId: '',
+      purchaseOrderId: '',
     },
   });
+
+  const selectedSupplierId = form.watch('supplierId');
+  const transactionType = form.watch('type');
 
   useEffect(() => {
     if (transactionToEdit) {
@@ -215,6 +229,7 @@ export default function FinancialsPage() {
         projectId: transactionToEdit.projectId || '',
         clientId: transactionToEdit.clientId || '',
         supplierId: transactionToEdit.supplierId || '',
+        purchaseOrderId: transactionToEdit.purchaseOrderId || '',
       });
     } else {
       form.reset(form.formState.defaultValues);
@@ -266,6 +281,9 @@ export default function FinancialsPage() {
   }
 
   const getLinkedEntity = (transaction: Transaction) => {
+    if (transaction.purchaseOrderId && nameMaps.purchaseOrders.has(transaction.purchaseOrderId)) {
+        return { name: `PO: ${nameMaps.purchaseOrders.get(transaction.purchaseOrderId)}`, url: `/procurement/${transaction.purchaseOrderId}`, type: 'PO' };
+    }
     if (transaction.clientId) {
       return { name: nameMaps.clients.get(transaction.clientId) || 'N/A', url: `/clients/${transaction.clientId}`, type: 'Client' };
     }
@@ -390,11 +408,12 @@ export default function FinancialsPage() {
                         <FormField control={form.control} name="date" render={({ field }) => (<FormItem><FormLabel>Transaction Date</FormLabel><FormControl><Input type="date" {...field} /></FormControl><FormMessage /></FormItem>)} />
                         <FormField control={form.control} name="accountId" render={({ field }) => (<FormItem><FormLabel>Account</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Select an account" /></SelectTrigger></FormControl><SelectContent>{accounts.map(acc => (<SelectItem key={acc.id} value={acc.id}>{acc.name}</SelectItem>))}</SelectContent></Select><FormMessage /></FormItem>)} />
                     </div>
-                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                        <FormField control={form.control} name="clientId" render={({ field }) => (<FormItem><FormLabel>Client (Optional)</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Link to a client" /></SelectTrigger></FormControl><SelectContent><SelectItem value="">None</SelectItem>{clients.map(client => (<SelectItem key={client.id} value={client.id}>{client.name}</SelectItem>))}</SelectContent></Select><FormMessage /></FormItem>)} />
-                        <FormField control={form.control} name="supplierId" render={({ field }) => (<FormItem><FormLabel>Supplier (Optional)</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Link to a supplier" /></SelectTrigger></FormControl><SelectContent><SelectItem value="">None</SelectItem>{suppliers.map(supplier => (<SelectItem key={supplier.id} value={supplier.id}>{supplier.name}</SelectItem>))}</SelectContent></Select><FormMessage /></FormItem>)} />
-                    </div>
                     <FormField control={form.control} name="projectId" render={({ field }) => (<FormItem><FormLabel>Project (Optional)</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Link to a project" /></SelectTrigger></FormControl><SelectContent><SelectItem value="">None</SelectItem>{projects.map(project => (<SelectItem key={project.id} value={project.id}>{project.name}</SelectItem>))}</SelectContent></Select><FormMessage /></FormItem>)} />
+                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                        <FormField control={form.control} name="clientId" render={({ field }) => (<FormItem className={transactionType === 'Expense' ? 'hidden' : ''}><FormLabel>Client (Optional)</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Link to a client" /></SelectTrigger></FormControl><SelectContent><SelectItem value="">None</SelectItem>{clients.map(client => (<SelectItem key={client.id} value={client.id}>{client.name}</SelectItem>))}</SelectContent></Select><FormMessage /></FormItem>)} />
+                        <FormField control={form.control} name="supplierId" render={({ field }) => (<FormItem className={transactionType === 'Income' ? 'hidden' : ''}><FormLabel>Supplier (Optional)</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Link to a supplier" /></SelectTrigger></FormControl><SelectContent><SelectItem value="">None</SelectItem>{suppliers.map(supplier => (<SelectItem key={supplier.id} value={supplier.id}>{supplier.name}</SelectItem>))}</SelectContent></Select><FormMessage /></FormItem>)} />
+                    </div>
+                    <FormField control={form.control} name="purchaseOrderId" render={({ field }) => (<FormItem className={transactionType === 'Income' ? 'hidden' : ''}><FormLabel>Purchase Order (Optional)</FormLabel><Select onValueChange={field.onChange} value={field.value || ''} disabled={!selectedSupplierId}><FormControl><SelectTrigger><SelectValue placeholder="Link to a PO" /></SelectTrigger></FormControl><SelectContent><SelectItem value="">None</SelectItem>{purchaseOrders.filter(po => po.supplierId === selectedSupplierId).map(po => (<SelectItem key={po.id} value={po.id}>{po.itemName} (...{po.id.slice(-5)})</SelectItem>))}</SelectContent></Select><FormMessage /></FormItem>)} />
                     <DialogFooter>
                         <Button type="submit" disabled={form.formState.isSubmitting}>{form.formState.isSubmitting ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Saving...</> : (transactionToEdit ? 'Save Changes' : 'Save Transaction')}</Button>
                     </DialogFooter>

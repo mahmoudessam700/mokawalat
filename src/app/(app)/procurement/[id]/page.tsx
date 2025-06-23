@@ -2,15 +2,17 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { doc, onSnapshot, type Timestamp } from 'firebase/firestore';
+import { doc, onSnapshot, type Timestamp, collection, query, where } from 'firebase/firestore';
 import { firestore } from '@/lib/firebase';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
-import { ArrowLeft, Briefcase, Truck, Calendar, Hash, Activity } from 'lucide-react';
+import { ArrowLeft, Briefcase, Truck, Calendar, Hash, Activity, DollarSign } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { format } from 'date-fns';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 
 type RequestStatus = 'Pending' | 'Approved' | 'Rejected' | 'Ordered' | 'Received';
 type ProjectStatus = 'In Progress' | 'Planning' | 'Completed' | 'On Hold';
@@ -38,6 +40,14 @@ type Supplier = {
     status: SupplierStatus;
 };
 
+type Transaction = {
+  id: string;
+  description: string;
+  amount: number;
+  type: 'Income' | 'Expense';
+  date: Timestamp;
+};
+
 
 const requestStatusVariant: { [key in RequestStatus]: 'default' | 'secondary' | 'destructive' | 'outline' } = {
   Pending: 'default',
@@ -47,10 +57,18 @@ const requestStatusVariant: { [key in RequestStatus]: 'default' | 'secondary' | 
   Rejected: 'destructive',
 };
 
+const formatCurrency = (value: number) => {
+    const formatter = new Intl.NumberFormat('en-US', {
+        minimumFractionDigits: 2,
+    });
+    return `LE ${formatter.format(value)}`;
+};
+
 export default function ProcurementDetailPage({ params }: { params: { id: string } }) {
   const [request, setRequest] = useState<PurchaseOrder | null>(null);
   const [project, setProject] = useState<Project | null>(null);
   const [supplier, setSupplier] = useState<Supplier | null>(null);
+  const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const requestId = params.id;
@@ -99,6 +117,11 @@ export default function ProcurementDetailPage({ params }: { params: { id: string
     });
 
     unsubscribes.push(unsubRequest);
+
+    const qTransactions = query(collection(firestore, 'transactions'), where('purchaseOrderId', '==', requestId));
+    unsubscribes.push(onSnapshot(qTransactions, (snapshot) => {
+        setTransactions(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Transaction)));
+    }));
     
     return () => unsubscribes.forEach(unsub => unsub());
   }, [requestId]);
@@ -113,11 +136,8 @@ export default function ProcurementDetailPage({ params }: { params: { id: string
                 <Skeleton className="h-4 w-48 mt-2" />
             </div>
         </div>
-        <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-            <Skeleton className="h-40 w-full rounded-lg" />
-            <Skeleton className="h-40 w-full rounded-lg" />
-            <Skeleton className="h-40 w-full rounded-lg" />
-        </div>
+        <Skeleton className="h-10 w-48" />
+        <Card><CardContent className="p-6"><Skeleton className="h-48 w-full" /></CardContent></Card>
       </div>
     );
   }
@@ -158,72 +178,119 @@ export default function ProcurementDetailPage({ params }: { params: { id: string
                 </p>
             </div>
         </div>
-
-        <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-            <Card>
-                <CardHeader>
-                    <CardTitle>Order Details</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                    <div className="flex items-center gap-4">
-                        <Activity className="size-4 text-muted-foreground" />
-                         <Badge variant={requestStatusVariant[request.status]}>{request.status}</Badge>
-                    </div>
-                     <div className="flex items-center gap-4">
-                        <Hash className="size-4 text-muted-foreground" />
-                        <span className="text-sm">Quantity: <strong>{request.quantity}</strong></span>
-                    </div>
-                     <div className="flex items-center gap-4">
-                        <Calendar className="size-4 text-muted-foreground" />
-                        <span className="text-sm">Requested on {request.requestedAt ? format(request.requestedAt.toDate(), 'PPP') : 'N/A'}</span>
-                    </div>
-                </CardContent>
-            </Card>
-            
-            <Card>
-                <CardHeader>
-                    <CardTitle>Project</CardTitle>
-                </CardHeader>
-                 <CardContent>
-                    {project ? (
-                         <div className="space-y-4">
-                             <div className="flex items-center gap-4">
-                                <Briefcase className="size-4 text-muted-foreground" />
-                                <Link href={`/projects/${project.id}`} className="font-semibold hover:underline">{project.name}</Link>
-                             </div>
-                             <div className="flex items-center gap-4">
+        
+        <Tabs defaultValue="overview">
+            <TabsList>
+                <TabsTrigger value="overview">Details</TabsTrigger>
+                <TabsTrigger value="financials">Financials</TabsTrigger>
+            </TabsList>
+            <TabsContent value="overview" className="pt-4">
+                <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>Order Details</CardTitle>
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                            <div className="flex items-center gap-4">
                                 <Activity className="size-4 text-muted-foreground" />
-                                <span className="text-sm">Status: {project.status}</span>
-                             </div>
-                        </div>
-                    ) : (
-                        <p className="text-sm text-muted-foreground">No project linked.</p>
-                    )}
-                 </CardContent>
-            </Card>
+                                <Badge variant={requestStatusVariant[request.status]}>{request.status}</Badge>
+                            </div>
+                            <div className="flex items-center gap-4">
+                                <Hash className="size-4 text-muted-foreground" />
+                                <span className="text-sm">Quantity: <strong>{request.quantity}</strong></span>
+                            </div>
+                            <div className="flex items-center gap-4">
+                                <Calendar className="size-4 text-muted-foreground" />
+                                <span className="text-sm">Requested on {request.requestedAt ? format(request.requestedAt.toDate(), 'PPP') : 'N/A'}</span>
+                            </div>
+                        </CardContent>
+                    </Card>
+                    
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>Project</CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                            {project ? (
+                                <div className="space-y-4">
+                                    <div className="flex items-center gap-4">
+                                        <Briefcase className="size-4 text-muted-foreground" />
+                                        <Link href={`/projects/${project.id}`} className="font-semibold hover:underline">{project.name}</Link>
+                                    </div>
+                                    <div className="flex items-center gap-4">
+                                        <Activity className="size-4 text-muted-foreground" />
+                                        <span className="text-sm">Status: {project.status}</span>
+                                    </div>
+                                </div>
+                            ) : (
+                                <p className="text-sm text-muted-foreground">No project linked.</p>
+                            )}
+                        </CardContent>
+                    </Card>
 
-            <Card>
-                <CardHeader>
-                    <CardTitle>Supplier</CardTitle>
-                </CardHeader>
-                 <CardContent>
-                    {supplier ? (
-                         <div className="space-y-4">
-                             <div className="flex items-center gap-4">
-                                <Truck className="size-4 text-muted-foreground" />
-                                <Link href={`/suppliers/${supplier.id}`} className="font-semibold hover:underline">{supplier.name}</Link>
-                             </div>
-                              <div className="flex items-center gap-4">
-                                <Activity className="size-4 text-muted-foreground" />
-                                <span className="text-sm">Status: {supplier.status}</span>
-                             </div>
-                        </div>
-                    ) : (
-                         <p className="text-sm text-muted-foreground">No supplier linked.</p>
-                    )}
-                 </CardContent>
-            </Card>
-        </div>
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>Supplier</CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                            {supplier ? (
+                                <div className="space-y-4">
+                                    <div className="flex items-center gap-4">
+                                        <Truck className="size-4 text-muted-foreground" />
+                                        <Link href={`/suppliers/${supplier.id}`} className="font-semibold hover:underline">{supplier.name}</Link>
+                                    </div>
+                                    <div className="flex items-center gap-4">
+                                        <Activity className="size-4 text-muted-foreground" />
+                                        <span className="text-sm">Status: {supplier.status}</span>
+                                    </div>
+                                </div>
+                            ) : (
+                                <p className="text-sm text-muted-foreground">No supplier linked.</p>
+                            )}
+                        </CardContent>
+                    </Card>
+                </div>
+            </TabsContent>
+            <TabsContent value="financials" className="pt-4">
+                <Card>
+                    <CardHeader>
+                        <CardTitle>Linked Financials</CardTitle>
+                        <CardDescription>Payments and other transactions linked to this purchase order.</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        {isLoading ? (
+                            <Skeleton className="h-24 w-full" />
+                        ) : transactions.length > 0 ? (
+                            <Table>
+                                <TableHeader>
+                                    <TableRow>
+                                        <TableHead>Date</TableHead>
+                                        <TableHead>Description</TableHead>
+                                        <TableHead>Type</TableHead>
+                                        <TableHead className="text-right">Amount</TableHead>
+                                    </TableRow>
+                                </TableHeader>
+                                <TableBody>
+                                    {transactions.map(transaction => (
+                                        <TableRow key={transaction.id}>
+                                            <TableCell>{transaction.date ? format(transaction.date.toDate(), 'PPP') : 'N/A'}</TableCell>
+                                            <TableCell className="font-medium">{transaction.description}</TableCell>
+                                            <TableCell><Badge variant={transaction.type === 'Income' ? 'secondary' : 'destructive'}>{transaction.type}</Badge></TableCell>
+                                            <TableCell className={`text-right font-semibold ${transaction.type === 'Income' ? 'text-success' : ''}`}>{formatCurrency(transaction.amount)}</TableCell>
+                                        </TableRow>
+                                    ))}
+                                </TableBody>
+                            </Table>
+                        ) : (
+                            <div className="flex flex-col items-center justify-center gap-2 py-8 text-center text-muted-foreground">
+                                <DollarSign className="size-12" />
+                                <p>No financial records found for this purchase order.</p>
+                            </div>
+                        )}
+                    </CardContent>
+                </Card>
+            </TabsContent>
+        </Tabs>
     </div>
   );
 }
