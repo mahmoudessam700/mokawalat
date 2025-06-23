@@ -170,7 +170,7 @@ export default function ProjectsPage() {
       }
     ));
     
-    const qClients = query(collection(firestore, 'clients'), where('status', '==', 'Active'));
+    const qClients = query(collection(firestore, 'clients'));
     unsubscribes.push(onSnapshot(qClients, (snapshot) => {
         const clientsData: Client[] = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Client));
         clientsData.sort((a, b) => a.name.localeCompare(b.name));
@@ -557,7 +557,15 @@ export default function ProjectsPage() {
                     <TableCell className="font-medium">
                       {project.name}
                     </TableCell>
-                    <TableCell>{project.clientId ? clientNames.get(project.clientId) || 'N/A' : 'N/A'}</TableCell>
+                    <TableCell>
+                      {project.clientId && clientNames.has(project.clientId) ? (
+                        <Link href={`/clients/${project.clientId}`} className="hover:underline">
+                          {clientNames.get(project.clientId)}
+                        </Link>
+                      ) : (
+                        'N/A'
+                      )}
+                    </TableCell>
                     <TableCell className="hidden md:table-cell">
                       {project.startDate
                         ? format(project.startDate.toDate(), 'PPP')
