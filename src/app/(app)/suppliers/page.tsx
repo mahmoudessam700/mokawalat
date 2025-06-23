@@ -18,7 +18,7 @@ import {
   DropdownMenuLabel,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Loader2, MoreHorizontal, PlusCircle, Star, Trash2 } from 'lucide-react';
+import { Loader2, MoreHorizontal, PlusCircle, Search, Star, Trash2 } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   Dialog,
@@ -51,7 +51,7 @@ import {
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { addSupplier, deleteSupplier, updateSupplier } from './actions';
 import { useToast } from '@/hooks/use-toast';
 import { collection, onSnapshot, query, orderBy } from 'firebase/firestore';
@@ -108,6 +108,10 @@ export default function SuppliersPage() {
   const [isDeleting, setIsDeleting] = useState(false);
   const { toast } = useToast();
   const { profile } = useAuth();
+  
+  const [searchTerm, setSearchTerm] = useState('');
+  const [statusFilter, setStatusFilter] = useState('All');
+  const [ratingFilter, setRatingFilter] = useState('All');
 
   useEffect(() => {
     const q = query(collection(firestore, 'suppliers'), orderBy('name', 'asc'));
@@ -130,6 +134,26 @@ export default function SuppliersPage() {
 
     return () => unsubscribe();
   }, [toast]);
+  
+  const filteredSuppliers = useMemo(() => {
+    const lowercasedFilter = searchTerm.toLowerCase();
+    return suppliers.filter((supplier) => {
+      const matchesSearch =
+        lowercasedFilter === '' ||
+        supplier.name.toLowerCase().includes(lowercasedFilter) ||
+        supplier.contactPerson.toLowerCase().includes(lowercasedFilter);
+
+      const matchesStatus = statusFilter === 'All' || supplier.status === statusFilter;
+
+      const matchesRating =
+        ratingFilter === 'All' ||
+        (ratingFilter === 'Rated' && (supplier.rating ?? 0) > 0) ||
+        (ratingFilter === 'Unrated' && !(supplier.rating ?? 0 > 0));
+
+      return matchesSearch && matchesStatus && matchesRating;
+    });
+  }, [suppliers, searchTerm, statusFilter, ratingFilter]);
+
 
   const form = useForm<SupplierFormValues>({
     resolver: zodResolver(supplierFormSchema),
@@ -327,8 +351,44 @@ export default function SuppliersPage() {
 
       <Card>
         <CardHeader>
-          <CardTitle>Supplier List</CardTitle>
-          <CardDescription>A list of all suppliers in the system.</CardDescription>
+          <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+            <div>
+              <CardTitle>Supplier List</CardTitle>
+              <CardDescription>A list of all suppliers in the system.</CardDescription>
+            </div>
+            <div className="flex flex-col items-stretch gap-2 md:flex-row md:items-center">
+               <div className="relative w-full md:w-auto">
+                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                <Input
+                  type="search"
+                  placeholder="Search by name or contact..."
+                  className="w-full pl-8 md:w-[250px]"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                />
+              </div>
+              <Select value={statusFilter} onValueChange={setStatusFilter}>
+                <SelectTrigger className="w-full md:w-[150px]">
+                  <SelectValue placeholder="Filter by status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="All">All Statuses</SelectItem>
+                  <SelectItem value="Active">Active</SelectItem>
+                  <SelectItem value="Inactive">Inactive</SelectItem>
+                </SelectContent>
+              </Select>
+               <Select value={ratingFilter} onValueChange={setRatingFilter}>
+                <SelectTrigger className="w-full md:w-[150px]">
+                  <SelectValue placeholder="Filter by rating" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="All">All Ratings</SelectItem>
+                  <SelectItem value="Rated">Rated</SelectItem>
+                  <SelectItem value="Unrated">Unrated</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
         </CardHeader>
         <CardContent>
           <Table>
@@ -359,8 +419,8 @@ export default function SuppliersPage() {
                     </TableCell>
                   </TableRow>
                 ))
-              ) : suppliers.length > 0 ? (
-                suppliers.map((supplier) => (
+              ) : filteredSuppliers.length > 0 ? (
+                filteredSuppliers.map((supplier) => (
                   <TableRow key={supplier.id}>
                     <TableCell className="font-medium">{supplier.name}</TableCell>
                     <TableCell className="hidden md:table-cell">{supplier.contactPerson}</TableCell>
@@ -380,28 +440,28 @@ export default function SuppliersPage() {
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
                           <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                          {profile?.role === 'admin' && (
-                            <DropdownMenuItem onSelect={() => {
-                                setSupplierToEdit(supplier);
-                                setIsFormDialogOpen(true);
-                            }}>
-                                Edit
-                            </DropdownMenuItem>
-                          )}
                           <DropdownMenuItem asChild>
                             <Link href={`/suppliers/${supplier.id}`}>View Details</Link>
                           </DropdownMenuItem>
                           {profile?.role === 'admin' && (
-                            <DropdownMenuItem
-                                className="text-destructive"
-                                onSelect={() => {
-                                setSupplierToDelete(supplier);
-                                setIsDeleteDialogOpen(true);
-                                }}
-                            >
-                                <Trash2 className="mr-2 h-4 w-4" />
-                                Delete
-                            </DropdownMenuItem>
+                            <>
+                              <DropdownMenuItem onSelect={() => {
+                                  setSupplierToEdit(supplier);
+                                  setIsFormDialogOpen(true);
+                              }}>
+                                  Edit
+                              </DropdownMenuItem>
+                              <DropdownMenuItem
+                                  className="text-destructive"
+                                  onSelect={() => {
+                                  setSupplierToDelete(supplier);
+                                  setIsDeleteDialogOpen(true);
+                                  }}
+                              >
+                                  <Trash2 className="mr-2 h-4 w-4" />
+                                  Delete
+                              </DropdownMenuItem>
+                            </>
                           )}
                         </DropdownMenuContent>
                       </DropdownMenu>
@@ -411,7 +471,7 @@ export default function SuppliersPage() {
               ) : (
                  <TableRow>
                   <TableCell colSpan={6} className="h-24 text-center">
-                    No suppliers found. Add one to get started.
+                    {suppliers.length > 0 ? "No suppliers match the current filters." : "No suppliers found. Add one to get started."}
                   </TableCell>
                 </TableRow>
               )}
