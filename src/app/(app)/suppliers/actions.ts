@@ -1,10 +1,11 @@
 
 'use server';
 
-import { firestore } from '@/lib/firebase';
-import { collection, addDoc, doc, deleteDoc, updateDoc, serverTimestamp } from 'firebase/firestore';
+import { firestore, storage } from '@/lib/firebase';
+import { collection, addDoc, doc, deleteDoc, updateDoc, serverTimestamp, setDoc, getDoc } from 'firebase/firestore';
 import { z } from 'zod';
 import { revalidatePath } from 'next/cache';
+import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
 
 const supplierFormSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters long."),
@@ -132,28 +133,48 @@ const contractFormSchema = z.object({
   effectiveDate: z.string().refine((date) => !isNaN(Date.parse(date)), {
     message: 'Please select a valid date.',
   }),
-  fileUrl: z.string().url({ message: "Please enter a valid URL." }).optional().or(z.literal('')),
 });
 
 export type ContractFormValues = z.infer<typeof contractFormSchema>;
 
-export async function addContract(supplierId: string, values: ContractFormValues) {
+export async function addContract(supplierId: string, formData: FormData) {
   if (!supplierId) {
     return { message: 'Supplier ID is required.', errors: { _server: ['Supplier ID is missing.'] } };
   }
 
-  const validatedFields = contractFormSchema.safeParse(values);
+  const formValues = {
+      title: formData.get('title'),
+      effectiveDate: formData.get('effectiveDate'),
+  };
+
+  const validatedFields = contractFormSchema.safeParse(formValues);
   if (!validatedFields.success) {
     return { errors: validatedFields.error.flatten().fieldErrors, message: 'Invalid data provided.' };
   }
+  
+  const file = formData.get('file') as File | null;
 
   try {
-    const contractsRef = collection(firestore, 'suppliers', supplierId, 'contracts');
-    await addDoc(contractsRef, {
+    const newContractRef = doc(collection(firestore, 'suppliers', supplierId, 'contracts'));
+    let fileUrl = '';
+    let filePath = '';
+
+    if (file && file.size > 0) {
+      filePath = `contracts/suppliers/${supplierId}/${newContractRef.id}/${file.name}`;
+      const storageRef = ref(storage, filePath);
+      await uploadBytes(storageRef, file);
+      fileUrl = await getDownloadURL(storageRef);
+    }
+    
+    const contractData = {
       ...validatedFields.data,
       effectiveDate: new Date(validatedFields.data.effectiveDate),
+      fileUrl: fileUrl,
+      filePath: filePath,
       createdAt: serverTimestamp(),
-    });
+    };
+
+    await setDoc(newContractRef, contractData);
 
     await addDoc(collection(firestore, 'activityLog'), {
         message: `New contract added for supplier: ${validatedFields.data.title}`,
@@ -176,7 +197,20 @@ export async function deleteContract(supplierId: string, contractId: string) {
   }
 
   try {
-    await deleteDoc(doc(firestore, 'suppliers', supplierId, 'contracts', contractId));
+    const contractRef = doc(firestore, 'suppliers', supplierId, 'contracts', contractId);
+    const contractSnap = await getDoc(contractRef);
+
+    if (contractSnap.exists()) {
+        const contractData = contractSnap.data();
+        if (contractData.filePath) {
+            const fileRef = ref(storage, contractData.filePath);
+            await deleteObject(fileRef).catch(err => {
+                console.error("Failed to delete contract file from storage:", err);
+            });
+        }
+    }
+
+    await deleteDoc(contractRef);
     revalidatePath(`/suppliers/${supplierId}`);
     return { success: true, message: 'Contract deleted successfully.' };
   } catch (error) {
