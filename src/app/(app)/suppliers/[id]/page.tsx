@@ -94,7 +94,7 @@ const contractFormSchema = z.object({
   effectiveDate: z.string().refine((date) => !isNaN(Date.parse(date)), {
     message: 'Please select a valid date.',
   }),
-  fileUrl: z.string().url({ message: "Please enter a valid URL." }).optional().or(z.literal('')),
+  file: z.instanceof(FileList).optional(),
 });
 type ContractFormValues = z.infer<typeof contractFormSchema>;
 
@@ -195,13 +195,20 @@ export default function SupplierDetailPage({ params }: { params: { id: string } 
     defaultValues: {
       title: '',
       effectiveDate: new Date().toISOString().split('T')[0],
-      fileUrl: '',
     },
   });
 
   async function onContractSubmit(values: ContractFormValues) {
     if (!supplier) return;
-    const result = await addContract(supplier.id, values);
+    
+    const formData = new FormData();
+    formData.append('title', values.title);
+    formData.append('effectiveDate', values.effectiveDate);
+    if (values.file && values.file.length > 0) {
+        formData.append('file', values.file[0]);
+    }
+
+    const result = await addContract(supplier.id, formData);
     if (result.errors) {
       toast({ variant: 'destructive', title: 'Error', description: result.message });
     } else {
@@ -383,14 +390,14 @@ export default function SupplierDetailPage({ params }: { params: { id: string } 
                                             />
                                              <FormField
                                                 control={contractForm.control}
-                                                name="fileUrl"
+                                                name="file"
                                                 render={({ field }) => (
                                                     <FormItem>
-                                                    <FormLabel>Document URL (Optional)</FormLabel>
-                                                    <FormControl>
-                                                        <Input type="url" placeholder="https://..." {...field} />
-                                                    </FormControl>
-                                                    <FormMessage />
+                                                        <FormLabel>Document</FormLabel>
+                                                        <FormControl>
+                                                            <Input type="file" {...contractForm.register('file')} />
+                                                        </FormControl>
+                                                        <FormMessage />
                                                     </FormItem>
                                                 )}
                                             />

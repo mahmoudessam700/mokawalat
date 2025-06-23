@@ -1,12 +1,13 @@
 
 'use server';
 
-import { firestore } from '@/lib/firebase';
-import { collection, addDoc, serverTimestamp, getDocs, query, orderBy, Timestamp, doc, deleteDoc } from 'firebase/firestore';
+import { firestore, storage } from '@/lib/firebase';
+import { collection, addDoc, serverTimestamp, getDocs, query, orderBy, Timestamp, doc, deleteDoc, setDoc, getDoc } from 'firebase/firestore';
 import { z } from 'zod';
 import { revalidatePath } from 'next/cache';
 import { summarizeClientInteractions } from '@/ai/flows/summarize-client-interactions';
 import { format } from 'date-fns';
+import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
 
 const interactionFormSchema = z.object({
   type: z.enum(["Call", "Email", "Meeting", "Note"]),
@@ -95,28 +96,49 @@ const contractFormSchema = z.object({
     message: 'Please select a valid date.',
   }),
   value: z.coerce.number().optional(),
-  fileUrl: z.string().url({ message: "Please enter a valid URL." }).optional().or(z.literal('')),
 });
 
 export type ContractFormValues = z.infer<typeof contractFormSchema>;
 
-export async function addContract(clientId: string, values: ContractFormValues) {
+export async function addContract(clientId: string, formData: FormData) {
   if (!clientId) {
     return { message: 'Client ID is required.', errors: { _server: ['Client ID is missing.'] } };
   }
 
-  const validatedFields = contractFormSchema.safeParse(values);
+  const formValues = {
+      title: formData.get('title'),
+      effectiveDate: formData.get('effectiveDate'),
+      value: formData.get('value') ? Number(formData.get('value')) : undefined,
+  }
+
+  const validatedFields = contractFormSchema.safeParse(formValues);
   if (!validatedFields.success) {
     return { errors: validatedFields.error.flatten().fieldErrors, message: 'Invalid data provided.' };
   }
+  
+  const file = formData.get('file') as File | null;
 
   try {
-    const contractsRef = collection(firestore, 'clients', clientId, 'contracts');
-    await addDoc(contractsRef, {
+    const newContractRef = doc(collection(firestore, 'clients', clientId, 'contracts'));
+    let fileUrl = '';
+    let filePath = '';
+
+    if (file && file.size > 0) {
+      filePath = `contracts/clients/${clientId}/${newContractRef.id}/${file.name}`;
+      const storageRef = ref(storage, filePath);
+      await uploadBytes(storageRef, file);
+      fileUrl = await getDownloadURL(storageRef);
+    }
+
+    const contractData = {
       ...validatedFields.data,
       effectiveDate: new Date(validatedFields.data.effectiveDate),
+      fileUrl: fileUrl,
+      filePath: filePath,
       createdAt: serverTimestamp(),
-    });
+    };
+    
+    await setDoc(newContractRef, contractData);
 
     await addDoc(collection(firestore, 'activityLog'), {
         message: `New contract added for client: ${validatedFields.data.title}`,
@@ -139,7 +161,20 @@ export async function deleteContract(clientId: string, contractId: string) {
   }
 
   try {
-    await deleteDoc(doc(firestore, 'clients', clientId, 'contracts', contractId));
+    const contractRef = doc(firestore, 'clients', clientId, 'contracts', contractId);
+    const contractSnap = await getDoc(contractRef);
+
+    if (contractSnap.exists()) {
+        const contractData = contractSnap.data();
+        if (contractData.filePath) {
+            const fileRef = ref(storage, contractData.filePath);
+            await deleteObject(fileRef).catch(err => {
+                console.error("Failed to delete contract file from storage:", err);
+            });
+        }
+    }
+
+    await deleteDoc(contractRef);
     revalidatePath(`/clients/${clientId}`);
     return { success: true, message: 'Contract deleted successfully.' };
   } catch (error) {

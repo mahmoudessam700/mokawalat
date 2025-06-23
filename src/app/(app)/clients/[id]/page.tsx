@@ -100,7 +100,7 @@ const contractFormSchema = z.object({
     message: 'Please select a valid date.',
   }),
   value: z.coerce.number().optional(),
-  fileUrl: z.string().url({ message: "Please enter a valid URL." }).optional().or(z.literal('')),
+  file: z.instanceof(FileList).optional(),
 });
 type ContractFormValues = z.infer<typeof contractFormSchema>;
 
@@ -257,7 +257,7 @@ export default function ClientDetailPage({ params }: { params: { id: string } })
 
   const contractForm = useForm<ContractFormValues>({
     resolver: zodResolver(contractFormSchema),
-    defaultValues: { title: '', effectiveDate: new Date().toISOString().split('T')[0], value: 0, fileUrl: '' },
+    defaultValues: { title: '', effectiveDate: new Date().toISOString().split('T')[0], value: 0 },
   });
 
   async function onInteractionSubmit(values: InteractionFormValues) {
@@ -272,7 +272,17 @@ export default function ClientDetailPage({ params }: { params: { id: string } })
   }
 
   async function onContractSubmit(values: ContractFormValues) {
-    const result = await addContract(clientId, values);
+    const formData = new FormData();
+    formData.append('title', values.title);
+    formData.append('effectiveDate', values.effectiveDate);
+    if (values.value) {
+        formData.append('value', values.value.toString());
+    }
+    if (values.file && values.file.length > 0) {
+        formData.append('file', values.file[0]);
+    }
+
+    const result = await addContract(clientId, formData);
     if (result.errors) {
       toast({ variant: 'destructive', title: 'Error', description: result.message });
     } else {
@@ -427,7 +437,7 @@ export default function ClientDetailPage({ params }: { params: { id: string } })
                                                 <FormField control={contractForm.control} name="effectiveDate" render={({ field }) => (<FormItem><FormLabel>Effective Date</FormLabel><FormControl><Input type="date" {...field} /></FormControl><FormMessage /></FormItem>)} />
                                                 <FormField control={contractForm.control} name="value" render={({ field }) => (<FormItem><FormLabel>Value (LE) (Optional)</FormLabel><FormControl><Input type="number" placeholder="e.g., 500000" {...field} /></FormControl><FormMessage /></FormItem>)} />
                                             </div>
-                                            <FormField control={contractForm.control} name="fileUrl" render={({ field }) => (<FormItem><FormLabel>Document URL (Optional)</FormLabel><FormControl><Input type="url" placeholder="https://..." {...field} /></FormControl><FormMessage /></FormItem>)} />
+                                            <FormField control={contractForm.control} name="file" render={({ field }) => (<FormItem><FormLabel>Document</FormLabel><FormControl><Input type="file" {...contractForm.register('file')} /></FormControl><FormMessage /></FormItem>)} />
                                             <DialogFooter><Button type="submit" disabled={contractForm.formState.isSubmitting}>{contractForm.formState.isSubmitting ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Saving...</> : 'Save Contract'}</Button></DialogFooter>
                                         </form>
                                     </Form>
