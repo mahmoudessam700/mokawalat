@@ -18,7 +18,7 @@ import {
   DropdownMenuLabel,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Loader2, MoreHorizontal, PlusCircle, Search, Trash2 } from 'lucide-react';
+import { Loader2, MoreHorizontal, PlusCircle, Search, Trash2, DollarSign } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   Dialog,
@@ -213,154 +213,162 @@ export default function EmployeesPage() {
           </p>
         </div>
         {profile?.role === 'admin' && (
-            <Dialog open={isFormDialogOpen} onOpenChange={handleFormDialog_onOpenChange}>
-            <DialogTrigger asChild>
-                <Button onClick={() => setEmployeeToEdit(null)}>
-                <PlusCircle className="mr-2" />
-                Add Employee
+            <div className="flex items-center gap-2">
+                <Button asChild variant="outline">
+                    <Link href="/employees/payroll">
+                        <DollarSign className="mr-2" />
+                        Payroll Summary
+                    </Link>
                 </Button>
-            </DialogTrigger>
-            <DialogContent className="sm:max-w-[425px]">
-                <DialogHeader>
-                <DialogTitle>{employeeToEdit ? 'Edit Employee' : 'Add New Employee'}</DialogTitle>
-                <DialogDescription>
-                    {employeeToEdit ? 'Update the details of the employee.' : 'Fill in the details below to add a new employee to the system.'}
-                </DialogDescription>
-                </DialogHeader>
-                <Form {...form}>
-                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 py-4">
-                    <FormField
-                    control={form.control}
-                    name="name"
-                    render={({ field }) => (
-                        <FormItem>
-                        <FormLabel>Full Name</FormLabel>
-                        <FormControl>
-                            <Input placeholder="e.g., John Doe" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                        </FormItem>
-                    )}
-                    />
-                    <FormField
-                    control={form.control}
-                    name="email"
-                    render={({ field }) => (
-                        <FormItem>
-                        <FormLabel>Email</FormLabel>
-                        <FormControl>
-                            <Input placeholder="e.g., john.doe@example.com" type="email" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                        </FormItem>
-                    )}
-                    />
-                    <FormField
-                    control={form.control}
-                    name="role"
-                    render={({ field }) => (
-                        <FormItem>
-                        <FormLabel>Role</FormLabel>
-                        <Select onValueChange={field.onChange} value={field.value}>
-                            <FormControl>
-                            <SelectTrigger>
-                                <SelectValue placeholder="Select a role" />
-                            </SelectTrigger>
-                            </FormControl>
-                            <SelectContent>
-                            <SelectItem value="Project Manager">Project Manager</SelectItem>
-                            <SelectItem value="HR Specialist">HR Specialist</SelectItem>
-                            <SelectItem value="Accountant">Accountant</SelectItem>
-                            <SelectItem value="Civil Engineer">Civil Engineer</SelectItem>
-                            <SelectItem value="Procurement Officer">Procurement Officer</SelectItem>
-                            <SelectItem value="Worker">Worker</SelectItem>
-                            </SelectContent>
-                        </Select>
-                        <FormMessage />
-                        </FormItem>
-                    )}
-                    />
-                    <FormField
-                    control={form.control}
-                    name="department"
-                    render={({ field }) => (
-                        <FormItem>
-                        <FormLabel>Department</FormLabel>
-                        <Select onValueChange={field.onChange} value={field.value}>
-                            <FormControl>
-                            <SelectTrigger>
-                                <SelectValue placeholder="Select a department" />
-                            </SelectTrigger>
-                            </FormControl>
-                            <SelectContent>
-                            <SelectItem value="Engineering">Engineering</SelectItem>
-                            <SelectItem value="Human Resources">Human Resources</SelectItem>
-                            <SelectItem value="Finance">Finance</SelectItem>
-                            <SelectItem value="Procurement">Procurement</SelectItem>
-                            <SelectItem value="Operations">Operations</SelectItem>
-                            </SelectContent>
-                        </Select>
-                        <FormMessage />
-                        </FormItem>
-                    )}
-                    />
-                    <FormField
-                    control={form.control}
-                    name="status"
-                    render={({ field }) => (
-                        <FormItem>
-                        <FormLabel>Status</FormLabel>
-                        <Select onValueChange={field.onChange} value={field.value}>
-                            <FormControl>
-                            <SelectTrigger>
-                                <SelectValue placeholder="Select status" />
-                            </SelectTrigger>
-                            </FormControl>
-                            <SelectContent>
-                            <SelectItem value="Active">Active</SelectItem>
-                            <SelectItem value="On Leave">On Leave</SelectItem>
-                            <SelectItem value="Inactive">Inactive</SelectItem>
-                            </SelectContent>
-                        </Select>
-                        <FormMessage />
-                        </FormItem>
-                    )}
-                    />
-                    <FormField
-                      control={form.control}
-                      name="salary"
-                      render={({ field }) => (
-                          <FormItem>
-                          <FormLabel>Salary (LE) (Optional)</FormLabel>
-                          <FormControl>
-                              <Input
-                                type="number"
-                                placeholder="e.g., 8000"
-                                {...field}
-                                value={field.value ?? ''}
-                                onChange={(e) => field.onChange(e.target.value === '' ? undefined : +e.target.value)}
-                              />
-                          </FormControl>
-                          <FormMessage />
-                          </FormItem>
-                      )}
-                    />
-                    <DialogFooter>
-                    <Button type="submit" disabled={form.formState.isSubmitting}>
-                        {form.formState.isSubmitting ? (
-                        <>
-                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                            Saving...
-                        </>
-                        ) : (
-                        employeeToEdit ? 'Save Changes' : 'Save Employee'
-                        )}
+                <Dialog open={isFormDialogOpen} onOpenChange={handleFormDialog_onOpenChange}>
+                <DialogTrigger asChild>
+                    <Button onClick={() => setEmployeeToEdit(null)}>
+                    <PlusCircle className="mr-2" />
+                    Add Employee
                     </Button>
-                    </DialogFooter>
-                </form>
-                </Form>
-            </DialogContent>
-            </Dialog>
+                </DialogTrigger>
+                <DialogContent className="sm:max-w-[425px]">
+                    <DialogHeader>
+                    <DialogTitle>{employeeToEdit ? 'Edit Employee' : 'Add New Employee'}</DialogTitle>
+                    <DialogDescription>
+                        {employeeToEdit ? 'Update the details of the employee.' : 'Fill in the details below to add a new employee to the system.'}
+                    </DialogDescription>
+                    </DialogHeader>
+                    <Form {...form}>
+                    <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 py-4">
+                        <FormField
+                        control={form.control}
+                        name="name"
+                        render={({ field }) => (
+                            <FormItem>
+                            <FormLabel>Full Name</FormLabel>
+                            <FormControl>
+                                <Input placeholder="e.g., John Doe" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                            </FormItem>
+                        )}
+                        />
+                        <FormField
+                        control={form.control}
+                        name="email"
+                        render={({ field }) => (
+                            <FormItem>
+                            <FormLabel>Email</FormLabel>
+                            <FormControl>
+                                <Input placeholder="e.g., john.doe@example.com" type="email" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                            </FormItem>
+                        )}
+                        />
+                        <FormField
+                        control={form.control}
+                        name="role"
+                        render={({ field }) => (
+                            <FormItem>
+                            <FormLabel>Role</FormLabel>
+                            <Select onValueChange={field.onChange} value={field.value}>
+                                <FormControl>
+                                <SelectTrigger>
+                                    <SelectValue placeholder="Select a role" />
+                                </SelectTrigger>
+                                </FormControl>
+                                <SelectContent>
+                                <SelectItem value="Project Manager">Project Manager</SelectItem>
+                                <SelectItem value="HR Specialist">HR Specialist</SelectItem>
+                                <SelectItem value="Accountant">Accountant</SelectItem>
+                                <SelectItem value="Civil Engineer">Civil Engineer</SelectItem>
+                                <SelectItem value="Procurement Officer">Procurement Officer</SelectItem>
+                                <SelectItem value="Worker">Worker</SelectItem>
+                                </SelectContent>
+                            </Select>
+                            <FormMessage />
+                            </FormItem>
+                        )}
+                        />
+                        <FormField
+                        control={form.control}
+                        name="department"
+                        render={({ field }) => (
+                            <FormItem>
+                            <FormLabel>Department</FormLabel>
+                            <Select onValueChange={field.onChange} value={field.value}>
+                                <FormControl>
+                                <SelectTrigger>
+                                    <SelectValue placeholder="Select a department" />
+                                </SelectTrigger>
+                                </FormControl>
+                                <SelectContent>
+                                <SelectItem value="Engineering">Engineering</SelectItem>
+                                <SelectItem value="Human Resources">Human Resources</SelectItem>
+                                <SelectItem value="Finance">Finance</SelectItem>
+                                <SelectItem value="Procurement">Procurement</SelectItem>
+                                <SelectItem value="Operations">Operations</SelectItem>
+                                </SelectContent>
+                            </Select>
+                            <FormMessage />
+                            </FormItem>
+                        )}
+                        />
+                        <FormField
+                        control={form.control}
+                        name="status"
+                        render={({ field }) => (
+                            <FormItem>
+                            <FormLabel>Status</FormLabel>
+                            <Select onValueChange={field.onChange} value={field.value}>
+                                <FormControl>
+                                <SelectTrigger>
+                                    <SelectValue placeholder="Select status" />
+                                </SelectTrigger>
+                                </FormControl>
+                                <SelectContent>
+                                <SelectItem value="Active">Active</SelectItem>
+                                <SelectItem value="On Leave">On Leave</SelectItem>
+                                <SelectItem value="Inactive">Inactive</SelectItem>
+                                </SelectContent>
+                            </Select>
+                            <FormMessage />
+                            </FormItem>
+                        )}
+                        />
+                        <FormField
+                          control={form.control}
+                          name="salary"
+                          render={({ field }) => (
+                              <FormItem>
+                              <FormLabel>Salary (LE) (Optional)</FormLabel>
+                              <FormControl>
+                                  <Input
+                                    type="number"
+                                    placeholder="e.g., 8000"
+                                    {...field}
+                                    value={field.value ?? ''}
+                                    onChange={(e) => field.onChange(e.target.value === '' ? undefined : +e.target.value)}
+                                  />
+                              </FormControl>
+                              <FormMessage />
+                              </FormItem>
+                          )}
+                        />
+                        <DialogFooter>
+                        <Button type="submit" disabled={form.formState.isSubmitting}>
+                            {form.formState.isSubmitting ? (
+                            <>
+                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                Saving...
+                            </>
+                            ) : (
+                            employeeToEdit ? 'Save Changes' : 'Save Employee'
+                            )}
+                        </Button>
+                        </DialogFooter>
+                    </form>
+                    </Form>
+                </DialogContent>
+                </Dialog>
+            </div>
         )}
       </div>
 
