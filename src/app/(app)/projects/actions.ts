@@ -149,6 +149,14 @@ export async function updateProject(projectId: string, values: ProjectFormValues
             name_lowercase: validatedFields.data.name.toLowerCase(),
             startDate: new Date(validatedFields.data.startDate),
         });
+
+        await addDoc(collection(firestore, 'activityLog'), {
+            message: `Project details updated for: ${validatedFields.data.name}`,
+            type: "PROJECT_UPDATED",
+            link: `/projects/${projectId}`,
+            timestamp: serverTimestamp(),
+        });
+
         revalidatePath('/projects');
         revalidatePath(`/projects/${projectId}`);
         return { message: 'Project updated successfully.', errors: null };
@@ -170,7 +178,23 @@ export async function deleteProject(projectId: string) {
   }
 
   try {
-    await deleteDoc(doc(firestore, 'projects', projectId));
+    const projectRef = doc(firestore, 'projects', projectId);
+    const projectSnap = await getDoc(projectRef);
+
+    if (!projectSnap.exists()) {
+        return { success: false, message: 'Project not found.' };
+    }
+    const projectName = projectSnap.data().name;
+
+    await deleteDoc(projectRef);
+
+    await addDoc(collection(firestore, 'activityLog'), {
+        message: `Project deleted: ${projectName}`,
+        type: "PROJECT_DELETED",
+        link: `/projects`,
+        timestamp: serverTimestamp(),
+    });
+
     revalidatePath('/projects');
     return { success: true, message: 'Project deleted successfully.' };
   } catch (error) {
@@ -455,6 +479,16 @@ export async function deleteProjectDocument(projectId: string, documentId: strin
                 console.error("Failed to delete document file from storage:", err);
             });
         }
+        
+        const projectSnap = await getDoc(doc(firestore, 'projects', projectId));
+        const projectName = projectSnap.exists() ? projectSnap.data().name : 'Unknown Project';
+
+        await addDoc(collection(firestore, 'activityLog'), {
+            message: `Document "${docData.title}" deleted from project: ${projectName}`,
+            type: "DOCUMENT_DELETED",
+            link: `/projects/${projectId}`,
+            timestamp: serverTimestamp(),
+        });
     }
 
     await deleteDoc(docRef);
@@ -514,6 +548,16 @@ export async function updateTaskStatus(projectId: string, taskId: string, status
     try {
         const taskRef = doc(firestore, 'projects', projectId, 'tasks', taskId);
         await updateDoc(taskRef, { status });
+        
+        const taskSnap = await getDoc(taskRef);
+        const taskName = taskSnap.data()?.name || 'Unknown Task';
+    
+        await addDoc(collection(firestore, 'activityLog'), {
+            message: `Task "${taskName}" status changed to ${status}`,
+            type: "TASK_STATUS_CHANGED",
+            link: `/projects/${projectId}`,
+            timestamp: serverTimestamp(),
+        });
 
         await recalculateProjectProgress(projectId);
         revalidatePath(`/projects/${projectId}`);
@@ -536,7 +580,20 @@ export async function deleteTask(projectId: string, taskId: string) {
     }
 
     try {
-        await deleteDoc(doc(firestore, 'projects', projectId, 'tasks', taskId));
+        const taskRef = doc(firestore, 'projects', projectId, 'tasks', taskId);
+        const taskSnap = await getDoc(taskRef);
+
+        if (taskSnap.exists()) {
+            const taskName = taskSnap.data().name;
+            await addDoc(collection(firestore, 'activityLog'), {
+                message: `Task deleted: "${taskName}"`,
+                type: "TASK_DELETED",
+                link: `/projects/${projectId}`,
+                timestamp: serverTimestamp(),
+            });
+        }
+
+        await deleteDoc(taskRef);
         await recalculateProjectProgress(projectId);
         revalidatePath(`/projects/${projectId}`);
         return { success: true, message: 'Task deleted successfully.' };

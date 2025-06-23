@@ -31,6 +31,9 @@ import {
   ClipboardList,
   Bell,
   History,
+  Pencil,
+  Trash2,
+  ListChecks,
 } from 'lucide-react';
 
 type Activity = {
@@ -43,6 +46,8 @@ type Activity = {
 
 const activityIcons: { [key: string]: React.ReactNode } = {
   PROJECT_CREATED: <Briefcase className="size-4" />,
+  PROJECT_UPDATED: <Pencil className="size-4" />,
+  PROJECT_DELETED: <Trash2 className="size-4" />,
   CLIENT_ADDED: <Contact className="size-4" />,
   EMPLOYEE_HIRED: <Users className="size-4" />,
   TRANSACTION_ADDED: <DollarSign className="size-4" />,
@@ -51,11 +56,19 @@ const activityIcons: { [key: string]: React.ReactNode } = {
   PO_CREATED: <ShoppingCart className="size-4" />,
   CONTRACT_ADDED: <FileText className="size-4" />,
   MATERIAL_REQUESTED: <ClipboardList className="size-4" />,
+  TASK_STATUS_CHANGED: <ListChecks className="size-4" />,
+  TASK_DELETED: <Trash2 className="size-4" />,
+  DOCUMENT_DELETED: <Trash2 className="size-4" />,
   DEFAULT: <Bell className="size-4" />,
 };
 
 const activityTypes = [
     "PROJECT_CREATED",
+    "PROJECT_UPDATED",
+    "PROJECT_DELETED",
+    "TASK_STATUS_CHANGED",
+    "TASK_DELETED",
+    "DOCUMENT_DELETED",
     "CLIENT_ADDED",
     "EMPLOYEE_HIRED",
     "TRANSACTION_ADDED",
