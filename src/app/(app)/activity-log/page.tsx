@@ -53,18 +53,26 @@ const activityIcons: { [key: string]: React.ReactNode } = {
   PROJECT_UPDATED: <Pencil className="size-4" />,
   PROJECT_DELETED: <Trash2 className="size-4" />,
   CLIENT_ADDED: <Contact className="size-4" />,
+  CLIENT_DELETED: <Trash2 className="size-4" />,
   EMPLOYEE_HIRED: <Users className="size-4" />,
+  EMPLOYEE_DELETED: <Trash2 className="size-4" />,
   TRANSACTION_ADDED: <DollarSign className="size-4" />,
   SUPPLIER_ADDED: <Truck className="size-4" />,
+  SUPPLIER_DELETED: <Trash2 className="size-4" />,
   INVENTORY_ADDED: <Warehouse className="size-4" />,
+  INVENTORY_DELETED: <Trash2 className="size-4" />,
   ASSET_ADDED: <Wrench className="size-4" />,
+  ASSET_DELETED: <Trash2 className="size-4" />,
   PO_CREATED: <ShoppingCart className="size-4" />,
+  PO_DELETED: <Trash2 className="size-4" />,
   CONTRACT_ADDED: <FileText className="size-4" />,
+  CONTRACT_DELETED: <Trash2 className="size-4" />,
   MATERIAL_REQUESTED: <ClipboardList className="size-4" />,
   TASK_STATUS_CHANGED: <ListChecks className="size-4" />,
   TASK_DELETED: <Trash2 className="size-4" />,
   DOCUMENT_DELETED: <Trash2 className="size-4" />,
   INVOICE_CREATED: <Receipt className="size-4" />,
+  INVOICE_STATUS_CHANGED: <ListChecks className="size-4" />,
   DEFAULT: <Bell className="size-4" />,
 };
 
@@ -76,15 +84,23 @@ const activityTypes = [
     "TASK_DELETED",
     "DOCUMENT_DELETED",
     "CLIENT_ADDED",
+    "CLIENT_DELETED",
     "EMPLOYEE_HIRED",
+    "EMPLOYEE_DELETED",
     "TRANSACTION_ADDED",
     "SUPPLIER_ADDED",
+    "SUPPLIER_DELETED",
     "INVENTORY_ADDED",
+    "INVENTORY_DELETED",
     "ASSET_ADDED",
+    "ASSET_DELETED",
     "PO_CREATED",
+    "PO_DELETED",
     "CONTRACT_ADDED",
+    "CONTRACT_DELETED",
     "MATERIAL_REQUESTED",
     "INVOICE_CREATED",
+    "INVOICE_STATUS_CHANGED",
 ];
 
 const formatActivityType = (type: string) => {
@@ -160,7 +176,7 @@ export default function ActivityLogPage() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="All">All Event Types</SelectItem>
-                  {activityTypes.map(type => (
+                  {activityTypes.sort().map(type => (
                       <SelectItem key={type} value={type}>{formatActivityType(type)}</SelectItem>
                   ))}
                 </SelectContent>

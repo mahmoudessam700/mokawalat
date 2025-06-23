@@ -2,7 +2,7 @@
 'use server';
 
 import { firestore } from '@/lib/firebase';
-import { collection, addDoc, doc, deleteDoc, updateDoc, serverTimestamp, query, where, getDocs } from 'firebase/firestore';
+import { collection, addDoc, doc, deleteDoc, updateDoc, serverTimestamp, query, where, getDocs, getDoc } from 'firebase/firestore';
 import { z } from 'zod';
 import { revalidatePath } from 'next/cache';
 
@@ -82,6 +82,13 @@ export async function deleteEmployee(employeeId: string) {
   }
 
   try {
+    const employeeRef = doc(firestore, 'employees', employeeId);
+    const employeeSnap = await getDoc(employeeRef);
+    if (!employeeSnap.exists()) {
+        return { success: false, message: 'Employee not found.' };
+    }
+    const employeeName = employeeSnap.data().name;
+
     // Check if employee is assigned to any projects
     const projectsQuery = query(collection(firestore, 'projects'), where('teamMemberIds', 'array-contains', employeeId));
     const projectsSnapshot = await getDocs(projectsQuery);
@@ -89,7 +96,15 @@ export async function deleteEmployee(employeeId: string) {
         return { success: false, message: 'Cannot delete employee assigned to one or more projects. Please remove them from project teams first.' };
     }
 
-    await deleteDoc(doc(firestore, 'employees', employeeId));
+    await deleteDoc(employeeRef);
+
+    await addDoc(collection(firestore, 'activityLog'), {
+        message: `Employee deleted: ${employeeName}`,
+        type: "EMPLOYEE_DELETED",
+        link: `/employees`,
+        timestamp: serverTimestamp(),
+    });
+
     revalidatePath('/employees');
     return { success: true, message: 'Employee deleted successfully.' };
   } catch (error) {

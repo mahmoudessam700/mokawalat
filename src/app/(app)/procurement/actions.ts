@@ -107,7 +107,22 @@ export async function deletePurchaseRequest(requestId: string) {
     }
 
     try {
-        await deleteDoc(doc(firestore, 'procurement', requestId));
+        const requestRef = doc(firestore, 'procurement', requestId);
+        const requestSnap = await getDoc(requestRef);
+        if (!requestSnap.exists()) {
+            return { success: false, message: 'Purchase order not found.' };
+        }
+        const poName = requestSnap.data().itemName;
+        
+        await deleteDoc(requestRef);
+
+        await addDoc(collection(firestore, 'activityLog'), {
+            message: `Purchase Order deleted for: ${poName}`,
+            type: "PO_DELETED",
+            link: `/procurement`,
+            timestamp: serverTimestamp(),
+        });
+
         revalidatePath('/procurement');
         return { success: true, message: 'Purchase order deleted successfully.' };
     } catch (error) {

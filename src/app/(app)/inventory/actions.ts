@@ -7,7 +7,7 @@
  */
 
 import { firestore } from '@/lib/firebase';
-import { collection, addDoc, doc, deleteDoc, updateDoc, runTransaction, serverTimestamp } from 'firebase/firestore';
+import { collection, addDoc, doc, deleteDoc, updateDoc, runTransaction, serverTimestamp, getDoc } from 'firebase/firestore';
 import { z } from 'zod';
 import { revalidatePath } from 'next/cache';
 
@@ -103,7 +103,22 @@ export async function deleteInventoryItem(itemId: string) {
   }
 
   try {
-    await deleteDoc(doc(firestore, 'inventory', itemId));
+    const itemRef = doc(firestore, 'inventory', itemId);
+    const itemSnap = await getDoc(itemRef);
+    if (!itemSnap.exists()) {
+        return { success: false, message: 'Item not found.' };
+    }
+    const itemName = itemSnap.data().name;
+
+    await deleteDoc(itemRef);
+
+    await addDoc(collection(firestore, 'activityLog'), {
+        message: `Inventory item deleted: ${itemName}`,
+        type: "INVENTORY_DELETED",
+        link: `/inventory`,
+        timestamp: serverTimestamp(),
+    });
+
     revalidatePath('/inventory');
     return { success: true, message: 'Item deleted successfully.' };
   } catch (error) {

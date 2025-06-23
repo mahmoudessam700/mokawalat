@@ -2,7 +2,7 @@
 'use server';
 
 import { firestore } from '@/lib/firebase';
-import { collection, addDoc, serverTimestamp, doc, deleteDoc, updateDoc, query, where, getDocs } from 'firebase/firestore';
+import { collection, addDoc, serverTimestamp, doc, deleteDoc, updateDoc, query, where, getDocs, getDoc } from 'firebase/firestore';
 import { z } from 'zod';
 import { revalidatePath } from 'next/cache';
 
@@ -91,7 +91,22 @@ export async function deleteAsset(assetId: string) {
   }
 
   try {
-    await deleteDoc(doc(firestore, 'assets', assetId));
+    const assetRef = doc(firestore, 'assets', assetId);
+    const assetSnap = await getDoc(assetRef);
+    if (!assetSnap.exists()) {
+        return { success: false, message: 'Asset not found.' };
+    }
+    const assetName = assetSnap.data().name;
+
+    await deleteDoc(assetRef);
+
+    await addDoc(collection(firestore, 'activityLog'), {
+        message: `Asset deleted: ${assetName}`,
+        type: "ASSET_DELETED",
+        link: `/assets`,
+        timestamp: serverTimestamp(),
+    });
+
     revalidatePath('/assets');
     return { success: true, message: 'Asset deleted successfully.' };
   } catch (error) {

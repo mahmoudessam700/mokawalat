@@ -172,6 +172,12 @@ export async function deleteContract(clientId: string, contractId: string) {
                 console.error("Failed to delete contract file from storage:", err);
             });
         }
+        await addDoc(collection(firestore, 'activityLog'), {
+            message: `Contract "${contractData.title}" deleted from client`,
+            type: "CONTRACT_DELETED",
+            link: `/clients/${clientId}`,
+            timestamp: serverTimestamp(),
+        });
     }
 
     await deleteDoc(contractRef);

@@ -75,15 +75,15 @@ export async function updateInvoiceStatus(invoiceId: string, status: 'Sent' | 'P
     }
 
     const invoiceRef = doc(firestore, 'invoices', invoiceId);
+    
+    const invoiceSnap = await getDoc(invoiceRef);
+    if (!invoiceSnap.exists()) {
+        throw new Error("Invoice not found.");
+    }
+    const invoiceData = invoiceSnap.data();
 
     try {
         if (status === 'Paid') {
-            const invoiceSnap = await getDoc(invoiceRef);
-            if (!invoiceSnap.exists()) {
-                throw new Error("Invoice not found.");
-            }
-            const invoiceData = invoiceSnap.data();
-
             const accountsQuery = query(collection(firestore, 'accounts'), limit(1));
             const accountsSnap = await getDocs(accountsQuery);
             if (accountsSnap.empty) {
@@ -112,11 +112,16 @@ export async function updateInvoiceStatus(invoiceId: string, status: 'Sent' | 'P
 
         await updateDoc(invoiceRef, { status });
 
+        await addDoc(collection(firestore, 'activityLog'), {
+            message: `Invoice ${invoiceData.invoiceNumber} status updated to ${status}`,
+            type: "INVOICE_STATUS_CHANGED",
+            link: `/invoices/${invoiceId}`,
+            timestamp: serverTimestamp(),
+        });
+
         revalidatePath('/invoices');
         
         if (status === 'Paid') {
-            const invoiceSnap = await getDoc(invoiceRef);
-            const invoiceData = invoiceSnap.data();
             revalidatePath('/financials');
             revalidatePath('/financials/accounts');
             if (invoiceData?.clientId) {

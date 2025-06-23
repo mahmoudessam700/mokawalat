@@ -83,6 +83,13 @@ export async function deleteSupplier(supplierId: string) {
   }
 
   try {
+    const supplierRef = doc(firestore, 'suppliers', supplierId);
+    const supplierSnap = await getDoc(supplierRef);
+    if (!supplierSnap.exists()) {
+        return { success: false, message: 'Supplier not found.' };
+    }
+    const supplierName = supplierSnap.data().name;
+
     // Check for linked purchase orders
     const poQuery = query(collection(firestore, 'procurement'), where('supplierId', '==', supplierId));
     const poSnapshot = await getDocs(poQuery);
@@ -90,7 +97,15 @@ export async function deleteSupplier(supplierId: string) {
       return { success: false, message: 'Cannot delete supplier with existing purchase orders. Please re-assign or delete them first.' };
     }
 
-    await deleteDoc(doc(firestore, 'suppliers', supplierId));
+    await deleteDoc(supplierRef);
+
+    await addDoc(collection(firestore, 'activityLog'), {
+        message: `Supplier deleted: ${supplierName}`,
+        type: "SUPPLIER_DELETED",
+        link: `/suppliers`,
+        timestamp: serverTimestamp(),
+    });
+
     revalidatePath('/suppliers');
     return { success: true, message: 'Supplier deleted successfully.' };
   } catch (error) {

@@ -2,7 +2,7 @@
 'use server';
 
 import { firestore } from '@/lib/firebase';
-import { collection, addDoc, serverTimestamp, doc, deleteDoc, updateDoc, query, where, getDocs } from 'firebase/firestore';
+import { collection, addDoc, serverTimestamp, doc, deleteDoc, updateDoc, query, where, getDocs, getDoc } from 'firebase/firestore';
 import { z } from 'zod';
 import { revalidatePath } from 'next/cache';
 
@@ -82,6 +82,13 @@ export async function deleteClient(clientId: string) {
   }
 
   try {
+    const clientRef = doc(firestore, 'clients', clientId);
+    const clientSnap = await getDoc(clientRef);
+    if (!clientSnap.exists()) {
+        return { success: false, message: 'Client not found.' };
+    }
+    const clientName = clientSnap.data().name;
+
     // Check for linked projects
     const projectsQuery = query(collection(firestore, 'projects'), where('clientId', '==', clientId));
     const projectsSnapshot = await getDocs(projectsQuery);
@@ -96,7 +103,15 @@ export async function deleteClient(clientId: string) {
       return { success: false, message: 'Cannot delete client with existing financial transactions.' };
     }
 
-    await deleteDoc(doc(firestore, 'clients', clientId));
+    await deleteDoc(clientRef);
+
+    await addDoc(collection(firestore, 'activityLog'), {
+        message: `Client deleted: ${clientName}`,
+        type: "CLIENT_DELETED",
+        link: `/clients`,
+        timestamp: serverTimestamp(),
+    });
+
     revalidatePath('/clients');
     return { success: true, message: 'Client deleted successfully.' };
   } catch (error) {
