@@ -18,7 +18,7 @@ import { useToast } from '@/hooks/use-toast';
 import { firestore } from '@/lib/firebase';
 import { collection, onSnapshot, query, type Timestamp } from 'firebase/firestore';
 import { useEffect, useMemo, useState } from 'react';
-import { Bar, BarChart, CartesianGrid, Pie, PieChart, XAxis, YAxis, Legend } from 'recharts';
+import { Bar, BarChart, CartesianGrid, Pie, PieChart, XAxis, YAxis, Legend, ResponsiveContainer } from 'recharts';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
 import { Calendar as CalendarIcon, DollarSign } from 'lucide-react';
@@ -27,15 +27,6 @@ import { Calendar } from '@/components/ui/calendar';
 import { subDays, format } from 'date-fns';
 import type { DateRange } from 'react-day-picker';
 import { cn } from '@/lib/utils';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
-import { Progress } from '@/components/ui/progress';
 
 // Types from other modules
 type TransactionType = 'Income' | 'Expense';
@@ -86,14 +77,15 @@ const chartConfig = {
     label: 'Out of Stock',
     color: 'hsl(var(--chart-5))',
   },
+  Budget: {
+    label: "Budget",
+    color: "hsl(var(--chart-1))",
+  },
+  Expenses: {
+    label: "Expenses",
+    color: "hsl(var(--chart-3))",
+  },
 } satisfies ChartConfig;
-
-const formatCurrency = (value: number) => {
-    const formatter = new Intl.NumberFormat('en-US', {
-        minimumFractionDigits: 0,
-    });
-    return `LE ${formatter.format(value)}`;
-};
 
 
 export default function ReportsPage() {
@@ -248,22 +240,18 @@ export default function ReportsPage() {
     })).filter(d => d.value > 0);
 }, [clients]);
 
- const projectFinancials = useMemo(() => {
+ const projectFinancialsChartData = useMemo(() => {
     return projects.map(project => {
         const projectExpenses = transactions
             .filter(t => t.projectId === project.id && t.type === 'Expense')
             .reduce((acc, t) => acc + t.amount, 0);
         
-        const remainingBudget = project.budget - projectExpenses;
-        const budgetConsumedPercentage = project.budget > 0 ? Math.round((projectExpenses / project.budget) * 100) : 0;
-
         return {
-            ...project,
-            expenses: projectExpenses,
-            remaining: remainingBudget,
-            consumed: budgetConsumedPercentage > 100 ? 100 : budgetConsumedPercentage,
+            name: project.name,
+            Budget: project.budget,
+            Expenses: projectExpenses,
         };
-    }).sort((a, b) => b.budget - a.budget);
+    }).sort((a, b) => b.Budget - a.Budget);
   }, [projects, transactions]);
 
 
@@ -317,9 +305,8 @@ export default function ReportsPage() {
             </Popover>
         </div>
       </div>
-
-       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-         <Card>
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+          <Card>
            <CardHeader>
              <CardTitle>Financial Overview</CardTitle>
              <CardDescription>A summary of total income and expenses for the selected period.</CardDescription>
@@ -419,9 +406,7 @@ export default function ReportsPage() {
              )}
            </CardContent>
          </Card>
-      </div>
-
-       <Card>
+          <Card className="lg:col-span-2">
             <CardHeader>
                 <CardTitle>Project Budget vs. Actuals</CardTitle>
                 <CardDescription>
@@ -430,35 +415,32 @@ export default function ReportsPage() {
             </CardHeader>
             <CardContent>
                 {isLoading ? (
-                    <Skeleton className="h-[250px] w-full" />
-                ) : projectFinancials.length > 0 ? (
-                    <Table>
-                        <TableHeader>
-                            <TableRow>
-                                <TableHead>Project</TableHead>
-                                <TableHead className="text-right">Budget</TableHead>
-                                <TableHead className="text-right">Expenses</TableHead>
-                                <TableHead className="text-right">Remaining</TableHead>
-                                <TableHead>Consumption</TableHead>
-                            </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                            {projectFinancials.map(proj => (
-                                <TableRow key={proj.id}>
-                                    <TableCell className="font-medium">{proj.name}</TableCell>
-                                    <TableCell className="text-right">{formatCurrency(proj.budget)}</TableCell>
-                                    <TableCell className="text-right text-destructive">{formatCurrency(proj.expenses)}</TableCell>
-                                    <TableCell className="text-right font-semibold">{formatCurrency(proj.remaining)}</TableCell>
-                                    <TableCell>
-                                        <div className="flex items-center gap-2">
-                                            <Progress value={proj.consumed} className="w-24" />
-                                            <span className="text-xs text-muted-foreground">{proj.consumed}%</span>
-                                        </div>
-                                    </TableCell>
-                                </TableRow>
-                            ))}
-                        </TableBody>
-                    </Table>
+                    <Skeleton className="h-[400px] w-full" />
+                ) : projectFinancialsChartData.length > 0 ? (
+                   <ChartContainer config={chartConfig} className="h-[400px] w-full">
+                        <BarChart 
+                            data={projectFinancialsChartData}
+                            margin={{ top: 20, right: 30, left: 20, bottom: 60 }}
+                        >
+                            <CartesianGrid vertical={false} />
+                            <XAxis
+                                dataKey="name"
+                                tickLine={false}
+                                tickMargin={10}
+                                axisLine={false}
+                                angle={-35}
+                                textAnchor="end"
+                            />
+                            <YAxis tickFormatter={(value) => `LE ${(Number(value) / 1000).toLocaleString()}k`} />
+                            <ChartTooltip
+                                cursor={false}
+                                content={<ChartTooltipContent indicator="line" />}
+                            />
+                            <Legend />
+                            <Bar dataKey="Budget" fill="var(--color-Budget)" radius={[4, 4, 0, 0]} />
+                            <Bar dataKey="Expenses" fill="var(--color-Expenses)" radius={[4, 4, 0, 0]} />
+                        </BarChart>
+                    </ChartContainer>
                 ) : (
                     <div className="flex flex-col items-center justify-center gap-2 py-8 text-center text-muted-foreground">
                         <DollarSign className="size-12" />
@@ -467,6 +449,7 @@ export default function ReportsPage() {
                 )}
             </CardContent>
         </Card>
+      </div>
     </div>
   );
 }
