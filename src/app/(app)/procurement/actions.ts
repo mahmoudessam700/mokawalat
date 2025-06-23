@@ -11,7 +11,6 @@ const procurementFormSchema = z.object({
   quantity: z.coerce.number().min(1, "Quantity must be at least 1."),
   supplierId: z.string().min(1, "Supplier is required."),
   projectId: z.string().min(1, "Project is required."),
-  status: z.enum(["Pending", "Approved", "Rejected", "Ordered", "Received"]),
 });
 
 export type ProcurementFormValues = z.infer<typeof procurementFormSchema>;
@@ -39,6 +38,7 @@ export async function addPurchaseRequest(values: ProcurementFormValues) {
     const poRef = await addDoc(collection(firestore, 'procurement'), {
       ...validatedFields.data,
       itemName,
+      status: 'Pending',
       requestedAt: serverTimestamp(),
     });
 
@@ -109,6 +109,41 @@ export async function deletePurchaseRequest(requestId: string) {
         console.error('Error deleting purchase order:', error);
         return { success: false, message: 'Failed to delete purchase order.' };
     }
+}
+
+export async function updatePurchaseRequestStatus(requestId: string, newStatus: 'Approved' | 'Rejected' | 'Ordered') {
+  if (!requestId) {
+    return { success: false, message: 'Request ID is required.' };
+  }
+  
+  const requestRef = doc(firestore, 'procurement', requestId);
+
+  try {
+    const poDoc = await getDoc(requestRef);
+    if (!poDoc.exists()) {
+      throw new Error("Purchase Order not found.");
+    }
+
+    const currentStatus = poDoc.data().status;
+
+    const allowedTransitions: { [key: string]: string[] } = {
+        'Pending': ['Approved', 'Rejected'],
+        'Approved': ['Ordered'],
+    };
+
+    if (!allowedTransitions[currentStatus] || !allowedTransitions[currentStatus].includes(newStatus)) {
+        throw new Error(`Cannot change status from '${currentStatus}' to '${newStatus}'.`);
+    }
+    
+    await updateDoc(requestRef, { status: newStatus });
+    
+    revalidatePath('/procurement');
+    revalidatePath(`/procurement/${requestId}`);
+    return { success: true, message: `Purchase Order status updated to ${newStatus}.` };
+  } catch (error: any) {
+    console.error('Error updating PO status:', error);
+    return { success: false, message: error.message || 'Failed to update status.' };
+  }
 }
 
 

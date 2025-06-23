@@ -16,9 +16,10 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuLabel,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { ClipboardCheck, Loader2, MoreHorizontal, PlusCircle, Trash2 } from 'lucide-react';
+import { CheckCircle2, ClipboardCheck, Loader2, MoreHorizontal, PlusCircle, Send, Trash2, XCircle } from 'lucide-react';
 import {
   Card,
   CardContent,
@@ -65,7 +66,7 @@ import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useState, useEffect, useMemo } from 'react';
-import { addPurchaseRequest, deletePurchaseRequest, updatePurchaseRequest, markPOAsReceived } from './actions';
+import { addPurchaseRequest, deletePurchaseRequest, updatePurchaseRequest, markPOAsReceived, updatePurchaseRequestStatus } from './actions';
 import { useToast } from '@/hooks/use-toast';
 import { collection, onSnapshot, query, orderBy, Timestamp } from 'firebase/firestore';
 import { firestore } from '@/lib/firebase';
@@ -104,7 +105,6 @@ const procurementFormSchema = z.object({
   quantity: z.coerce.number().min(1, "Quantity must be at least 1."),
   supplierId: z.string().min(1, "Supplier is required."),
   projectId: z.string().min(1, "Project is required."),
-  status: z.enum(["Pending", "Approved", "Rejected", "Ordered", "Received"]),
 });
 
 type ProcurementFormValues = z.infer<typeof procurementFormSchema>;
@@ -167,7 +167,6 @@ export default function ProcurementPage() {
       quantity: 1,
       supplierId: '',
       projectId: '',
-      status: 'Pending',
     },
   });
 
@@ -207,6 +206,15 @@ export default function ProcurementPage() {
     }
     setIsDeleteDialogOpen(false);
     setRequestToDelete(null);
+  }
+  
+  async function handleStatusUpdate(id: string, status: 'Approved' | 'Rejected' | 'Ordered') {
+    const result = await updatePurchaseRequestStatus(id, status);
+    if (result.success) {
+        toast({ title: 'Success', description: result.message });
+    } else {
+        toast({ variant: 'destructive', title: 'Error', description: result.message });
+    }
   }
 
   async function handleMarkAsReceived(id: string) {
@@ -329,30 +337,6 @@ export default function ProcurementPage() {
                         </FormItem>
                     )}
                     />
-                    <FormField
-                    control={form.control}
-                    name="status"
-                    render={({ field }) => (
-                        <FormItem>
-                        <FormLabel>Status</FormLabel>
-                        <Select onValueChange={field.onChange} value={field.value}>
-                            <FormControl>
-                            <SelectTrigger>
-                                <SelectValue placeholder="Select status" />
-                            </SelectTrigger>
-                            </FormControl>
-                            <SelectContent>
-                            <SelectItem value="Pending">Pending</SelectItem>
-                            <SelectItem value="Approved">Approved</SelectItem>
-                            <SelectItem value="Rejected">Rejected</SelectItem>
-                            <SelectItem value="Ordered">Ordered</SelectItem>
-                            <SelectItem value="Received">Received</SelectItem>
-                            </SelectContent>
-                        </Select>
-                        <FormMessage />
-                        </FormItem>
-                    )}
-                    />
                     <DialogFooter>
                     <Button type="submit" disabled={form.formState.isSubmitting}>
                         {form.formState.isSubmitting ? (
@@ -424,26 +408,51 @@ export default function ProcurementPage() {
                             </DropdownMenuItem>
                           {profile?.role === 'admin' && (
                             <>
+                              <DropdownMenuSeparator />
+                              {request.status === 'Pending' && (
+                                <>
+                                  <DropdownMenuItem onSelect={() => handleStatusUpdate(request.id, 'Approved')}>
+                                    <CheckCircle2 className="mr-2 h-4 w-4" />
+                                    Approve
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem className="text-destructive" onSelect={() => handleStatusUpdate(request.id, 'Rejected')}>
+                                    <XCircle className="mr-2 h-4 w-4" />
+                                    Reject
+                                  </DropdownMenuItem>
+                                </>
+                              )}
+                              {request.status === 'Approved' && (
+                                <DropdownMenuItem onSelect={() => handleStatusUpdate(request.id, 'Ordered')}>
+                                  <Send className="mr-2 h-4 w-4" />
+                                  Mark as Ordered
+                                </DropdownMenuItem>
+                              )}
                               {request.status === 'Ordered' && (
                                 <DropdownMenuItem onSelect={() => handleMarkAsReceived(request.id)}>
                                     <ClipboardCheck className="mr-2 h-4 w-4" />
                                     Mark as Received
                                 </DropdownMenuItem>
                               )}
-                              <DropdownMenuItem onSelect={() => {
-                                setRequestToEdit(request);
-                                setIsDialogOpen(true);
-                              }}>Edit</DropdownMenuItem>
-                              <DropdownMenuItem
-                                className="text-destructive"
-                                onSelect={() => {
-                                  setRequestToDelete(request);
-                                  setIsDeleteDialogOpen(true);
-                                }}
-                              >
-                                 <Trash2 className="mr-2 h-4 w-4" />
-                                Delete
-                              </DropdownMenuItem>
+                              
+                              {(request.status === 'Pending' || request.status === 'Approved') && (
+                                <>
+                                  <DropdownMenuSeparator />
+                                  <DropdownMenuItem onSelect={() => {
+                                    setRequestToEdit(request);
+                                    setIsDialogOpen(true);
+                                  }}>Edit</DropdownMenuItem>
+                                  <DropdownMenuItem
+                                    className="text-destructive"
+                                    onSelect={() => {
+                                      setRequestToDelete(request);
+                                      setIsDeleteDialogOpen(true);
+                                    }}
+                                  >
+                                    <Trash2 className="mr-2 h-4 w-4" />
+                                    Delete
+                                  </DropdownMenuItem>
+                                </>
+                              )}
                             </>
                           )}
                         </DropdownMenuContent>
