@@ -22,6 +22,8 @@ type PurchaseOrder = {
   id: string;
   itemName: string;
   quantity: number;
+  unitCost: number;
+  totalCost: number;
   status: RequestStatus;
   requestedAt: Timestamp;
   projectId: string;
@@ -202,6 +204,16 @@ export default function ProcurementDetailPage({ params }: { params: { id: string
                             <div className="flex items-center gap-4">
                                 <Calendar className="size-4 text-muted-foreground" />
                                 <span className="text-sm">Requested on {request.requestedAt ? format(request.requestedAt.toDate(), 'PPP') : 'N/A'}</span>
+                            </div>
+                            <div className="flex items-center gap-4 border-t pt-4 mt-4">
+                                <DollarSign className="size-4 text-muted-foreground" />
+                                <div className="text-sm">
+                                    <span>
+                                        {formatCurrency(request.unitCost)} per unit &middot;{' '}
+                                        <strong>Total: {formatCurrency(request.totalCost)}</strong>
+                                    </span>
+                                    
+                                </div>
                             </div>
                         </CardContent>
                     </Card>

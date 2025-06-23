@@ -84,6 +84,7 @@ type PurchaseOrder = {
   quantity: number;
   supplierId: string;
   projectId: string;
+  totalCost: number;
   status: RequestStatus;
   requestedAt: Timestamp;
 };
@@ -103,6 +104,7 @@ const statusVariant: { [key in RequestStatus]: 'default' | 'secondary' | 'destru
 const procurementFormSchema = z.object({
   itemId: z.string().min(1, "Item is required."),
   quantity: z.coerce.number().min(1, "Quantity must be at least 1."),
+  unitCost: z.coerce.number().min(0, "Unit cost must be a non-negative number."),
   supplierId: z.string().min(1, "Supplier is required."),
   projectId: z.string().min(1, "Project is required."),
 });
@@ -116,6 +118,13 @@ const renderRating = (rating?: number) => {
   const filledStars = '★'.repeat(rating);
   const emptyStars = '☆'.repeat(5 - rating);
   return ` ${filledStars}${emptyStars}`;
+};
+
+const formatCurrency = (value: number) => {
+    const formatter = new Intl.NumberFormat('en-US', {
+      minimumFractionDigits: 2,
+    });
+    return `LE ${formatter.format(value)}`;
 };
 
 export default function ProcurementPage() {
@@ -190,10 +199,15 @@ export default function ProcurementPage() {
     defaultValues: {
       itemId: '',
       quantity: 1,
+      unitCost: 0,
       supplierId: '',
       projectId: '',
     },
   });
+
+  const watchedQuantity = form.watch('quantity');
+  const watchedUnitCost = form.watch('unitCost');
+  const totalCost = useMemo(() => watchedQuantity * watchedUnitCost, [watchedQuantity, watchedUnitCost]);
 
   useEffect(() => {
     if (requestToEdit) {
@@ -318,6 +332,27 @@ export default function ProcurementPage() {
                         </FormItem>
                     )}
                     />
+                     <div className="grid grid-cols-2 gap-4">
+                        <FormField
+                        control={form.control}
+                        name="unitCost"
+                        render={({ field }) => (
+                            <FormItem>
+                            <FormLabel>Unit Cost (LE)</FormLabel>
+                            <FormControl>
+                                <Input type="number" placeholder="e.g., 150.50" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                            </FormItem>
+                        )}
+                        />
+                         <FormItem>
+                            <FormLabel>Total Cost (LE)</FormLabel>
+                            <FormControl>
+                                <Input type="text" readOnly value={formatCurrency(totalCost)} className="font-semibold bg-muted" />
+                            </FormControl>
+                        </FormItem>
+                    </div>
                     <FormField
                     control={form.control}
                     name="supplierId"
@@ -440,6 +475,7 @@ export default function ProcurementPage() {
               <TableRow>
                 <TableHead>Item</TableHead>
                 <TableHead>Quantity</TableHead>
+                <TableHead className="hidden md:table-cell">Total Cost</TableHead>
                 <TableHead className="hidden md:table-cell">Supplier</TableHead>
                 <TableHead className="hidden lg:table-cell">Project</TableHead>
                 <TableHead className="hidden md:table-cell">Requested On</TableHead>
@@ -453,6 +489,7 @@ export default function ProcurementPage() {
                   <TableRow key={index}>
                     <TableCell><Skeleton className="h-4 w-[150px]" /></TableCell>
                     <TableCell><Skeleton className="h-4 w-[50px]" /></TableCell>
+                    <TableCell className="hidden md:table-cell"><Skeleton className="h-4 w-[100px]" /></TableCell>
                     <TableCell className="hidden md:table-cell"><Skeleton className="h-4 w-[120px]" /></TableCell>
                     <TableCell className="hidden lg:table-cell"><Skeleton className="h-4 w-[150px]" /></TableCell>
                     <TableCell className="hidden md:table-cell"><Skeleton className="h-4 w-[100px]" /></TableCell>
@@ -465,6 +502,7 @@ export default function ProcurementPage() {
                   <TableRow key={request.id}>
                     <TableCell className="font-medium">{request.itemName}</TableCell>
                     <TableCell>{request.quantity}</TableCell>
+                    <TableCell className="hidden md:table-cell">{formatCurrency(request.totalCost)}</TableCell>
                     <TableCell className="hidden md:table-cell">{supplierNames.get(request.supplierId) || 'N/A'}</TableCell>
                     <TableCell className="hidden lg:table-cell">{projectNames.get(request.projectId) || 'N/A'}</TableCell>
                     <TableCell className="hidden md:table-cell">{request.requestedAt ? format(request.requestedAt.toDate(), 'PPP') : 'N/A'}</TableCell>
@@ -538,7 +576,7 @@ export default function ProcurementPage() {
                 ))
               ) : (
                 <TableRow>
-                  <TableCell colSpan={7} className="h-24 text-center">
+                  <TableCell colSpan={8} className="h-24 text-center">
                     {requests.length > 0 ? "No purchase orders match the current filters." : "No purchase orders found. Create one to get started."}
                   </TableCell>
                 </TableRow>

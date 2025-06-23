@@ -177,6 +177,8 @@ Tracks purchase orders (POs).
     -   `itemName` (string): The name of the item being procured.
     -   `itemId` (string): A reference to the `inventory` collection document ID.
     -   `quantity` (number)
+    -   `unitCost` (number): The cost per unit of the item.
+    -   `totalCost` (number): The total cost for the PO (quantity * unitCost).
     -   `supplierId` (string): A reference to the `suppliers` collection document ID.
     -   `projectId` (string): A reference to the `projects` collection document ID.
     -   `status` (string): The PO status (`Pending`, `Approved`, `Rejected`, `Ordered`, `Received`).

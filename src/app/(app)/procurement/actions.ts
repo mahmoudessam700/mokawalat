@@ -9,6 +9,7 @@ import { revalidatePath } from 'next/cache';
 const procurementFormSchema = z.object({
   itemId: z.string().min(1, "Item is required."),
   quantity: z.coerce.number().min(1, "Quantity must be at least 1."),
+  unitCost: z.coerce.number().min(0, "Unit cost must be a non-negative number."),
   supplierId: z.string().min(1, "Supplier is required."),
   projectId: z.string().min(1, "Project is required."),
 });
@@ -34,10 +35,12 @@ export async function addPurchaseRequest(values: ProcurementFormValues) {
     }
     
     const itemName = itemDoc.data().name;
+    const totalCost = validatedFields.data.quantity * validatedFields.data.unitCost;
 
     const poRef = await addDoc(collection(firestore, 'procurement'), {
       ...validatedFields.data,
       itemName,
+      totalCost,
       status: 'Pending',
       requestedAt: serverTimestamp(),
     });
@@ -80,11 +83,13 @@ export async function updatePurchaseRequest(requestId: string, values: Procureme
         }
         
         const itemName = itemDoc.data().name;
+        const totalCost = validatedFields.data.quantity * validatedFields.data.unitCost;
 
         const requestRef = doc(firestore, 'procurement', requestId);
         await updateDoc(requestRef, {
             ...validatedFields.data,
             itemName,
+            totalCost,
         });
 
         revalidatePath('/procurement');
