@@ -252,7 +252,7 @@ export default function DashboardPage() {
             id: doc.id,
             title: `Material request for "${data.itemName}"`,
             type: 'Project Request',
-            link: `/projects/${data.projectId}`,
+            link: '/material-requests',
           };
         });
         setMaterialRequestTasks(tasks);
