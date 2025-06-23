@@ -12,7 +12,7 @@ const lineItemSchema = z.object({
   unitPrice: z.coerce.number().min(0, "Unit price must be a non-negative number."),
 });
 
-export const invoiceFormSchema = z.object({
+const invoiceFormSchema = z.object({
   clientId: z.string().min(1, "A client is required."),
   projectId: z.string().optional(),
   issueDate: z.string().refine((date) => !isNaN(Date.parse(date)), {
