@@ -1,93 +1,62 @@
-
 rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
-
+  
+    // Helper function to check for admin role
     function isAdmin() {
       return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
     }
-
-    function isAuthenticated() {
-      return request.auth != null;
-    }
-
-    // Default deny all access
-    match /{document=**} {
-      allow read, write: if false;
-    }
-
-    // Users: Read if authenticated, write if admin
+    
+    // Users can read their own profile, admins can read any profile
     match /users/{userId} {
-      allow read: if isAuthenticated();
-      allow write: if isAdmin();
+      allow read: if request.auth != null && (request.auth.uid == userId || isAdmin());
+      // A user can create their own document, but cannot assign themselves as admin.
+      allow create: if request.auth != null && request.auth.uid == userId && request.resource.data.role == 'user';
+      // Only admins can update user documents (e.g. to change roles)
+      allow update: if isAdmin();
+      allow delete: if isAdmin();
     }
     
-    // Activity Log: Read if authenticated, create if authenticated, update/delete if admin
-    match /activityLog/{logId} {
-      allow read: if isAuthenticated();
-      allow create: if isAuthenticated();
-      allow update, delete: if isAdmin();
-    }
-
-    match /projects/{projectId} {
-      allow read: if isAuthenticated();
-      allow write: if isAdmin();
-    }
-    
-    match /employees/{employeeId} {
-      allow read: if isAuthenticated();
+    // Admins have full access to most collections.
+    // Regular authenticated users have read-only access.
+    match /{collection}/{docId} where collection in ['projects', 'employees', 'suppliers', 'inventory', 'procurement', 'clients', 'accounts', 'activityLog'] {
+      allow read: if request.auth != null;
       allow write: if isAdmin();
     }
 
-    match /suppliers/{supplierId} {
-      allow read: if isAuthenticated();
-      allow write: if isAdmin();
-    }
+    // Special rules for subcollections or collections with user write access
 
-    match /suppliers/{supplierId}/contracts/{contractId} {
-        allow read: if isAuthenticated();
-        allow write: if isAdmin();
-    }
-
-    match /inventory/{itemId} {
-      allow read: if isAuthenticated();
-      allow write: if isAdmin();
-    }
-
-    match /procurement/{procurementId} {
-      allow read: if isAuthenticated();
-      allow write: if isAdmin();
-    }
-
-    match /clients/{clientId} {
-        allow read: if isAuthenticated();
-        allow write: if isAdmin();
-    }
+    // Client Interactions: Any authenticated user can add an interaction. Only admins can edit/delete.
     match /clients/{clientId}/interactions/{interactionId} {
-        allow read: if isAuthenticated();
-        allow create: if isAuthenticated();
+        allow read: if request.auth != null;
+        allow create: if request.auth != null;
         allow update, delete: if isAdmin();
     }
-     match /clients/{clientId}/contracts/{contractId} {
-        allow read: if isAuthenticated();
+    
+    // Client Contracts: Only admins can manage contracts.
+    match /clients/{clientId}/contracts/{contractId} {
+        allow read: if request.auth != null;
         allow write: if isAdmin();
     }
 
-    match /transactions/{transactionId} {
-        allow read: if isAuthenticated();
+    // Supplier Contracts: Only admins can manage contracts.
+    match /suppliers/{supplierId}/contracts/{contractId} {
+        allow read: if request.auth != null;
         allow write: if isAdmin();
     }
-
-    match /accounts/{accountId} {
-        allow read: if isAuthenticated();
-        allow write: if isAdmin();
-    }
-
+    
+    // Material Requests: Any authenticated user can create a request. Only admins can update/delete.
     match /materialRequests/{requestId} {
-        allow read: if isAuthenticated();
-        allow create: if isAuthenticated();
+        allow read: if request.auth != null;
+        allow create: if request.auth != null;
         allow update, delete: if isAdmin();
+    }
+
+    // Transactions: Only admins can manage transactions.
+    match /transactions/{transactionId} {
+        allow read: if request.auth != null;
+        allow write: if isAdmin();
     }
   }
 }
