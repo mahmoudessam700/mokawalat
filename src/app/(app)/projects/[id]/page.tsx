@@ -36,6 +36,7 @@ import { ProjectAiAssistant } from './project-ai-assistant';
 import { Progress } from '@/components/ui/progress';
 import { z } from 'zod';
 import { Textarea } from '@/components/ui/textarea';
+import { ProjectLogSummary } from './project-log-summary';
 
 type ProjectStatus = 'In Progress' | 'Planning' | 'Completed' | 'On Hold';
 
@@ -594,6 +595,7 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
                         <CardDescription>A chronological record of project updates and observations.</CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-6">
+                        <ProjectLogSummary projectId={project.id} />
                         <Form {...dailyLogForm}>
                             <form onSubmit={dailyLogForm.handleSubmit(onDailyLogSubmit)} className="space-y-4">
                                 <FormField

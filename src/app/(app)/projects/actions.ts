@@ -7,6 +7,7 @@ import { z } from 'zod';
 import { revalidatePath } from 'next/cache';
 import { analyzeProjectRisks, ProjectRiskAnalysisInput, type ProjectRiskAnalysisOutput } from '@/ai/flows/project-risk-analysis';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { summarizeDailyLogs, type SummarizeDailyLogsOutput } from '@/ai/flows/summarize-daily-logs';
 
 const projectFormSchema = z.object({
   name: z.string().min(3, 'Project name must be at least 3 characters long.'),
@@ -377,5 +378,42 @@ export async function updateMaterialRequestStatus(requestId: string, newStatus: 
   } catch (error: any) {
     console.error('Error updating material request:', error);
     return { success: false, message: error.message || 'Failed to update request status.' };
+  }
+}
+
+export interface AiLogSummaryState {
+    message: string | null;
+    data: SummarizeDailyLogsOutput | null;
+    error: boolean;
+}
+
+export async function getDailyLogSummary(projectId: string): Promise<AiLogSummaryState> {
+  if (!projectId) {
+    return { message: 'Project ID is required.', data: null, error: true };
+  }
+
+  try {
+    const result = await summarizeDailyLogs({ projectId });
+    
+    if (result.summary) {
+      return {
+        message: 'Summary generated successfully.',
+        data: result,
+        error: false,
+      };
+    } else {
+       return {
+        message: 'AI could not generate a summary from the logs.',
+        data: null,
+        error: true,
+      };
+    }
+  } catch (error) {
+    console.error('Error getting daily log summary:', error);
+    return {
+      message: 'An unexpected AI error occurred. Please try again.',
+      data: null,
+      error: true,
+    };
   }
 }
