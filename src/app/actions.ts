@@ -6,7 +6,7 @@ import { collection, query, where, getDocs, limit, or, and } from 'firebase/fire
 
 export interface SearchResult {
     name: string;
-    type: 'Project' | 'Client' | 'Employee' | 'Supplier' | 'Inventory Item' | 'Asset';
+    type: 'Project' | 'Client' | 'Employee' | 'Supplier' | 'Inventory Item' | 'Asset' | 'Invoice';
     url: string;
     context?: string;
 }
@@ -77,7 +77,14 @@ export async function globalSearch(searchTerm: string): Promise<SearchResult[]> 
     const assetsSnapshot = await getDocs(searchQuery('assets', 'name_lowercase'));
     assetsSnapshot.forEach(doc => {
         const data = doc.data();
-        addResult({ name: data.name, type: 'Asset', url: `/assets`, context: data.category });
+        addResult({ name: data.name, type: 'Asset', url: `/assets/${doc.id}`, context: data.category });
+    });
+    
+    // Invoices
+    const invoicesSnapshot = await getDocs(searchQuery('invoices', 'invoiceNumber_lowercase'));
+    invoicesSnapshot.forEach(doc => {
+        const data = doc.data();
+        addResult({ name: data.invoiceNumber, type: 'Invoice', url: `/invoices/${doc.id}`, context: `Status: ${data.status}` });
     });
     
     // Note: If you see permission errors in the browser console, you may need to create new indexes in Firebase
