@@ -149,11 +149,7 @@ export default function ProcurementPage() {
   useEffect(() => {
     const qRequests = query(collection(firestore, 'procurement'), orderBy('requestedAt', 'desc'));
     const unsubscribeRequests = onSnapshot(qRequests, (snapshot) => {
-      const data: PurchaseOrder[] = [];
-      snapshot.forEach((doc) => {
-        data.push({ id: doc.id, ...doc.data() } as PurchaseOrder);
-      });
-      setRequests(data);
+      setRequests(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as PurchaseOrder)));
       setIsLoading(false);
     });
 
@@ -548,7 +544,7 @@ export default function ProcurementPage() {
                                 </DropdownMenuItem>
                               )}
                               
-                              {(request.status === 'Pending' || request.status === 'Approved') && (
+                              {(request.status === 'Pending') && (
                                 <>
                                   <DropdownMenuSeparator />
                                   <DropdownMenuItem onSelect={() => {
