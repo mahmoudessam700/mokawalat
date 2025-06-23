@@ -11,15 +11,7 @@ import {
 } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-import { Loader2, MoreHorizontal, PlusCircle, Trash2, X, FilePlus, Send, CheckCircle, Search } from 'lucide-react';
+import { Loader2, FilePlus, Search } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   Dialog,
@@ -52,6 +44,7 @@ import { format } from 'date-fns';
 import { useAuth } from '@/hooks/use-auth';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import Link from 'next/link';
+import { PlusCircle, Trash2 } from 'lucide-react';
 
 
 type InvoiceStatus = 'Draft' | 'Sent' | 'Paid' | 'Void';
@@ -183,15 +176,6 @@ export default function InvoicesPage() {
     }
   }
 
-  async function handleStatusUpdate(id: string, status: 'Sent' | 'Paid' | 'Void') {
-    const result = await updateInvoiceStatus(id, status);
-    if (result.success) {
-      toast({ title: 'Success', description: result.message });
-    } else {
-      toast({ variant: 'destructive', title: 'Error', description: result.message });
-    }
-  }
-
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -270,7 +254,7 @@ export default function InvoicesPage() {
         </CardHeader>
         <CardContent>
           <Table>
-            <TableHeader><TableRow><TableHead>Invoice #</TableHead><TableHead>Client</TableHead><TableHead>Issue Date</TableHead><TableHead>Due Date</TableHead><TableHead>Status</TableHead><TableHead className="text-right">Amount</TableHead><TableHead><span className="sr-only">Actions</span></TableHead></TableRow></TableHeader>
+            <TableHeader><TableRow><TableHead>Invoice #</TableHead><TableHead>Client</TableHead><TableHead>Issue Date</TableHead><TableHead>Due Date</TableHead><TableHead>Status</TableHead><TableHead className="text-right">Amount</TableHead><TableHead className='text-right'>Action</TableHead></TableRow></TableHeader>
             <TableBody>
               {isLoading ? (Array.from({ length: 5 }).map((_, index) => (<TableRow key={index}><TableCell colSpan={7}><Skeleton className="h-8 w-full"/></TableCell></TableRow>)))
               : filteredInvoices.length > 0 ? (filteredInvoices.map((invoice) => (
@@ -285,17 +269,10 @@ export default function InvoicesPage() {
                     <TableCell>{format(invoice.dueDate.toDate(), 'PPP')}</TableCell>
                     <TableCell><Badge variant={statusVariant[invoice.status]}>{invoice.status}</Badge></TableCell>
                     <TableCell className="text-right font-medium">{formatCurrency(invoice.totalAmount)}</TableCell>
-                    <TableCell>
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild><Button size="icon" variant="ghost"><MoreHorizontal/></Button></DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                            <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                            <DropdownMenuSeparator/>
-                            {invoice.status === 'Draft' && <DropdownMenuItem onSelect={() => handleStatusUpdate(invoice.id, 'Sent')}><Send className="mr-2"/>Mark as Sent</DropdownMenuItem>}
-                            {invoice.status === 'Sent' && <DropdownMenuItem onSelect={() => handleStatusUpdate(invoice.id, 'Paid')}><CheckCircle className="mr-2"/>Mark as Paid</DropdownMenuItem>}
-                            {invoice.status !== 'Void' && invoice.status !== 'Paid' && <DropdownMenuItem className="text-destructive" onSelect={() => handleStatusUpdate(invoice.id, 'Void')}><X className="mr-2"/>Void Invoice</DropdownMenuItem>}
-                        </DropdownMenuContent>
-                      </DropdownMenu>
+                    <TableCell className="text-right">
+                       <Button asChild variant="outline" size="sm">
+                          <Link href={`/invoices/${invoice.id}`}>View Details</Link>
+                        </Button>
                     </TableCell>
                 </TableRow>
               )))
