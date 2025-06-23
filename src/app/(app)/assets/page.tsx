@@ -114,6 +114,25 @@ const formatCurrency = (value: number) => {
 };
 
 /**
+ * Determines the maintenance status of an asset based on its next maintenance date.
+ * This is safe to use on both server and client, but will give client-local time,
+ * so it's best used inside a useEffect for indicators.
+ */
+const getMaintenanceStatus = (maintenanceDate?: Timestamp): 'ok' | 'upcoming' | 'overdue' => {
+  if (!maintenanceDate) {
+    return 'ok';
+  }
+  const date = maintenanceDate.toDate();
+  if (isPast(date)) {
+    return 'overdue';
+  }
+  if (isFuture(date) && differenceInDays(date, new Date()) <= 30) {
+    return 'upcoming';
+  }
+  return 'ok';
+};
+
+/**
  * A client-side component to safely render maintenance status without causing hydration errors.
  * It uses useEffect to calculate the status only after the initial client render.
  */
@@ -121,19 +140,8 @@ function MaintenanceStatusIndicator({ maintenanceDate }: { maintenanceDate?: Tim
   const [status, setStatus] = React.useState<'ok' | 'upcoming' | 'overdue'>('ok');
 
   useEffect(() => {
-    if (!maintenanceDate) {
-      setStatus('ok');
-      return;
-    }
-    const date = maintenanceDate.toDate();
     // This logic now runs only on the client, avoiding server-client mismatch
-    if (isPast(date)) {
-      setStatus('overdue');
-    } else if (isFuture(date) && differenceInDays(date, new Date()) <= 30) {
-      setStatus('upcoming');
-    } else {
-      setStatus('ok');
-    }
+    setStatus(getMaintenanceStatus(maintenanceDate));
   }, [maintenanceDate]);
 
   if (status === 'ok') {
@@ -198,17 +206,25 @@ export default function AssetsPage() {
   const projectMap = useMemo(() => new Map(projects.map(p => [p.id, p.name])), [projects]);
 
   const filteredAssets = useMemo(() => {
-    return assets.filter(asset => {
+    const baseFiltered = assets.filter(asset => {
         const lowercasedTerm = searchTerm.toLowerCase();
         const matchesSearch = !searchTerm || asset.name.toLowerCase().includes(lowercasedTerm);
         const matchesCategory = categoryFilter === 'All' || asset.category === categoryFilter;
         const matchesStatus = statusFilter === 'All' || asset.status === statusFilter;
-        
-        // Temporarily disable maintenance filter from main filter logic
-        // as the status is now determined on the client
         return matchesSearch && matchesCategory && matchesStatus;
     });
-  }, [assets, searchTerm, categoryFilter, statusFilter]);
+
+    if (maintenanceFilter === 'All' || !isClient) {
+        return baseFiltered;
+    }
+    
+    return baseFiltered.filter(asset => {
+        const status = getMaintenanceStatus(asset.nextMaintenanceDate);
+        if (maintenanceFilter === 'Upcoming' && status === 'upcoming') return true;
+        if (maintenanceFilter === 'Overdue' && status === 'overdue') return true;
+        return false;
+    });
+  }, [assets, searchTerm, categoryFilter, statusFilter, maintenanceFilter, isClient]);
 
   const form = useForm<AssetFormValues>({
     resolver: zodResolver(assetFormSchema),
