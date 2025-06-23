@@ -28,6 +28,7 @@ import {
   History,
   Wrench,
   ClipboardCheck,
+  Receipt,
 } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
@@ -65,6 +66,7 @@ const menuItems = [
   { href: '/material-requests', label: 'Material Requests', icon: ClipboardList },
   { href: '/clients', label: 'Clients & Sales', icon: Contact },
   { href: '/financials', label: 'Financials', icon: DollarSign },
+  { href: '/invoices', label: 'Invoicing', icon: Receipt },
   { href: '/reports', label: 'Reports', icon: BarChart3 },
   { href: '/activity-log', label: 'Activity Log', icon: History },
   { href: '/iso-compliance', label: 'ISO Compliance', icon: CheckSquare },

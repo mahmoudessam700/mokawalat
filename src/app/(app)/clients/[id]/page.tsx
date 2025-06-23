@@ -7,7 +7,7 @@ import { firestore } from '@/lib/firebase';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
-import { ArrowLeft, User, Phone, Mail, PlusCircle, Loader2, MessageSquare, Briefcase, PhoneCall, MailIcon, Users, NotepadText, Lightbulb, Sparkles, AlertCircle, FileText, Trash2, DollarSign, ExternalLink } from 'lucide-react';
+import { ArrowLeft, User, Phone, Mail, PlusCircle, Loader2, MessageSquare, Briefcase, PhoneCall, MailIcon, Users, NotepadText, Lightbulb, Sparkles, AlertCircle, FileText, Trash2, DollarSign, ExternalLink, Receipt } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import {
@@ -39,6 +39,7 @@ import React from 'react';
 type ClientStatus = 'Lead' | 'Active' | 'Inactive';
 type InteractionType = 'Call' | 'Email' | 'Meeting' | 'Note';
 type ProjectStatus = 'In Progress' | 'Planning' | 'Completed' | 'On Hold';
+type InvoiceStatus = 'Draft' | 'Sent' | 'Paid' | 'Void';
 
 type Client = {
   id: string;
@@ -77,8 +78,18 @@ type Project = {
   name: string;
   status: ProjectStatus;
   budget: number;
+  progress?: number;
+  startDate: Timestamp;
 };
 
+type Invoice = {
+  id: string;
+  invoiceNumber: string;
+  totalAmount: number;
+  issueDate: Timestamp;
+  dueDate: Timestamp;
+  status: InvoiceStatus;
+};
 
 const statusVariant: { [key in ClientStatus]: 'default' | 'secondary' | 'destructive' } = {
   Lead: 'default',
@@ -93,6 +104,13 @@ const projectStatusVariant: {
   Planning: 'default',
   Completed: 'outline',
   'On Hold': 'destructive',
+};
+
+const invoiceStatusVariant: { [key in InvoiceStatus]: 'default' | 'secondary' | 'destructive' | 'outline' } = {
+  Draft: 'outline',
+  Sent: 'default',
+  Paid: 'secondary',
+  Void: 'destructive',
 };
 
 const interactionIcons: { [key in InteractionType]: React.ReactNode } = {
@@ -212,6 +230,7 @@ export default function ClientDetailPage({ params }: { params: { id: string } })
   const [contracts, setContracts] = useState<Contract[]>([]);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [projects, setProjects] = useState<Project[]>([]);
+  const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isInteractionFormOpen, setIsInteractionFormOpen] = useState(false);
@@ -266,6 +285,13 @@ export default function ClientDetailPage({ params }: { params: { id: string } })
         setProjects(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Project)));
     }, (err) => {
         console.error('Error fetching projects for client:', err);
+    }));
+    
+    const invoicesQuery = query(collection(firestore, 'invoices'), where('clientId', '==', clientId), orderBy('issueDate', 'desc'));
+    unsubscribes.push(onSnapshot(invoicesQuery, (snapshot) => {
+        setInvoices(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Invoice)));
+    }, (err) => {
+        console.error('Error fetching invoices:', err);
     }));
 
     const timer = setTimeout(() => setIsLoading(false), 1500);
@@ -387,6 +413,7 @@ export default function ClientDetailPage({ params }: { params: { id: string } })
             <TabsList>
                 <TabsTrigger value="overview">Overview</TabsTrigger>
                 <TabsTrigger value="projects">Projects</TabsTrigger>
+                <TabsTrigger value="invoices">Invoices</TabsTrigger>
                 <TabsTrigger value="interactions">Interactions</TabsTrigger>
                 <TabsTrigger value="contracts">Contracts</TabsTrigger>
                 <TabsTrigger value="financials">Financials</TabsTrigger>
@@ -451,6 +478,37 @@ export default function ClientDetailPage({ params }: { params: { id: string } })
                             <div className="flex flex-col items-center justify-center gap-2 py-8 text-center text-muted-foreground">
                                 <Briefcase className="size-12" />
                                 <p>No projects are linked to this client yet.</p>
+                            </div>
+                        )}
+                    </CardContent>
+                </Card>
+            </TabsContent>
+            <TabsContent value="invoices" className="pt-4">
+                <Card>
+                    <CardHeader>
+                        <CardTitle>Invoices</CardTitle>
+                        <CardDescription>All invoices issued to this client.</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        {invoices.length > 0 ? (
+                            <Table>
+                                <TableHeader><TableRow><TableHead>Invoice #</TableHead><TableHead>Issue Date</TableHead><TableHead>Due Date</TableHead><TableHead>Status</TableHead><TableHead className="text-right">Amount</TableHead></TableRow></TableHeader>
+                                <TableBody>
+                                    {invoices.map(invoice => (
+                                        <TableRow key={invoice.id}>
+                                            <TableCell className="font-mono">{invoice.invoiceNumber}</TableCell>
+                                            <TableCell>{format(invoice.issueDate.toDate(), 'PPP')}</TableCell>
+                                            <TableCell>{format(invoice.dueDate.toDate(), 'PPP')}</TableCell>
+                                            <TableCell><Badge variant={invoiceStatusVariant[invoice.status]}>{invoice.status}</Badge></TableCell>
+                                            <TableCell className="text-right font-medium">{formatCurrency(invoice.totalAmount)}</TableCell>
+                                        </TableRow>
+                                    ))}
+                                </TableBody>
+                            </Table>
+                        ) : (
+                            <div className="flex flex-col items-center justify-center gap-2 py-8 text-center text-muted-foreground">
+                                <Receipt className="size-12" />
+                                <p>No invoices found for this client.</p>
                             </div>
                         )}
                     </CardContent>

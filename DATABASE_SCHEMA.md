@@ -214,6 +214,26 @@ A ledger of all financial transactions.
     -   `purchaseOrderId` (string, optional)
     -   `createdAt` (Timestamp)
 
+### `invoices`
+
+Tracks all client invoices.
+
+-   **Document ID**: Auto-generated
+-   **Fields**:
+    -   `invoiceNumber` (string): A unique, sequential identifier for the invoice.
+    -   `clientId` (string): A reference to the `clients` collection document ID.
+    -   `projectId` (string, optional): A reference to the `projects` collection document ID.
+    -   `issueDate` (Timestamp): The date the invoice was issued.
+    -   `dueDate` (Timestamp): The date the payment is due.
+    -   `totalAmount` (number): The total amount of the invoice, calculated from line items.
+    -   `status` (string): The invoice status (`Draft`, `Sent`, `Paid`, `Void`).
+    -   `lineItems` (array of maps): An array of items being billed.
+        -   `description` (string)
+        -   `quantity` (number)
+        -   `unitPrice` (number)
+    -   `createdAt` (Timestamp)
+
+
 ### `accounts`
 
 Manages company bank accounts.
