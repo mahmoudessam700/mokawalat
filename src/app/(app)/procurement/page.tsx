@@ -89,7 +89,7 @@ type PurchaseOrder = {
 };
 
 type Project = { id: string; name: string; };
-type Supplier = { id: string; name: string; };
+type Supplier = { id: string; name: string; rating?: number; };
 type InventoryItem = { id: string; name: string };
 
 const statusVariant: { [key in RequestStatus]: 'default' | 'secondary' | 'destructive' | 'outline' } = {
@@ -110,6 +110,13 @@ const procurementFormSchema = z.object({
 type ProcurementFormValues = z.infer<typeof procurementFormSchema>;
 
 const requestStatuses: RequestStatus[] = ['Pending', 'Approved', 'Rejected', 'Ordered', 'Received'];
+
+const renderRating = (rating?: number) => {
+  if (!rating || rating === 0) return '';
+  const filledStars = '★'.repeat(rating);
+  const emptyStars = '☆'.repeat(5 - rating);
+  return ` ${filledStars}${emptyStars}`;
+};
 
 export default function ProcurementPage() {
   const [requests, setRequests] = useState<PurchaseOrder[]>([]);
@@ -325,7 +332,9 @@ export default function ProcurementPage() {
                             </FormControl>
                             <SelectContent>
                             {suppliers.map(supplier => (
-                                <SelectItem key={supplier.id} value={supplier.id}>{supplier.name}</SelectItem>
+                                <SelectItem key={supplier.id} value={supplier.id}>
+                                    {supplier.name}{renderRating(supplier.rating)}
+                                </SelectItem>
                             ))}
                             </SelectContent>
                         </Select>
