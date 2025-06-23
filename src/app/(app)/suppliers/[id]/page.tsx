@@ -36,7 +36,7 @@ import { SupplierAiSummary } from './supplier-ai-summary';
 
 
 type SupplierStatus = 'Active' | 'Inactive';
-type RequestStatus = 'Pending' | 'Approved' | 'Rejected' | 'Ordered';
+type RequestStatus = 'Pending' | 'Approved' | 'Rejected' | 'Ordered' | 'Received';
 
 type Supplier = {
   id: string;
@@ -87,6 +87,7 @@ const requestStatusVariant: { [key in RequestStatus]: 'default' | 'secondary' | 
   Pending: 'default',
   Approved: 'secondary',
   Ordered: 'outline',
+  Received: 'secondary',
   Rejected: 'destructive',
 };
 
