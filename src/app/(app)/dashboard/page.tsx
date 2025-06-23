@@ -21,6 +21,8 @@ import {
   ShoppingCart,
   ClipboardList,
   Truck,
+  Wrench,
+  AlertCircle,
 } from 'lucide-react';
 import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from 'recharts';
 import {
@@ -41,7 +43,7 @@ import {
 } from 'firebase/firestore';
 import { firestore } from '@/lib/firebase';
 import { Skeleton } from '@/components/ui/skeleton';
-import { startOfMonth, endOfMonth, formatDistanceToNow } from 'date-fns';
+import { startOfMonth, endOfMonth, formatDistanceToNow, addDays, isPast } from 'date-fns';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
@@ -81,6 +83,12 @@ type Activity = {
   link: string;
   timestamp: Timestamp;
 };
+type Asset = {
+    id: string;
+    name: string;
+    nextMaintenanceDate: Timestamp;
+};
+
 
 const formatCurrency = (value: number) => {
   const formatter = new Intl.NumberFormat('en-US', {
@@ -119,6 +127,7 @@ export default function DashboardPage() {
   const [inventoryTasks, setInventoryTasks] = useState<PendingTask[]>([]);
   const [materialRequestTasks, setMaterialRequestTasks] = useState<PendingTask[]>([]);
   const [recentActivities, setRecentActivities] = useState<Activity[]>([]);
+  const [maintenanceTasks, setMaintenanceTasks] = useState<Asset[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   const pendingTasks = useMemo(
@@ -283,6 +292,19 @@ export default function DashboardPage() {
         setRecentActivities(activitiesData);
     }));
 
+    const qAssets = query(collection(firestore, 'assets'), where('nextMaintenanceDate', '!=', null), orderBy('nextMaintenanceDate', 'asc'));
+    unsubscribes.push(onSnapshot(qAssets, (snapshot) => {
+        const now = new Date();
+        const thirtyDaysFromNow = addDays(now, 30);
+        const maintenance = snapshot.docs
+            .map(doc => ({ id: doc.id, ...doc.data() } as Asset))
+            .filter(asset => {
+                const maintenanceDate = asset.nextMaintenanceDate.toDate();
+                return isPast(maintenanceDate) || (maintenanceDate >= now && maintenanceDate <= thirtyDaysFromNow);
+            });
+        setMaintenanceTasks(maintenance);
+    }));
+
 
     const timer = setTimeout(() => setIsLoading(false), 1500);
     unsubscribes.push(() => clearTimeout(timer));
@@ -428,16 +450,16 @@ export default function DashboardPage() {
           </CardContent>
         </Card>
       </div>
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
         <Card className="lg:col-span-2">
           <CardHeader>
             <CardTitle>Project Status Overview</CardTitle>
           </CardHeader>
           <CardContent className="pl-2">
             {isLoading ? (
-              <Skeleton className="h-[250px] w-full" />
+              <Skeleton className="h-[300px] w-full" />
             ) : (
-              <ChartContainer config={chartConfig} className="h-[250px] w-full">
+              <ChartContainer config={chartConfig} className="h-[300px] w-full">
                 <BarChart accessibilityLayer data={projectStatusData}>
                   <CartesianGrid vertical={false} />
                   <XAxis
@@ -483,7 +505,7 @@ export default function DashboardPage() {
               </div>
             ) : pendingTasks.length > 0 ? (
               <div className="space-y-4">
-                {pendingTasks.slice(0, 3).map((task) => (
+                {pendingTasks.slice(0, 5).map((task) => (
                   <div
                     key={task.id}
                     className="flex items-center justify-between"
@@ -499,9 +521,9 @@ export default function DashboardPage() {
                     </Button>
                   </div>
                 ))}
-                {pendingTasks.length > 3 && (
+                {pendingTasks.length > 5 && (
                   <p className="text-sm text-muted-foreground pt-2">
-                    And {pendingTasks.length - 3} more...
+                    And {pendingTasks.length - 5} more...
                   </p>
                 )}
               </div>
@@ -514,9 +536,52 @@ export default function DashboardPage() {
             )}
           </CardContent>
         </Card>
-      </div>
-       <div className="grid grid-cols-1 gap-4">
         <Card>
+          <CardHeader>
+            <CardTitle>Upcoming Maintenance</CardTitle>
+            <CardDescription>
+                Assets that require maintenance soon or are overdue.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+             {isLoading ? (
+              <div className="space-y-4">
+                <Skeleton className="h-10 w-full" />
+                <Skeleton className="h-10 w-full" />
+                <Skeleton className="h-10 w-full" />
+              </div>
+            ) : maintenanceTasks.length > 0 ? (
+                <div className="space-y-4">
+                    {maintenanceTasks.slice(0, 5).map((asset) => {
+                        const isOverdue = isPast(asset.nextMaintenanceDate.toDate());
+                        return (
+                           <div key={asset.id} className="flex items-center justify-between">
+                                <div>
+                                <p className="font-semibold">{asset.name}</p>
+                                <p className={cn("text-sm", isOverdue ? 'text-destructive' : 'text-muted-foreground')}>
+                                    {formatDistanceToNow(asset.nextMaintenanceDate.toDate(), { addSuffix: true })}
+                                </p>
+                                </div>
+                                <AlertCircle className={cn('size-5', isOverdue ? 'text-destructive' : 'text-yellow-500')} />
+                            </div>
+                        )
+                    })}
+                    {maintenanceTasks.length > 5 && (
+                        <p className="text-sm text-muted-foreground pt-2">
+                            And {maintenanceTasks.length - 5} more...
+                        </p>
+                    )}
+                </div>
+            ) : (
+                 <div className="flex h-24 flex-col items-center justify-center text-center">
+                    <p className="text-sm text-muted-foreground">
+                        No upcoming maintenance.
+                    </p>
+                </div>
+            )}
+          </CardContent>
+        </Card>
+        <Card className="lg:col-span-2">
           <CardHeader>
             <CardTitle>Recent Activity</CardTitle>
             <CardDescription>

@@ -18,7 +18,7 @@ import {
   DropdownMenuLabel,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Loader2, MoreHorizontal, PlusCircle, Search, Trash2, Wrench } from 'lucide-react';
+import { Loader2, MoreHorizontal, PlusCircle, Search, Trash2, Wrench, AlertCircle } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   Dialog,
@@ -58,8 +58,10 @@ import { collection, onSnapshot, query, orderBy, Timestamp } from 'firebase/fire
 import { firestore } from '@/lib/firebase';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useAuth } from '@/hooks/use-auth';
-import { format } from 'date-fns';
+import { format, isPast, isFuture, differenceInDays } from 'date-fns';
 import Link from 'next/link';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { cn } from '@/lib/utils';
 
 type AssetStatus = 'Available' | 'In Use' | 'Under Maintenance' | 'Decommissioned';
 
@@ -109,6 +111,15 @@ const formatCurrency = (value: number) => {
     return `LE ${formatter.format(value)}`;
 };
 
+const getMaintenanceStatus = (maintenanceDate?: Timestamp): 'ok' | 'upcoming' | 'overdue' => {
+    if (!maintenanceDate) return 'ok';
+    const date = maintenanceDate.toDate();
+    if (isPast(date)) return 'overdue';
+    if (isFuture(date) && differenceInDays(date, new Date()) <= 30) return 'upcoming';
+    return 'ok';
+};
+
+
 export default function AssetsPage() {
   const [assets, setAssets] = useState<Asset[]>([]);
   const [projects, setProjects] = useState<Project[]>([]);
@@ -124,6 +135,7 @@ export default function AssetsPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('All');
   const [statusFilter, setStatusFilter] = useState('All');
+  const [maintenanceFilter, setMaintenanceFilter] = useState('All');
 
   useEffect(() => {
     const qAssets = query(collection(firestore, 'assets'), orderBy('name', 'asc'));
@@ -151,9 +163,15 @@ export default function AssetsPage() {
         const matchesSearch = !searchTerm || asset.name.toLowerCase().includes(lowercasedTerm);
         const matchesCategory = categoryFilter === 'All' || asset.category === categoryFilter;
         const matchesStatus = statusFilter === 'All' || asset.status === statusFilter;
-        return matchesSearch && matchesCategory && matchesStatus;
+        
+        const maintenanceStatus = getMaintenanceStatus(asset.nextMaintenanceDate);
+        const matchesMaintenance = maintenanceFilter === 'All'
+            || (maintenanceFilter === 'Upcoming' && maintenanceStatus === 'upcoming')
+            || (maintenanceFilter === 'Overdue' && maintenanceStatus === 'overdue');
+
+        return matchesSearch && matchesCategory && matchesStatus && matchesMaintenance;
     });
-  }, [assets, searchTerm, categoryFilter, statusFilter]);
+  }, [assets, searchTerm, categoryFilter, statusFilter, maintenanceFilter]);
 
   const form = useForm<AssetFormValues>({
     resolver: zodResolver(assetFormSchema),
@@ -222,7 +240,7 @@ export default function AssetsPage() {
   }
 
   return (
-    <>
+    <TooltipProvider>
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
@@ -282,7 +300,8 @@ export default function AssetsPage() {
                 <Input type="search" placeholder="Search by name..." className="w-full pl-8 md:w-[200px]" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
               </div>
               <Select value={categoryFilter} onValueChange={setCategoryFilter}><SelectTrigger className="w-full md:w-[180px]"><SelectValue placeholder="Filter by category" /></SelectTrigger><SelectContent><SelectItem value="All">All Categories</SelectItem>{assetCategories.map(cat => (<SelectItem key={cat} value={cat}>{cat}</SelectItem>))}</SelectContent></Select>
-              <Select value={statusFilter} onValueChange={setStatusFilter}><SelectTrigger className="w-full md:w-[180px]"><SelectValue placeholder="Filter by status" /></SelectTrigger><SelectContent><SelectItem value="All">All Statuses</SelectItem>{Object.keys(statusVariant).map(s => (<SelectItem key={s} value={s}>{s}</SelectItem>))}</SelectContent></Select>
+              <Select value={statusFilter} onValueChange={setStatusFilter}><SelectTrigger className="w-full md:w-[150px]"><SelectValue placeholder="Filter by status" /></SelectTrigger><SelectContent><SelectItem value="All">All Statuses</SelectItem>{Object.keys(statusVariant).map(s => (<SelectItem key={s} value={s}>{s}</SelectItem>))}</SelectContent></Select>
+               <Select value={maintenanceFilter} onValueChange={setMaintenanceFilter}><SelectTrigger className="w-full md:w-[180px]"><SelectValue placeholder="Maintenance Status" /></SelectTrigger><SelectContent><SelectItem value="All">All Maintenance</SelectItem><SelectItem value="Upcoming">Upcoming</SelectItem><SelectItem value="Overdue">Overdue</SelectItem></SelectContent></Select>
             </div>
           </div>
         </CardHeader>
@@ -311,12 +330,28 @@ export default function AssetsPage() {
                   </TableRow>
                 ))
               ) : filteredAssets.length > 0 ? (
-                filteredAssets.map((asset) => (
+                filteredAssets.map((asset) => {
+                  const maintenanceStatus = getMaintenanceStatus(asset.nextMaintenanceDate);
+                  return (
                   <TableRow key={asset.id}>
                     <TableCell className="font-medium">{asset.name}</TableCell>
                     <TableCell>{asset.category}</TableCell>
                     <TableCell>{asset.currentProjectId ? <Link href={`/projects/${asset.currentProjectId}`} className="hover:underline">{projectMap.get(asset.currentProjectId) || 'N/A'}</Link> : 'N/A'}</TableCell>
-                    <TableCell className="hidden md:table-cell">{asset.nextMaintenanceDate ? format(asset.nextMaintenanceDate.toDate(), 'PPP') : 'N/A'}</TableCell>
+                    <TableCell className="hidden md:table-cell">
+                        <div className="flex items-center gap-2">
+                           <span>{asset.nextMaintenanceDate ? format(asset.nextMaintenanceDate.toDate(), 'PPP') : 'N/A'}</span>
+                           {maintenanceStatus !== 'ok' && (
+                                <Tooltip>
+                                    <TooltipTrigger>
+                                        <AlertCircle className={cn('size-4', maintenanceStatus === 'overdue' ? 'text-destructive' : 'text-yellow-500')} />
+                                    </TooltipTrigger>
+                                    <TooltipContent>
+                                        <p>Maintenance {maintenanceStatus}</p>
+                                    </TooltipContent>
+                                </Tooltip>
+                           )}
+                        </div>
+                    </TableCell>
                     <TableCell><Badge variant={statusVariant[asset.status]}>{asset.status}</Badge></TableCell>
                     <TableCell className="text-right">
                       {profile?.role === 'admin' && (
@@ -331,7 +366,7 @@ export default function AssetsPage() {
                       )}
                     </TableCell>
                   </TableRow>
-                ))
+                )})
               ) : (
                 <TableRow>
                   <TableCell colSpan={6} className="h-24 text-center">
@@ -359,6 +394,6 @@ export default function AssetsPage() {
             </AlertDialogFooter>
         </AlertDialogContent>
     </AlertDialog>
-    </>
+    </TooltipProvider>
   );
 }
