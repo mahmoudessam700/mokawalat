@@ -286,7 +286,7 @@ const roadmapPhases = [
                 "Write clear inline comments in the code to explain functions and complex logic.",
                 "Create detailed README files for each part of the project (Frontend, Backend, Database Rules).",
             ],
-            completed: false,
+            completed: true,
         },
         {
             title: "6.2. Database Design Documentation:",

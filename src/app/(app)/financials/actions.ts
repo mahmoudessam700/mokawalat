@@ -1,5 +1,10 @@
 
 'use server';
+/**
+ * @fileoverview Server actions for the Financials module.
+ * This file contains functions for adding, updating, and deleting financial transactions.
+ * It handles data validation, database interactions with Firestore, and revalidates relevant Next.js caches.
+ */
 
 import { firestore } from '@/lib/firebase';
 import { collection, addDoc, serverTimestamp, doc, deleteDoc, updateDoc } from 'firebase/firestore';
@@ -22,6 +27,11 @@ const transactionFormSchema = z.object({
 
 export type TransactionFormValues = z.infer<typeof transactionFormSchema>;
 
+/**
+ * Adds a new financial transaction to Firestore.
+ * @param {TransactionFormValues} values - The transaction data, validated against transactionFormSchema.
+ * @returns {Promise<{message: string, errors: object|null}>} An object containing a success or error message.
+ */
 export async function addTransaction(values: TransactionFormValues) {
   const validatedFields = transactionFormSchema.safeParse(values);
 
@@ -61,6 +71,12 @@ export async function addTransaction(values: TransactionFormValues) {
   }
 }
 
+/**
+ * Updates an existing financial transaction in Firestore.
+ * @param {string} transactionId - The ID of the transaction to update.
+ * @param {TransactionFormValues} values - The new transaction data.
+ * @returns {Promise<{message: string, errors: object|null}>} An object containing a success or error message.
+ */
 export async function updateTransaction(transactionId: string, values: TransactionFormValues) {
   if (!transactionId) {
     return { message: 'Transaction ID is required.', errors: { _server: ['Transaction ID not provided.'] } };
@@ -96,6 +112,11 @@ export async function updateTransaction(transactionId: string, values: Transacti
   }
 }
 
+/**
+ * Deletes a financial transaction from Firestore.
+ * @param {string} transactionId - The ID of the transaction to delete.
+ * @returns {Promise<{success: boolean, message: string}>} An object indicating success or failure.
+ */
 export async function deleteTransaction(transactionId: string) {
   if (!transactionId) {
     return { success: false, message: 'Transaction ID is required.' };

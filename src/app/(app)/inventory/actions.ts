@@ -1,5 +1,10 @@
 
 'use server';
+/**
+ * @fileoverview Server actions for the Inventory module.
+ * This file contains functions for adding, updating, deleting, and adjusting stock for inventory items.
+ * It handles data validation, database interactions with Firestore (including transactions), and cache revalidation.
+ */
 
 import { firestore } from '@/lib/firebase';
 import { collection, addDoc, doc, deleteDoc, updateDoc, runTransaction, serverTimestamp } from 'firebase/firestore';
@@ -16,6 +21,11 @@ const inventoryFormSchema = z.object({
 
 export type InventoryFormValues = z.infer<typeof inventoryFormSchema>;
 
+/**
+ * Adds a new item to the inventory.
+ * @param {InventoryFormValues} values - The data for the new inventory item.
+ * @returns {Promise<{message: string, errors: object|null}>} An object containing a success or error message.
+ */
 export async function addInventoryItem(values: InventoryFormValues) {
   const validatedFields = inventoryFormSchema.safeParse(values);
 
@@ -48,6 +58,12 @@ export async function addInventoryItem(values: InventoryFormValues) {
   }
 }
 
+/**
+ * Updates an existing inventory item.
+ * @param {string} itemId - The ID of the item to update.
+ * @param {InventoryFormValues} values - The new data for the inventory item.
+ * @returns {Promise<{message: string, errors: object|null}>} An object containing a success or error message.
+ */
 export async function updateInventoryItem(itemId: string, values: InventoryFormValues) {
   if (!itemId) {
     return { message: 'Item ID is required.', errors: { _server: ['Item ID not provided.'] } };
@@ -76,6 +92,11 @@ export async function updateInventoryItem(itemId: string, values: InventoryFormV
   }
 }
 
+/**
+ * Deletes an inventory item from Firestore.
+ * @param {string} itemId - The ID of the item to delete.
+ * @returns {Promise<{success: boolean, message: string}>} An object indicating success or failure.
+ */
 export async function deleteInventoryItem(itemId: string) {
   if (!itemId) {
     return { success: false, message: 'Item ID is required.' };
@@ -98,6 +119,12 @@ const adjustStockFormSchema = z.object({
 
 export type AdjustStockFormValues = z.infer<typeof adjustStockFormSchema>;
 
+/**
+ * Adjusts the stock quantity of an inventory item within a Firestore transaction.
+ * @param {string} itemId - The ID of the item to adjust.
+ * @param {AdjustStockFormValues} values - The adjustment value (can be positive or negative).
+ * @returns {Promise<{message: string, errors: object|null}>} An object containing a success or error message.
+ */
 export async function adjustStock(itemId: string, values: AdjustStockFormValues) {
   if (!itemId) {
     return { message: 'Item ID is required.', errors: { _server: ['Item ID not provided.'] } };

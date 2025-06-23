@@ -1,5 +1,11 @@
 
 'use server';
+/**
+ * @fileoverview Server actions for the Projects module.
+ * This file contains the business logic for creating, updating, and deleting projects,
+ * managing tasks, team assignments, documents, and daily logs. It also interfaces
+ * with AI flows for risk analysis and log summarization.
+ */
 
 import { firestore, storage } from '@/lib/firebase';
 import { collection, addDoc, serverTimestamp, doc, deleteDoc, updateDoc, getDoc, setDoc, runTransaction, getDocs } from 'firebase/firestore';
@@ -48,6 +54,10 @@ export interface AiAnalysisState {
     error: boolean;
 }
 
+/**
+ * Recalculates and updates a project's progress percentage based on completed tasks.
+ * @param {string} projectId - The ID of the project to update.
+ */
 async function recalculateProjectProgress(projectId: string) {
   const tasksRef = collection(firestore, 'projects', projectId, 'tasks');
   const tasksSnapshot = await getDocs(tasksRef);
@@ -67,6 +77,11 @@ async function recalculateProjectProgress(projectId: string) {
   await updateDoc(projectRef, { progress });
 }
 
+/**
+ * Adds a new project to Firestore.
+ * @param {ProjectFormValues} values - The project data from the form.
+ * @returns {Promise<{message: string, errors: object|null}>} An object with a success or error message.
+ */
 export async function addProject(values: ProjectFormValues) {
   const validatedFields = projectFormSchema.safeParse(values);
 
@@ -106,6 +121,12 @@ export async function addProject(values: ProjectFormValues) {
   }
 }
 
+/**
+ * Updates an existing project in Firestore.
+ * @param {string} projectId - The ID of the project to update.
+ * @param {ProjectFormValues} values - The new project data.
+ * @returns {Promise<{message: string, errors: object|null}>} An object with a success or error message.
+ */
 export async function updateProject(projectId: string, values: ProjectFormValues) {
     if (!projectId) {
         return { message: 'Project ID is required.', errors: { _server: ['Project ID not provided.'] } };
@@ -137,6 +158,11 @@ export async function updateProject(projectId: string, values: ProjectFormValues
 }
 
 
+/**
+ * Deletes a project from Firestore. Note: This does not delete sub-collections like tasks or documents.
+ * @param {string} projectId - The ID of the project to delete.
+ * @returns {Promise<{success: boolean, message: string}>} An object indicating success or failure.
+ */
 export async function deleteProject(projectId: string) {
   if (!projectId) {
     return { success: false, message: 'Project ID is required.' };
@@ -152,6 +178,12 @@ export async function deleteProject(projectId: string) {
   }
 }
 
+/**
+ * Assigns or updates the team members for a project.
+ * @param {string} projectId - The ID of the project.
+ * @param {AssignTeamFormValues} values - An object containing an array of employee IDs.
+ * @returns {Promise<{message: string, errors: object|null}>} An object with a success or error message.
+ */
 export async function assignTeamToProject(projectId: string, values: AssignTeamFormValues) {
     if (!projectId) {
         return { message: 'Project ID is required.', errors: { _server: ['Project ID not provided.'] } };
@@ -179,6 +211,11 @@ export async function assignTeamToProject(projectId: string, values: AssignTeamF
     }
 }
 
+/**
+ * Fetches project data and runs it through an AI flow to analyze potential risks.
+ * @param {string} projectId - The ID of the project to analyze.
+ * @returns {Promise<AiAnalysisState>} The state object containing the analysis data or an error.
+ */
 export async function getProjectRiskAnalysis(projectId: string): Promise<AiAnalysisState> {
   if (!projectId) {
     return { message: 'Project ID is required.', data: null, error: true };
@@ -225,6 +262,13 @@ export async function getProjectRiskAnalysis(projectId: string): Promise<AiAnaly
   }
 }
 
+/**
+ * Adds a new daily log entry to a project, optionally with a photo.
+ * @param {string} projectId - The ID of the project.
+ * @param {{uid: string, email: string}} author - The user creating the log.
+ * @param {FormData} formData - The form data containing the notes and optional photo.
+ * @returns {Promise<{message: string, errors: object|null}>} An object with a success or error message.
+ */
 export async function addDailyLog(projectId: string, author: { uid: string, email: string }, formData: FormData) {
     if (!projectId) {
         return { message: 'Project ID is required.', errors: { _server: ['Project ID is missing.'] } };
@@ -292,6 +336,11 @@ export interface AiLogSummaryState {
     error: boolean;
 }
 
+/**
+ * Generates an AI-powered summary of a project's daily logs.
+ * @param {string} projectId - The ID of the project to summarize.
+ * @returns {Promise<AiLogSummaryState>} The state object containing the summary data or an error.
+ */
 export async function getDailyLogSummary(projectId: string): Promise<AiLogSummaryState> {
   if (!projectId) {
     return { message: 'Project ID is required.', data: null, error: true };
@@ -329,6 +378,12 @@ const documentFormSchema = z.object({
 
 export type DocumentFormValues = z.infer<typeof documentFormSchema>;
 
+/**
+ * Uploads a document and attaches it to a project.
+ * @param {string} projectId - The ID of the project.
+ * @param {FormData} formData - The form data containing the title and file.
+ * @returns {Promise<{message: string, errors: object|null}>} An object with a success or error message.
+ */
 export async function addProjectDocument(projectId: string, formData: FormData) {
   if (!projectId) {
     return { message: 'Project ID is required.', errors: { _server: ['Project ID is missing.'] } };
@@ -375,6 +430,12 @@ export async function addProjectDocument(projectId: string, formData: FormData) 
   }
 }
 
+/**
+ * Deletes a project document from Firestore and Firebase Storage.
+ * @param {string} projectId - The ID of the project.
+ * @param {string} documentId - The ID of the document to delete.
+ * @returns {Promise<{success: boolean, message: string}>} An object indicating success or failure.
+ */
 export async function deleteProjectDocument(projectId: string, documentId: string) {
   if (!projectId || !documentId) {
     return { success: false, message: 'Project and Document ID are required.' };
@@ -389,6 +450,7 @@ export async function deleteProjectDocument(projectId: string, documentId: strin
         if (docData.filePath) {
             const fileRef = ref(storage, docData.filePath);
             await deleteObject(fileRef).catch(err => {
+                // Log error but don't block deletion of firestore doc
                 console.error("Failed to delete document file from storage:", err);
             });
         }
@@ -403,7 +465,12 @@ export async function deleteProjectDocument(projectId: string, documentId: strin
   }
 }
 
-// Task Management Actions
+/**
+ * Adds a new task to a project's sub-collection.
+ * @param {string} projectId - The ID of the project.
+ * @param {TaskFormValues} values - The task data from the form.
+ * @returns {Promise<{message: string, errors: object|null}>} An object with a success or error message.
+ */
 export async function addTask(projectId: string, values: TaskFormValues) {
     if (!projectId) {
         return { message: 'Project ID is required.', errors: { _server: ['Project ID not provided.'] } };
@@ -431,6 +498,13 @@ export async function addTask(projectId: string, values: TaskFormValues) {
     }
 }
 
+/**
+ * Updates the status of a project task.
+ * @param {string} projectId - The ID of the project.
+ * @param {string} taskId - The ID of the task to update.
+ * @param {'To Do' | 'In Progress' | 'Done'} status - The new status for the task.
+ * @returns {Promise<{success: boolean, message: string}>} An object indicating success or failure.
+ */
 export async function updateTaskStatus(projectId: string, taskId: string, status: 'To Do' | 'In Progress' | 'Done') {
     if (!projectId || !taskId) {
         return { success: false, message: 'Project and Task ID are required.' };
@@ -449,6 +523,12 @@ export async function updateTaskStatus(projectId: string, taskId: string, status
     }
 }
 
+/**
+ * Deletes a task from a project.
+ * @param {string} projectId - The ID of the project.
+ * @param {string} taskId - The ID of the task to delete.
+ * @returns {Promise<{success: boolean, message: string}>} An object indicating success or failure.
+ */
 export async function deleteTask(projectId: string, taskId: string) {
     if (!projectId || !taskId) {
         return { success: false, message: 'Project and Task ID are required.' };
