@@ -1,3 +1,4 @@
+
 'use client';
 
 import {
@@ -17,7 +18,7 @@ import {
   DropdownMenuLabel,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Loader2, MoreHorizontal, PlusCircle, Trash2 } from 'lucide-react';
+import { Loader2, MoreHorizontal, PlusCircle, Search, Trash2 } from 'lucide-react';
 import {
   Card,
   CardContent,
@@ -29,7 +30,6 @@ import {
   Dialog,
   DialogContent,
   DialogDescription,
-  DialogFooter,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
@@ -63,7 +63,7 @@ import {
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { addInventoryItem, deleteInventoryItem, updateInventoryItem } from './actions';
 import { useToast } from '@/hooks/use-toast';
 import { collection, onSnapshot, query, orderBy } from 'firebase/firestore';
@@ -114,6 +114,11 @@ export default function InventoryPage() {
   const [isDeleting, setIsDeleting] = useState(false);
   const { toast } = useToast();
   const { profile } = useAuth();
+  
+  const [searchTerm, setSearchTerm] = useState('');
+  const [categoryFilter, setCategoryFilter] = useState('All');
+  const [warehouseFilter, setWarehouseFilter] = useState('All');
+  const [statusFilter, setStatusFilter] = useState('All');
 
   useEffect(() => {
     const unsubscribes: (() => void)[] = [];
@@ -177,6 +182,17 @@ export default function InventoryPage() {
 
     return () => unsubscribes.forEach(unsub => unsub());
   }, [toast]);
+  
+  const filteredItems = useMemo(() => {
+    return items.filter(item => {
+        const lowercasedTerm = searchTerm.toLowerCase();
+        const matchesSearch = !searchTerm || item.name.toLowerCase().includes(lowercasedTerm);
+        const matchesCategory = categoryFilter === 'All' || item.category === categoryFilter;
+        const matchesWarehouse = warehouseFilter === 'All' || item.warehouse === warehouseFilter;
+        const matchesStatus = statusFilter === 'All' || item.status === statusFilter;
+        return matchesSearch && matchesCategory && matchesWarehouse && matchesStatus;
+    });
+  }, [items, searchTerm, categoryFilter, warehouseFilter, statusFilter]);
 
   const form = useForm<InventoryFormValues>({
     resolver: zodResolver(inventoryFormSchema),
@@ -425,10 +441,57 @@ export default function InventoryPage() {
 
       <Card>
         <CardHeader>
-          <CardTitle>Inventory List</CardTitle>
-          <CardDescription>
-            A list of all items in your inventory.
-          </CardDescription>
+          <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+            <div>
+                <CardTitle>Inventory List</CardTitle>
+                <CardDescription>A list of all items in your inventory.</CardDescription>
+            </div>
+            <div className="flex flex-col items-stretch gap-2 md:flex-row md:items-center">
+                <div className="relative w-full md:w-auto">
+                  <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    type="search"
+                    placeholder="Search by name..."
+                    className="w-full pl-8 md:w-[200px]"
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                  />
+                </div>
+                <Select value={categoryFilter} onValueChange={setCategoryFilter}>
+                    <SelectTrigger className="w-full md:w-[180px]">
+                        <SelectValue placeholder="Filter by category" />
+                    </SelectTrigger>
+                    <SelectContent>
+                        <SelectItem value="All">All Categories</SelectItem>
+                        {categories.map(cat => (
+                            <SelectItem key={cat.id} value={cat.name}>{cat.name}</SelectItem>
+                        ))}
+                    </SelectContent>
+                </Select>
+                 <Select value={warehouseFilter} onValueChange={setWarehouseFilter}>
+                    <SelectTrigger className="w-full md:w-[180px]">
+                        <SelectValue placeholder="Filter by warehouse" />
+                    </SelectTrigger>
+                    <SelectContent>
+                        <SelectItem value="All">All Warehouses</SelectItem>
+                        {warehouses.map(w => (
+                            <SelectItem key={w.id} value={w.name}>{w.name}</SelectItem>
+                        ))}
+                    </SelectContent>
+                </Select>
+                 <Select value={statusFilter} onValueChange={setStatusFilter}>
+                    <SelectTrigger className="w-full md:w-[150px]">
+                        <SelectValue placeholder="Filter by status" />
+                    </SelectTrigger>
+                    <SelectContent>
+                        <SelectItem value="All">All Statuses</SelectItem>
+                        <SelectItem value="In Stock">In Stock</SelectItem>
+                        <SelectItem value="Low Stock">Low Stock</SelectItem>
+                        <SelectItem value="Out of Stock">Out of Stock</SelectItem>
+                    </SelectContent>
+                </Select>
+            </div>
+          </div>
         </CardHeader>
         <CardContent>
           <Table>
@@ -478,8 +541,8 @@ export default function InventoryPage() {
                     </TableCell>
                   </TableRow>
                 ))
-              ) : items.length > 0 ? (
-                items.map((item) => (
+              ) : filteredItems.length > 0 ? (
+                filteredItems.map((item) => (
                   <TableRow key={item.id}>
                     <TableCell className="font-medium">{item.name}</TableCell>
                     <TableCell className="hidden md:table-cell">
@@ -545,7 +608,7 @@ export default function InventoryPage() {
               ) : (
                 <TableRow>
                   <TableCell colSpan={6} className="h-24 text-center">
-                    No items found. Add one to get started.
+                    {items.length > 0 ? "No items match the current filters." : "No items found. Add one to get started."}
                   </TableCell>
                 </TableRow>
               )}
@@ -578,3 +641,5 @@ export default function InventoryPage() {
     </>
   );
 }
+
+    
