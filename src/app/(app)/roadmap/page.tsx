@@ -278,7 +278,7 @@ const roadmapPhases = [
   {
     title: "Phase 6: Documentation",
     objective: "Provide comprehensive and up-to-date documentation for the application, including code, database design, and user manual, to facilitate future maintenance, development, and compliance with ISO 9001 standards.",
-    completed: false,
+    completed: true,
     subTasks: [
         {
             title: "6.1. Code Documentation:",
@@ -303,28 +303,28 @@ const roadmapPhases = [
                 "Include screenshots to illustrate the steps.",
                 "Include a Frequently Asked Questions (FAQ) and troubleshooting section.",
             ],
-            completed: false,
+            completed: true,
         },
         {
             title: "6.4. API Documentation (if any):",
             details: [
                 "If any external or internal APIs are developed, document the endpoints, request methods, parameters, and responses.",
             ],
-            completed: false,
+            completed: true,
         },
         {
             title: "6.5. Deployment Documentation:",
             details: [
                 "Document the steps required to deploy and update the application on production servers.",
             ],
-            completed: false,
+            completed: true,
         },
         {
             title: "6.6. ISO 9001 Compliance Documentation:",
             details: [
                 "Create a separate document that explains how the application's design and processes comply with ISO 9001 requirements, referencing specific features that support each clause of the standard (e.g., how documents are controlled, how processes are tracked).",
             ],
-            completed: false,
+            completed: true,
         }
     ]
   }
