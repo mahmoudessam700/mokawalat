@@ -7,7 +7,7 @@ import { firestore } from '@/lib/firebase';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
-import { ArrowLeft, Briefcase, Calendar, DollarSign, Activity, Users, ShoppingCart, PackagePlus, PackageCheck, PackageX, PackageSearch, Lightbulb, TrendingUp, MapPin, BookText, ExternalLink, FileText, PlusCircle, Trash2, ListChecks, CheckCheck, MoreHorizontal } from 'lucide-react';
+import { ArrowLeft, Briefcase, Calendar, DollarSign, Activity, Users, ShoppingCart, PackagePlus, PackageCheck, PackageX, PackageSearch, Lightbulb, TrendingUp, MapPin, BookText, ExternalLink, FileText, PlusCircle, Trash2, ListChecks, CheckCheck, MoreHorizontal, Contact } from 'lucide-react';
 import { format, formatDistanceToNow } from 'date-fns';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
@@ -54,6 +54,7 @@ export type Project = {
   status: ProjectStatus;
   teamMemberIds?: string[];
   progress?: number;
+  clientId?: string;
 };
 
 type Employee = {
@@ -61,6 +62,11 @@ type Employee = {
     name: string;
     email: string;
     role: string;
+};
+
+type Client = {
+    id: string;
+    name: string;
 };
 
 type Task = {
@@ -175,6 +181,7 @@ type DocumentFormValues = z.infer<typeof documentFormSchema>;
 
 export default function ProjectDetailPage({ params }: { params: { id: string } }) {
   const [project, setProject] = useState<Project | null>(null);
+  const [client, setClient] = useState<Client | null>(null);
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [tasks, setTasks] = useState<Task[]>([]);
   const [procurements, setProcurements] = useState<ProcurementRequest[]>([]);
@@ -206,7 +213,21 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
     const projectRef = doc(firestore, 'projects', projectId);
     unsubscribes.push(onSnapshot(projectRef, (doc) => {
         if (doc.exists()) {
-            setProject({ id: doc.id, ...doc.data() } as Project);
+            const projectData = { id: doc.id, ...doc.data() } as Project;
+            setProject(projectData);
+
+            if (projectData.clientId) {
+                const clientRef = doc(firestore, 'clients', projectData.clientId);
+                unsubscribes.push(onSnapshot(clientRef, (clientDoc) => {
+                    if (clientDoc.exists()) {
+                        setClient({ id: clientDoc.id, ...clientDoc.data() } as Client);
+                    } else {
+                        setClient(null);
+                    }
+                }));
+            } else {
+                setClient(null);
+            }
         } else {
             setError('Project not found.');
         }
@@ -510,12 +531,25 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
                         {project.description && (
                             <CardDescription>{project.description}</CardDescription>
                         )}
-                        {project.location && (
-                            <div className="flex items-center gap-2 pt-2 text-sm text-muted-foreground">
-                                <MapPin className="size-4" />
-                                <span>{project.location}</span>
-                            </div>
-                        )}
+                        <div className="flex flex-col gap-2 pt-2 text-sm text-muted-foreground">
+                            {project.location && (
+                                <div className="flex items-center gap-2">
+                                    <MapPin className="size-4" />
+                                    <span>{project.location}</span>
+                                </div>
+                            )}
+                            {client && (
+                                <div className="flex items-center gap-2">
+                                    <Contact className="size-4" />
+                                    <span>
+                                        Client:{' '}
+                                        <Link href={`/clients/${client.id}`} className="font-medium text-foreground hover:underline">
+                                            {client.name}
+                                        </Link>
+                                    </span>
+                                </div>
+                            )}
+                        </div>
                     </CardHeader>
                     <CardContent>
                         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
