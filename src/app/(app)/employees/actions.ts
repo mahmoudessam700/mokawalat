@@ -1,3 +1,4 @@
+
 'use server';
 
 import { firestore } from '@/lib/firebase';
@@ -26,7 +27,10 @@ export async function addEmployee(values: EmployeeFormValues) {
   }
 
   try {
-    const employeeRef = await addDoc(collection(firestore, 'employees'), validatedFields.data);
+    const employeeRef = await addDoc(collection(firestore, 'employees'), {
+      ...validatedFields.data,
+      name_lowercase: validatedFields.data.name.toLowerCase(),
+    });
     
     await addDoc(collection(firestore, 'activityLog'), {
         message: `New employee hired: ${validatedFields.data.name}`,
@@ -59,7 +63,10 @@ export async function updateEmployee(employeeId: string, values: EmployeeFormVal
 
   try {
     const employeeRef = doc(firestore, 'employees', employeeId);
-    await updateDoc(employeeRef, validatedFields.data);
+    await updateDoc(employeeRef, {
+      ...validatedFields.data,
+      name_lowercase: validatedFields.data.name.toLowerCase(),
+    });
     revalidatePath('/employees');
     return { message: 'Employee updated successfully.', errors: null };
   } catch (error) {

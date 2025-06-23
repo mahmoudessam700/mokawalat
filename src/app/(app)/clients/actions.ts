@@ -1,3 +1,4 @@
+
 'use server';
 
 import { firestore } from '@/lib/firebase';
@@ -28,6 +29,7 @@ export async function addClient(values: ClientFormValues) {
   try {
     const clientRef = await addDoc(collection(firestore, 'clients'), {
       ...validatedFields.data,
+      name_lowercase: validatedFields.data.name.toLowerCase(),
       createdAt: serverTimestamp(),
     });
 
@@ -62,7 +64,10 @@ export async function updateClient(clientId: string, values: ClientFormValues) {
 
   try {
     const clientRef = doc(firestore, 'clients', clientId);
-    await updateDoc(clientRef, validatedFields.data);
+    await updateDoc(clientRef, {
+      ...validatedFields.data,
+      name_lowercase: validatedFields.data.name.toLowerCase(),
+    });
     revalidatePath('/clients');
     return { message: 'Client updated successfully.', errors: null };
   } catch (error) {

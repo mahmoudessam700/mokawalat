@@ -47,6 +47,7 @@ export async function addProject(values: ProjectFormValues) {
   try {
     const data = {
         ...validatedFields.data,
+        name_lowercase: validatedFields.data.name.toLowerCase(),
         progress: validatedFields.data.progress || 0,
         startDate: new Date(validatedFields.data.startDate),
         createdAt: serverTimestamp(),
@@ -90,6 +91,7 @@ export async function updateProject(projectId: string, values: ProjectFormValues
         const projectRef = doc(firestore, 'projects', projectId);
         await updateDoc(projectRef, {
             ...validatedFields.data,
+            name_lowercase: validatedFields.data.name.toLowerCase(),
             progress: validatedFields.data.progress || 0,
             startDate: new Date(validatedFields.data.startDate),
         });

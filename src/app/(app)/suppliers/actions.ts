@@ -27,7 +27,10 @@ export async function addSupplier(values: SupplierFormValues) {
   }
 
   try {
-    await addDoc(collection(firestore, 'suppliers'), validatedFields.data);
+    await addDoc(collection(firestore, 'suppliers'), {
+      ...validatedFields.data,
+      name_lowercase: validatedFields.data.name.toLowerCase(),
+    });
     revalidatePath('/suppliers');
     return { message: 'Supplier added successfully.', errors: null };
   } catch (error) {
@@ -52,7 +55,10 @@ export async function updateSupplier(supplierId: string, values: SupplierFormVal
 
   try {
     const supplierRef = doc(firestore, 'suppliers', supplierId);
-    await updateDoc(supplierRef, validatedFields.data);
+    await updateDoc(supplierRef, {
+      ...validatedFields.data,
+      name_lowercase: validatedFields.data.name.toLowerCase(),
+    });
     revalidatePath('/suppliers');
     revalidatePath(`/suppliers/${supplierId}`);
     return { message: 'Supplier updated successfully.', errors: null };

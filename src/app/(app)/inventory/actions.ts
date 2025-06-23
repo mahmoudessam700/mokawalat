@@ -1,3 +1,4 @@
+
 'use server';
 
 import { firestore } from '@/lib/firebase';
@@ -26,7 +27,10 @@ export async function addInventoryItem(values: InventoryFormValues) {
   }
 
   try {
-    await addDoc(collection(firestore, 'inventory'), validatedFields.data);
+    await addDoc(collection(firestore, 'inventory'), {
+      ...validatedFields.data,
+      name_lowercase: validatedFields.data.name.toLowerCase(),
+    });
     revalidatePath('/inventory');
     return { message: 'Item added successfully.', errors: null };
   } catch (error) {
@@ -51,7 +55,10 @@ export async function updateInventoryItem(itemId: string, values: InventoryFormV
 
   try {
     const itemRef = doc(firestore, 'inventory', itemId);
-    await updateDoc(itemRef, validatedFields.data);
+    await updateDoc(itemRef, {
+      ...validatedFields.data,
+      name_lowercase: validatedFields.data.name.toLowerCase(),
+    });
     revalidatePath('/inventory');
     return { message: 'Item updated successfully.', errors: null };
   } catch (error) {
