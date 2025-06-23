@@ -152,6 +152,22 @@ Manages warehouse locations.
     -   `location` (string, optional): The physical address of the warehouse.
     -   `createdAt` (Timestamp)
 
+### `assets`
+
+Manages company-owned assets like vehicles and heavy machinery.
+
+-   **Document ID**: Auto-generated
+-   **Fields**:
+    -   `name` (string): The name or identifier of the asset (e.g., "Caterpillar 320 Excavator").
+    -   `name_lowercase` (string)
+    -   `category` (string): (e.g., "Heavy Machinery", "Vehicle", "Power Tool").
+    -   `status` (string): The current status (`Available`, `In Use`, `Under Maintenance`, `Decommissioned`).
+    -   `purchaseDate` (Timestamp): The date the asset was acquired.
+    -   `purchaseCost` (number): The original cost of the asset.
+    -   `currentProjectId` (string, optional): A reference to the `projects` collection document ID if currently assigned.
+    -   `nextMaintenanceDate` (Timestamp, optional): The date for the next scheduled maintenance.
+    -   `createdAt` (Timestamp)
+
 ### `procurement`
 
 Tracks purchase orders (POs).

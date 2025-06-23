@@ -11,6 +11,7 @@ import {
   Truck,
   Users,
   Warehouse,
+  Wrench,
 } from 'lucide-react';
 import { useDebounce } from 'use-debounce';
 
@@ -32,6 +33,7 @@ const typeIcons: Record<SearchResult['type'], React.ReactNode> = {
   Employee: <Users className="size-4" />,
   Supplier: <Truck className="size-4" />,
   'Inventory Item': <Warehouse className="size-4" />,
+  Asset: <Wrench className="size-4" />,
 };
 
 export function GlobalSearch() {

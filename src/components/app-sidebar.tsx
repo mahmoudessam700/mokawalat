@@ -26,6 +26,7 @@ import {
   Map,
   ClipboardList,
   History,
+  Wrench,
 } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
@@ -56,6 +57,7 @@ const menuItems = [
   { href: '/projects', label: 'Projects', icon: Briefcase },
   { href: '/employees', label: 'Employees', icon: Users },
   { href: '/suppliers', label: 'Suppliers', icon: Truck },
+  { href: '/assets', label: 'Asset Management', icon: Wrench },
   { href: '/inventory', label: 'Inventory', icon: Warehouse },
   { href: '/procurement', label: 'Purchase Orders', icon: ShoppingCart },
   { href: '/material-requests', label: 'Material Requests', icon: ClipboardList },

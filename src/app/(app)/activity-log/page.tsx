@@ -36,6 +36,7 @@ import {
   Trash2,
   ListChecks,
   Search,
+  Wrench,
 } from 'lucide-react';
 
 type Activity = {
@@ -55,6 +56,7 @@ const activityIcons: { [key: string]: React.ReactNode } = {
   TRANSACTION_ADDED: <DollarSign className="size-4" />,
   SUPPLIER_ADDED: <Truck className="size-4" />,
   INVENTORY_ADDED: <Warehouse className="size-4" />,
+  ASSET_ADDED: <Wrench className="size-4" />,
   PO_CREATED: <ShoppingCart className="size-4" />,
   CONTRACT_ADDED: <FileText className="size-4" />,
   MATERIAL_REQUESTED: <ClipboardList className="size-4" />,
@@ -76,6 +78,7 @@ const activityTypes = [
     "TRANSACTION_ADDED",
     "SUPPLIER_ADDED",
     "INVENTORY_ADDED",
+    "ASSET_ADDED",
     "PO_CREATED",
     "CONTRACT_ADDED",
     "MATERIAL_REQUESTED",
