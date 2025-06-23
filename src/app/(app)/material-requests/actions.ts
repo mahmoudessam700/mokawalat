@@ -44,6 +44,14 @@ export async function addMaterialRequest(projectId: string, values: MaterialRequ
       status: 'Pending',
       requestedAt: serverTimestamp(),
     });
+    
+    await addDoc(collection(firestore, 'activityLog'), {
+        message: `Material request for ${itemName} created for project`,
+        type: "MATERIAL_REQUESTED",
+        link: `/projects/${projectId}`,
+        timestamp: serverTimestamp(),
+    });
+    
     revalidatePath(`/projects/${projectId}`);
     return { message: 'Material request submitted successfully.', errors: null };
   } catch (error) {

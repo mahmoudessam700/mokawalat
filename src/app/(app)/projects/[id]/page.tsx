@@ -30,7 +30,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useToast } from '@/hooks/use-toast';
-import { addMaterialRequest, updateMaterialRequestStatus, materialRequestFormSchema, type MaterialRequestFormValues, addDailyLog, addProjectDocument, deleteProjectDocument, addTask, type TaskFormValues, taskFormSchema, updateTaskStatus, deleteTask } from '../actions';
+import { addMaterialRequest, updateMaterialRequestStatus, materialRequestFormSchema, type MaterialRequestFormValues } from '../../material-requests/actions';
+import { addDailyLog, addProjectDocument, deleteProjectDocument, addTask, type TaskFormValues, taskFormSchema, updateTaskStatus, deleteTask } from '../actions';
 import { Loader2 } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ProjectAiAssistant } from './project-ai-assistant';
