@@ -12,21 +12,7 @@ const lineItemSchema = z.object({
   unitPrice: z.coerce.number().min(0, "Unit price must be a non-negative number."),
 });
 
-const invoiceFormSchema = z.object({
-  clientId: z.string().min(1, "A client is required."),
-  projectId: z.string().optional(),
-  issueDate: z.string().refine((date) => !isNaN(Date.parse(date)), {
-    message: 'Please select a valid issue date.',
-  }),
-  dueDate: z.string().refine((date) => !isNaN(Date.parse(date)), {
-    message: 'Please select a valid due date.',
-  }),
-  lineItems: z.array(lineItemSchema).min(1, "At least one line item is required."),
-});
-
-export type InvoiceFormValues = z.infer<typeof invoiceFormSchema>;
-
-export async function addInvoice(values: InvoiceFormValues) {
+export async function addInvoice(values: z.infer<typeof invoiceFormSchema>) {
   const validatedFields = invoiceFormSchema.safeParse(values);
 
   if (!validatedFields.success) {
@@ -131,3 +117,18 @@ export async function updateInvoiceStatus(invoiceId: string, status: 'Sent' | 'P
         return { success: false, message: error.message || 'Failed to update status.' };
     }
 }
+
+// Moved from page.tsx to be accessible here
+export const invoiceFormSchema = z.object({
+  clientId: z.string().min(1, "A client is required."),
+  projectId: z.string().optional(),
+  issueDate: z.string().refine((date) => !isNaN(Date.parse(date)), {
+    message: 'Please select a valid issue date.',
+  }),
+  dueDate: z.string().refine((date) => !isNaN(Date.parse(date)), {
+    message: 'Please select a valid due date.',
+  }),
+  lineItems: z.array(lineItemSchema).min(1, "At least one line item is required."),
+});
+
+export type InvoiceFormValues = z.infer<typeof invoiceFormSchema>;
