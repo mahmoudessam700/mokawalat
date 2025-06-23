@@ -7,8 +7,8 @@ import { firestore } from '@/lib/firebase';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
-import { ArrowLeft, Briefcase, Calendar, DollarSign, Activity, Users, ShoppingCart, PackagePlus, PackageCheck, PackageX, PackageSearch, Lightbulb, TrendingUp, MapPin } from 'lucide-react';
-import { format } from 'date-fns';
+import { ArrowLeft, Briefcase, Calendar, DollarSign, Activity, Users, ShoppingCart, PackagePlus, PackageCheck, PackageX, PackageSearch, Lightbulb, TrendingUp, MapPin, BookText } from 'lucide-react';
+import { format, formatDistanceToNow } from 'date-fns';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { AssignTeamDialog } from './assign-team-dialog';
@@ -29,11 +29,13 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useToast } from '@/hooks/use-toast';
-import { addMaterialRequest, updateMaterialRequestStatus, materialRequestFormSchema, type MaterialRequestFormValues } from '../../material-requests/actions';
+import { addMaterialRequest, updateMaterialRequestStatus, materialRequestFormSchema, type MaterialRequestFormValues, addDailyLog } from '../actions';
 import { Loader2 } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ProjectAiAssistant } from './project-ai-assistant';
 import { Progress } from '@/components/ui/progress';
+import { z } from 'zod';
+import { Textarea } from '@/components/ui/textarea';
 
 type ProjectStatus = 'In Progress' | 'Planning' | 'Completed' | 'On Hold';
 
@@ -85,6 +87,14 @@ type InventoryItem = {
     quantity: number;
 };
 
+type DailyLog = {
+    id: string;
+    notes: string;
+    authorId: string;
+    authorEmail: string;
+    createdAt: Timestamp;
+};
+
 const statusVariant: {
   [key in ProjectStatus]: 'secondary' | 'default' | 'outline' | 'destructive';
 } = {
@@ -114,11 +124,17 @@ const formatCurrency = (value: number) => {
     return `LE ${formatter.format(value)}`;
 };
 
+const dailyLogFormSchema = z.object({
+  notes: z.string().min(10, 'Log notes must be at least 10 characters long.').max(2000),
+});
+type DailyLogFormValues = z.infer<typeof dailyLogFormSchema>;
+
 export default function ProjectDetailPage({ params }: { params: { id: string } }) {
   const [project, setProject] = useState<Project | null>(null);
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [procurements, setProcurements] = useState<ProcurementRequest[]>([]);
   const [materialRequests, setMaterialRequests] = useState<MaterialRequest[]>([]);
+  const [dailyLogs, setDailyLogs] = useState<DailyLog[]>([]);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [inventoryItems, setInventoryItems] = useState<InventoryItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -175,6 +191,12 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
         console.error('Error fetching material requests:', err);
     }));
 
+    // Subscribe to daily logs for this project
+    const dailyLogsQuery = query(collection(firestore, 'projects', projectId, 'dailyLogs'), orderBy('createdAt', 'desc'));
+    unsubscribes.push(onSnapshot(dailyLogsQuery, (snapshot) => {
+        setDailyLogs(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as DailyLog)));
+    }));
+
     // Subscribe to transactions for this project
     const transactionsQuery = query(collection(firestore, 'transactions'), where('projectId', '==', projectId), orderBy('date', 'desc'));
     unsubscribes.push(onSnapshot(transactionsQuery, (snapshot) => {
@@ -210,6 +232,11 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
     },
   });
 
+  const dailyLogForm = useForm<DailyLogFormValues>({
+    resolver: zodResolver(dailyLogFormSchema),
+    defaultValues: { notes: '' },
+  });
+
   async function onMaterialRequestSubmit(values: MaterialRequestFormValues) {
     const result = await addMaterialRequest(projectId, values);
     if (result.errors) {
@@ -218,6 +245,25 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
       toast({ title: 'Success', description: result.message });
       requestForm.reset();
       setIsRequestDialogOpen(false);
+    }
+  }
+
+  async function onDailyLogSubmit(values: DailyLogFormValues) {
+    if (!profile) {
+      toast({ variant: 'destructive', title: 'Error', description: 'You must be logged in to post a log.' });
+      return;
+    }
+    const result = await addDailyLog(projectId, { 
+        ...values, 
+        authorId: profile.uid, 
+        authorEmail: profile.email 
+    });
+
+    if (result.errors) {
+      toast({ variant: 'destructive', title: 'Error', description: result.message });
+    } else {
+      toast({ title: 'Success', description: result.message });
+      dailyLogForm.reset();
     }
   }
 
@@ -312,6 +358,7 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
             <TabsList>
                 <TabsTrigger value="overview">Overview</TabsTrigger>
                 <TabsTrigger value="team-materials">Team & Materials</TabsTrigger>
+                <TabsTrigger value="daily-logs">Daily Logs</TabsTrigger>
                 <TabsTrigger value="procurement">Procurement</TabsTrigger>
                 <TabsTrigger value="financials">Financials</TabsTrigger>
                 <TabsTrigger value="ai-assistant">
@@ -526,6 +573,71 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
                         </CardContent>
                     </Card>
                 </div>
+            </TabsContent>
+            <TabsContent value="daily-logs" className="pt-4">
+                <Card>
+                    <CardHeader>
+                        <CardTitle>Daily Logs</CardTitle>
+                        <CardDescription>A chronological record of project updates and observations.</CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-6">
+                        <Form {...dailyLogForm}>
+                            <form onSubmit={dailyLogForm.handleSubmit(onDailyLogSubmit)} className="space-y-4">
+                                <FormField
+                                    control={dailyLogForm.control}
+                                    name="notes"
+                                    render={({ field }) => (
+                                        <FormItem>
+                                            <FormLabel className="sr-only">New Log Entry</FormLabel>
+                                            <FormControl>
+                                                <Textarea
+                                                    placeholder="Add a new log entry for today..."
+                                                    rows={4}
+                                                    {...field}
+                                                    disabled={!profile || dailyLogForm.formState.isSubmitting}
+                                                />
+                                            </FormControl>
+                                            <FormMessage />
+                                        </FormItem>
+                                    )}
+                                />
+                                <div className="flex justify-end">
+                                    <Button type="submit" disabled={!profile || dailyLogForm.formState.isSubmitting}>
+                                        {dailyLogForm.formState.isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                                        Add Log
+                                    </Button>
+                                </div>
+                            </form>
+                        </Form>
+
+                        <div className="space-y-6">
+                            {dailyLogs.length > 0 ? (
+                                dailyLogs.map(log => (
+                                    <div key={log.id} className="flex items-start gap-4">
+                                        <Avatar>
+                                            <AvatarImage data-ai-hint="profile picture" />
+                                            <AvatarFallback>{log.authorEmail.charAt(0).toUpperCase()}</AvatarFallback>
+                                        </Avatar>
+                                        <div className="flex-1 rounded-md border bg-muted/50 p-4">
+                                            <div className="flex items-center justify-between">
+                                                <p className="font-semibold text-sm">{log.authorEmail}</p>
+                                                <p className="text-xs text-muted-foreground">
+                                                    {log.createdAt ? formatDistanceToNow(log.createdAt.toDate(), { addSuffix: true }) : 'N/A'}
+                                                </p>
+                                            </div>
+                                            <p className="mt-2 text-sm whitespace-pre-wrap">{log.notes}</p>
+                                        </div>
+                                    </div>
+                                ))
+                            ) : (
+                                <div className="flex flex-col items-center justify-center gap-2 py-8 text-center text-muted-foreground">
+                                    <BookText className="size-12" />
+                                    <p>No daily logs have been added to this project yet.</p>
+                                </div>
+                            )}
+                        </div>
+                    </CardContent>
+                </Card>
             </TabsContent>
             <TabsContent value="procurement" className="pt-4">
                  <Card>

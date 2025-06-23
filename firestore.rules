@@ -1,88 +1,87 @@
 
 rules_version = '2';
+
 service cloud.firestore {
   match /databases/{database}/documents {
-
+  
     function isAdmin() {
       return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
     }
     
-    function isUser() {
-      return request.auth != null;
+    // Default read access for all authenticated users
+    match /{document=**} {
+      allow read: if request.auth != null;
+    }
+    
+    // Users can read their own profile, admins can read any profile
+    match /users/{userId} {
+      allow read: if request.auth.uid == userId || isAdmin();
+      allow write: if isAdmin();
     }
 
-    match /users/{userId} {
-      allow read: if isUser();
-      allow write: if isAdmin() || request.auth.uid == userId;
-    }
-    
-    match /activityLog/{logId} {
-    	allow read: if isUser();
-      allow write: if isUser(); // allow any authenticated user to log activities
-    }
-    
     match /projects/{projectId} {
-      allow read: if isUser();
-      allow write: if isAdmin();
-      // Add specific write rules for project managers later if needed
+        allow write: if isAdmin();
     }
     
+    match /projects/{projectId}/dailyLogs/{logId} {
+        allow create, read: if request.auth != null;
+    }
+
     match /employees/{employeeId} {
-      allow read: if isUser();
-      allow write: if isAdmin();
-    }
-    
-    match /clients/{clientId} {
-      allow read: if isUser();
-      allow write: if isAdmin();
-    }
-    match /clients/{clientId}/interactions/{interactionId} {
-      allow read: if isUser();
-      allow write: if isUser(); // Any user can log an interaction
-    }
-    match /clients/{clientId}/contracts/{contractId} {
-      allow read: if isUser();
-      allow write: if isAdmin();
+        allow write: if isAdmin();
     }
     
     match /suppliers/{supplierId} {
-      allow read: if isUser();
-      allow write: if isAdmin();
+        allow write: if isAdmin();
     }
-    match /suppliers/{supplierId}/contracts/{contractId} {
-      allow read: if isUser();
-      allow write: if isAdmin();
-    }
-    
+
     match /inventory/{itemId} {
-      allow read: if isUser();
-      allow write: if isAdmin();
+        allow write: if isAdmin();
     }
     
     match /inventoryCategories/{categoryId} {
-      allow read: if isUser();
-      allow write: if isAdmin();
+        allow write: if isAdmin();
     }
-    
+
     match /procurement/{requestId} {
-      allow read: if isUser();
-      allow write: if isAdmin();
+        allow write: if isAdmin();
+    }
+
+    match /clients/{clientId} {
+        allow write: if isAdmin();
     }
     
-    match /materialRequests/{requestId} {
-      allow read: if isUser();
-      allow write: if isUser(); // Allow any user to request, but only admin can approve (handled in backend action)
+    match /clients/{clientId}/interactions/{interactionId} {
+      allow create: if request.auth != null; // Any user can log an interaction
+      allow read, update, delete: if isAdmin();
+    }
+    
+    match /clients/{clientId}/contracts/{contractId} {
+        allow create, delete: if isAdmin();
+    }
+    
+    match /suppliers/{supplierId}/contracts/{contractId} {
+        allow create, delete: if isAdmin();
     }
 
     match /transactions/{transactionId} {
-        allow read: if isUser();
         allow write: if isAdmin();
     }
 
     match /accounts/{accountId} {
-        allow read: if isUser();
         allow write: if isAdmin();
     }
+    
+    match /materialRequests/{requestId} {
+        allow create: if request.auth != null;
+        allow update: if isAdmin(); // Only admin can approve/reject
+    }
 
+    // Activity log is append-only for the system (via server actions)
+    // and readable by all authenticated users.
+    match /activityLog/{logId} {
+        allow create; // Handled by server-side actions
+        allow read: if request.auth != null;
+    }
   }
 }

@@ -25,8 +25,16 @@ const assignTeamFormSchema = z.object({
   employeeIds: z.array(z.string()).default([]),
 });
 
+const dailyLogFormSchema = z.object({
+  notes: z.string().min(10, 'Log notes must be at least 10 characters long.').max(2000),
+  authorId: z.string(),
+  authorEmail: z.string().email(),
+});
+
 export type ProjectFormValues = z.infer<typeof projectFormSchema>;
 export type AssignTeamFormValues = z.infer<typeof assignTeamFormSchema>;
+export type DailyLogFormValues = z.infer<typeof dailyLogFormSchema>;
+
 
 export interface AiAnalysisState {
     message: string | null;
@@ -190,5 +198,34 @@ export async function getProjectRiskAnalysis(projectId: string): Promise<AiAnaly
       data: null,
       error: true,
     };
+  }
+}
+
+export async function addDailyLog(projectId: string, values: DailyLogFormValues) {
+  if (!projectId) {
+    return { message: 'Project ID is required.', errors: { _server: ['Project ID is missing.'] } };
+  }
+
+  const validatedFields = dailyLogFormSchema.safeParse(values);
+
+  if (!validatedFields.success) {
+    return {
+      errors: validatedFields.error.flatten().fieldErrors,
+      message: 'Invalid data provided.',
+    };
+  }
+
+  try {
+    const logData = {
+      ...validatedFields.data,
+      createdAt: serverTimestamp(),
+    };
+    await addDoc(collection(firestore, 'projects', projectId, 'dailyLogs'), logData);
+
+    revalidatePath(`/projects/${projectId}`);
+    return { message: 'Daily log added successfully.', errors: null };
+  } catch (error) {
+    console.error('Error adding daily log:', error);
+    return { message: 'Failed to add daily log.', errors: { _server: ['An unexpected error occurred.'] } };
   }
 }
