@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, type FormEvent } from 'react';
@@ -78,7 +79,7 @@ export default function SignupPage() {
   };
 
   return (
-    <Card className="w-full max-w-sm">
+    <Card className="w-full max-w-sm bg-background/80 backdrop-blur-sm">
       <CardHeader className="text-center">
         <div className="mb-4 flex justify-center">
           <Logo className="size-12 text-primary" />
