@@ -1,131 +1,135 @@
-
 rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // Helper functions to check auth status and user role.
-    function isAuthenticated() {
+    // Helper functions
+    function isAdmin() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+    }
+
+    function isSignedIn() {
       return request.auth != null;
     }
 
-    function getRole() {
-      // Safely access user's role document.
-      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role;
+    // Default deny all access unless specified. This is a good security practice.
+    match /{document=**} {
+      allow read, write: if false;
     }
-
-    function isAdmin() {
-      return isAuthenticated() && getRole() == 'admin';
-    }
-
-    // User profiles can be read by their owner or an admin.
-    // Only admins should be able to create, update, or delete user documents.
+    
+    // User profiles
     match /users/{userId} {
-      allow read: if isAuthenticated() && (request.auth.uid == userId || isAdmin());
-      allow create, update, delete: if isAdmin();
+      allow read, update: if request.auth.uid == userId || isAdmin();
+      allow create: if isAdmin();
     }
 
-    // Most top-level collections are managed by admins, but readable by any user.
-    match /employees/{employeeId} {
-      allow read: if isAuthenticated();
-      allow create, update, delete: if isAdmin();
-    }
-
-    match /clients/{clientId} {
-      allow read: if isAuthenticated();
-      allow create, update, delete: if isAdmin();
-    }
-
-    match /suppliers/{supplierId} {
-      allow read: if isAuthenticated();
-      allow create, update, delete: if isAdmin();
-    }
-    
-    match /inventory/{itemId} {
-      allow read: if isAuthenticated();
-      allow create, update, delete: if isAdmin();
-    }
-
-    match /inventoryCategories/{categoryId} {
-        allow read: if isAuthenticated();
-        allow create, update, delete: if isAdmin();
-    }
-    
-    match /warehouses/{warehouseId} {
-        allow read: if isAuthenticated();
-        allow create, update, delete: if isAdmin();
-    }
-
-    match /assets/{assetId} {
-        allow read: if isAuthenticated();
-        allow create, update, delete: if isAdmin();
-    }
-
-    // Financial collections are admin-only for all operations.
-    match /transactions/{transactionId} {
-      allow read, create, update, delete: if isAdmin();
-    }
-
-    match /accounts/{accountId} {
-      allow read, create, update, delete: if isAdmin();
-    }
-
-    // Procurement and Material Requests can be created by any authenticated user, but only managed by admins.
-    match /procurement/{poId} {
-      allow read, create: if isAuthenticated();
-      allow update, delete: if isAdmin();
-    }
-
-    match /materialRequests/{requestId} {
-      allow read, create: if isAuthenticated();
-      allow update, delete: if isAdmin();
-    }
-
-    // Projects can be read by any user, but only managed by admins.
+    // Projects and their sub-collections
     match /projects/{projectId} {
-      allow read: if isAuthenticated();
+      allow read: if isSignedIn();
       allow create, update, delete: if isAdmin();
 
-      // Project sub-collections can be created by any authenticated user.
+      // Tasks can be managed by any signed-in user
       match /tasks/{taskId} {
-        allow read, create, update: if isAuthenticated();
-        allow delete: if isAdmin();
+        allow read, create, update, delete: if isSignedIn();
       }
 
+      // Documents can be managed by any signed-in user
       match /documents/{docId} {
-        allow read, create: if isAuthenticated();
-        allow delete: if isAdmin();
+        allow read, create, delete: if isSignedIn();
       }
       
+      // Daily logs can be read and created by any signed-in user
       match /dailyLogs/{logId} {
-        allow read, create: if isAuthenticated();
-        // Logs should not be updated or deleted by users.
-        allow update, delete: if false; 
+        allow read, create: if isSignedIn();
       }
     }
     
-    // Client sub-collections can be created by any user.
-    match /clients/{clientId}/interactions/{interactionId} {
-        allow read, create: if isAuthenticated();
-        allow update, delete: if isAdmin();
+    // Employees can be read by anyone signed in, but only managed by admins.
+    match /employees/{employeeId} {
+      allow read: if isSignedIn();
+      allow create, update, delete: if isAdmin();
+    }
+    
+    // Clients and their sub-collections
+    match /clients/{clientId} {
+      allow read: if isSignedIn();
+      allow create, update, delete: if isAdmin();
+
+      match /interactions/{interactionId} {
+          allow read, create, update, delete: if isSignedIn();
+      }
+      
+      match /contracts/{contractId} {
+          allow read: if isSignedIn();
+          allow create, delete: if isAdmin();
+      }
+    }
+    
+    // Suppliers and their sub-collections
+    match /suppliers/{supplierId} {
+      allow read: if isSignedIn();
+      allow create, update, delete: if isAdmin();
+      
+      match /contracts/{contractId} {
+          allow read: if isSignedIn();
+          allow create, delete: if isAdmin();
+      }
+    }
+    
+    // Inventory and related settings can be read by anyone, managed by admins.
+    match /inventory/{itemId} {
+      allow read: if isSignedIn();
+      allow create, update, delete: if isAdmin();
+    }
+    
+    match /inventoryCategories/{categoryId} {
+      allow read: if isSignedIn();
+      allow create, update, delete: if isAdmin();
     }
 
-    match /clients/{clientId}/contracts/{contractId} {
-        allow read, create: if isAuthenticated();
-        allow update, delete: if isAdmin();
+    match /warehouses/{warehouseId} {
+      allow read: if isSignedIn();
+      allow create, update, delete: if isAdmin();
     }
 
-    // Supplier sub-collections can be created by any user.
-    match /suppliers/{supplierId}/contracts/{contractId} {
-        allow read, create: if isAuthenticated();
-        allow update, delete: if isAdmin();
+    // Assets can be read by anyone, managed by admins
+    match /assets/{assetId} {
+      allow read: if isSignedIn();
+      allow create, update, delete: if isAdmin();
+    }
+    
+    // Procurement (POs) can be read by anyone, managed by admins
+    match /procurement/{poId} {
+      allow read: if isSignedIn();
+      allow create, update, delete: if isAdmin();
     }
 
-    // The activity log is read-only for admins from the client.
-    // It is written by backend functions with admin privileges.
+    // Material requests can be read by anyone, managed by admins
+    match /materialRequests/{reqId} {
+        allow read: if isSignedIn();
+        allow create, update, delete: if isAdmin();
+    }
+
+    // Financials can be read by anyone, managed by admins
+    match /transactions/{transactionId} {
+      allow read: if isSignedIn();
+      allow create, update, delete: if isAdmin();
+    }
+    
+    match /invoices/{invoiceId} {
+      allow read: if isSignedIn();
+      allow create, update, delete: if isAdmin();
+    }
+    
+    match /accounts/{accountId} {
+      allow read: if isSignedIn();
+      allow create, update, delete: if isAdmin();
+    }
+    
+    // Activity log is append-only for signed-in users, but can be read by anyone.
     match /activityLog/{logId} {
-      allow read: if isAdmin();
-      allow write: if false;
+      allow read: if isSignedIn();
+      allow create: if isSignedIn();
     }
   }
 }
