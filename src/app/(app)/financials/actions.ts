@@ -23,6 +23,8 @@ const transactionFormSchema = z.object({
   clientId: z.string().optional(),
   supplierId: z.string().optional(),
   purchaseOrderId: z.string().optional(),
+  contractId: z.string().optional(),
+  contractType: z.string().optional(),
 });
 
 export type TransactionFormValues = z.infer<typeof transactionFormSchema>;

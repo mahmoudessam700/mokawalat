@@ -234,6 +234,8 @@ A ledger of all financial transactions.
     -   `clientId` (string, optional)
     -   `supplierId` (string, optional)
     -   `purchaseOrderId` (string, optional)
+    -   `contractId` (string, optional): A reference to a `contracts` sub-collection document ID.
+    -   `contractType` (string, optional): The parent collection type for the contract ('client' or 'supplier').
     -   `createdAt` (Timestamp)
 
 ### `invoices`

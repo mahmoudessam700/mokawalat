@@ -54,7 +54,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useState, useEffect, useMemo } from 'react';
 import { addTransaction, deleteTransaction, updateTransaction } from './actions';
 import { useToast } from '@/hooks/use-toast';
-import { collection, onSnapshot, query, orderBy, type Timestamp } from 'firebase/firestore';
+import { collection, onSnapshot, query, orderBy, type Timestamp, collectionGroup } from 'firebase/firestore';
 import { firestore } from '@/lib/firebase';
 import { Skeleton } from '@/components/ui/skeleton';
 import { format } from 'date-fns';
@@ -75,6 +75,8 @@ type Transaction = {
   clientId?: string;
   supplierId?: string;
   purchaseOrderId?: string;
+  contractId?: string;
+  contractType?: string;
 };
 
 type Project = { id: string; name: string; };
@@ -82,6 +84,7 @@ type Client = { id: string; name: string; };
 type Supplier = { id: string; name: string; };
 type Account = { id: string; name: string; initialBalance: number; };
 type PurchaseOrder = { id: string; itemName: string; supplierId: string; };
+type Contract = { id: string; title: string; parentId: string; parentType: string; }
 
 
 const transactionFormSchema = z.object({
@@ -96,6 +99,8 @@ const transactionFormSchema = z.object({
   clientId: z.string().optional(),
   supplierId: z.string().optional(),
   purchaseOrderId: z.string().optional(),
+  contractId: z.string().optional(),
+  contractType: z.string().optional(),
 });
 
 type TransactionFormValues = z.infer<typeof transactionFormSchema>;
@@ -114,6 +119,7 @@ export default function FinancialsPage() {
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [purchaseOrders, setPurchaseOrders] = useState<PurchaseOrder[]>([]);
+  const [allContracts, setAllContracts] = useState<Contract[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isFormDialogOpen, setIsFormDialogOpen] = useState(false);
   const [transactionToEdit, setTransactionToEdit] = useState<Transaction | null>(null);
@@ -162,6 +168,24 @@ export default function FinancialsPage() {
         setPurchaseOrders(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as PurchaseOrder)));
     }));
 
+    const qContracts = query(collectionGroup(firestore, 'contracts'));
+    unsubscribes.push(onSnapshot(qContracts, (snapshot) => {
+        const contractsData: Contract[] = snapshot.docs.map(doc => {
+            const path = doc.ref.path.split('/');
+            const parentType = path[0].slice(0, -1); // 'client' or 'supplier'
+            const parentId = path[1];
+            return {
+                id: doc.id,
+                title: doc.data().title,
+                parentType,
+                parentId,
+            };
+        });
+        setAllContracts(contractsData);
+    }, (err) => {
+      console.error("Error fetching contracts via collectionGroup:", err)
+    }));
+
 
     return () => unsubscribes.forEach(unsub => unsub());
   }, [toast]);
@@ -201,11 +225,24 @@ export default function FinancialsPage() {
       clientId: '',
       supplierId: '',
       purchaseOrderId: '',
+      contractId: '',
+      contractType: '',
     },
   });
 
   const selectedSupplierId = form.watch('supplierId');
+  const selectedClientId = form.watch('clientId');
   const transactionType = form.watch('type');
+
+  const selectableContracts = useMemo(() => {
+    let parentId = '';
+    if (transactionType === 'Income') parentId = selectedClientId;
+    else if (transactionType === 'Expense') parentId = selectedSupplierId;
+    
+    if (!parentId) return [];
+    
+    return allContracts.filter(c => c.parentId === parentId);
+  }, [selectedClientId, selectedSupplierId, transactionType, allContracts]);
 
   useEffect(() => {
     if (transactionToEdit) {
@@ -217,11 +254,25 @@ export default function FinancialsPage() {
         clientId: transactionToEdit.clientId || '',
         supplierId: transactionToEdit.supplierId || '',
         purchaseOrderId: transactionToEdit.purchaseOrderId || '',
+        contractId: transactionToEdit.contractId || '',
+        contractType: transactionToEdit.contractType || '',
       });
     } else {
       form.reset(form.formState.defaultValues);
     }
   }, [transactionToEdit, form]);
+
+  useEffect(() => {
+    form.setValue('contractId', '');
+    if (transactionType === 'Income') {
+        form.setValue('supplierId', '');
+        form.setValue('purchaseOrderId', '');
+        form.setValue('contractType', selectedClientId ? 'client' : '');
+    } else { // Expense
+        form.setValue('clientId', '');
+        form.setValue('contractType', selectedSupplierId ? 'supplier' : '');
+    }
+  }, [transactionType, selectedClientId, selectedSupplierId, form]);
 
   async function onSubmit(values: TransactionFormValues) {
     const result = transactionToEdit
@@ -268,6 +319,15 @@ export default function FinancialsPage() {
   }
 
   const getLinkedEntity = (transaction: Transaction) => {
+    if (transaction.contractId) {
+        const contract = allContracts.find(c => c.id === transaction.contractId);
+        if (contract) {
+            const parentName = contract.parentType === 'client' 
+                ? nameMaps.clients.get(contract.parentId) 
+                : nameMaps.suppliers.get(contract.parentId);
+            return { name: contract.title, url: `/${contract.parentType}s/${contract.parentId}`, type: 'Contract', context: `For: ${parentName}` };
+        }
+    }
     if (transaction.purchaseOrderId && nameMaps.purchaseOrders.has(transaction.purchaseOrderId)) {
         return { name: `PO: ${nameMaps.purchaseOrders.get(transaction.purchaseOrderId)}`, url: `/procurement/${transaction.purchaseOrderId}`, type: 'PO' };
     }
@@ -350,7 +410,7 @@ export default function FinancialsPage() {
                   Add Transaction
                   </Button>
               </DialogTrigger>
-              <DialogContent className="sm:max-w-[480px]">
+              <DialogContent className="sm:max-w-2xl">
                   <DialogHeader>
                   <DialogTitle>{transactionToEdit ? 'Edit Transaction' : 'Add New Transaction'}</DialogTitle>
                   <DialogDescription>
@@ -369,10 +429,14 @@ export default function FinancialsPage() {
                           <FormField control={form.control} name="accountId" render={({ field }) => (<FormItem><FormLabel>Account</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Select an account" /></SelectTrigger></FormControl><SelectContent>{accounts.map(acc => (<SelectItem key={acc.id} value={acc.id}>{acc.name}</SelectItem>))}</SelectContent></Select><FormMessage /></FormItem>)} />
                       </div>
                       <FormField control={form.control} name="projectId" render={({ field }) => (<FormItem><FormLabel>Project (Optional)</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Link to a project" /></SelectTrigger></FormControl><SelectContent><SelectItem value="">None</SelectItem>{projects.map(project => (<SelectItem key={project.id} value={project.id}>{project.name}</SelectItem>))}</SelectContent></Select><FormMessage /></FormItem>)} />
+                      
                       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                           <FormField control={form.control} name="clientId" render={({ field }) => (<FormItem className={transactionType === 'Expense' ? 'hidden' : ''}><FormLabel>Client (Optional)</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Link to a client" /></SelectTrigger></FormControl><SelectContent><SelectItem value="">None</SelectItem>{clients.map(client => (<SelectItem key={client.id} value={client.id}>{client.name}</SelectItem>))}</SelectContent></Select><FormMessage /></FormItem>)} />
                           <FormField control={form.control} name="supplierId" render={({ field }) => (<FormItem className={transactionType === 'Income' ? 'hidden' : ''}><FormLabel>Supplier (Optional)</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Link to a supplier" /></SelectTrigger></FormControl><SelectContent><SelectItem value="">None</SelectItem>{suppliers.map(supplier => (<SelectItem key={supplier.id} value={supplier.id}>{supplier.name}</SelectItem>))}</SelectContent></Select><FormMessage /></FormItem>)} />
                       </div>
+                      
+                      <FormField control={form.control} name="contractId" render={({ field }) => (<FormItem><FormLabel>Contract (Optional)</FormLabel><Select onValueChange={field.onChange} value={field.value || ''} disabled={selectableContracts.length === 0}><FormControl><SelectTrigger><SelectValue placeholder="Link to a contract" /></SelectTrigger></FormControl><SelectContent><SelectItem value="">None</SelectItem>{selectableContracts.map(contract => (<SelectItem key={contract.id} value={contract.id}>{contract.title}</SelectItem>))}</SelectContent></Select><FormMessage /></FormItem>)} />
+
                       <FormField control={form.control} name="purchaseOrderId" render={({ field }) => (<FormItem className={transactionType === 'Income' ? 'hidden' : ''}><FormLabel>Purchase Order (Optional)</FormLabel><Select onValueChange={field.onChange} value={field.value || ''} disabled={!selectedSupplierId}><FormControl><SelectTrigger><SelectValue placeholder="Link to a PO" /></SelectTrigger></FormControl><SelectContent><SelectItem value="">None</SelectItem>{purchaseOrders.filter(po => po.supplierId === selectedSupplierId).map(po => (<SelectItem key={po.id} value={po.id}>{po.itemName} (...{po.id.slice(-5)})</SelectItem>))}</SelectContent></Select><FormMessage /></FormItem>)} />
                       <DialogFooter>
                           <Button type="submit" disabled={form.formState.isSubmitting}>{form.formState.isSubmitting ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Saving...</> : (transactionToEdit ? 'Save Changes' : 'Save Transaction')}</Button>
@@ -419,7 +483,14 @@ export default function FinancialsPage() {
                         <TableCell className="font-medium">{transaction.description}</TableCell>
                         <TableCell>{nameMaps.accounts.get(transaction.accountId) || 'N/A'}</TableCell>
                         <TableCell className="hidden md:table-cell">
-                            {linkedEntity ? <Link href={linkedEntity.url} className="hover:underline">{linkedEntity.name} <span className="text-muted-foreground text-xs">({linkedEntity.type})</span></Link> : 'N/A'}
+                            {linkedEntity ? 
+                                <div className="flex flex-col">
+                                    <Link href={linkedEntity.url} className="hover:underline">
+                                        {linkedEntity.name} <span className="text-muted-foreground text-xs">({linkedEntity.type})</span>
+                                    </Link>
+                                    {linkedEntity.context && <span className="text-xs text-muted-foreground">{linkedEntity.context}</span>}
+                                </div>
+                                : 'N/A'}
                         </TableCell>
                         <TableCell><Badge variant={transaction.type === 'Income' ? 'secondary' : 'destructive'}>{transaction.type}</Badge></TableCell>
                         <TableCell className={`text-right font-semibold ${transaction.type === 'Income' ? 'text-success' : ''}`}>{formatCurrency(transaction.amount)}</TableCell>
