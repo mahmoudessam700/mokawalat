@@ -1,6 +1,7 @@
+
 'use client';
 
-import { useFormState, useFormStatus } from 'react-dom';
+import { useActionState, useFormStatus } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
@@ -95,7 +96,7 @@ function Results({ state }: { state: FormState }) {
 
 
 export function IsoComplianceClient() {
-  const [state, formAction] = useFormState(getComplianceSuggestions, initialState);
+  const [state, formAction] = useActionState(getComplianceSuggestions, initialState);
 
   return (
     <form action={formAction} className="grid gap-6">
