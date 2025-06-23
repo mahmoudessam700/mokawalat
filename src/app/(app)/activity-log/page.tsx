@@ -19,6 +19,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { formatDistanceToNow } from 'date-fns';
 import Link from 'next/link';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Input } from '@/components/ui/input';
 import {
   Briefcase,
   Contact,
@@ -34,6 +35,7 @@ import {
   Pencil,
   Trash2,
   ListChecks,
+  Search,
 } from 'lucide-react';
 
 type Activity = {
@@ -87,6 +89,7 @@ export default function ActivityLogPage() {
   const [activities, setActivities] = useState<Activity[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [typeFilter, setTypeFilter] = useState('All');
+  const [searchTerm, setSearchTerm] = useState('');
   const { toast } = useToast();
 
   useEffect(() => {
@@ -112,11 +115,13 @@ export default function ActivityLogPage() {
   }, [toast]);
 
   const filteredActivities = useMemo(() => {
-    if (typeFilter === 'All') {
-      return activities;
-    }
-    return activities.filter((activity) => activity.type === typeFilter);
-  }, [activities, typeFilter]);
+    const lowercasedTerm = searchTerm.toLowerCase();
+    return activities.filter((activity) => {
+      const matchesSearch = !searchTerm || activity.message.toLowerCase().includes(lowercasedTerm);
+      const matchesType = typeFilter === 'All' || activity.type === typeFilter;
+      return matchesSearch && matchesType;
+    });
+  }, [activities, typeFilter, searchTerm]);
 
   return (
     <div className="space-y-6">
@@ -132,7 +137,17 @@ export default function ActivityLogPage() {
                 <CardTitle>Log History</CardTitle>
                 <CardDescription>All recorded activities, sorted by most recent.</CardDescription>
              </div>
-            <div className="flex items-center gap-2">
+            <div className="flex flex-col items-stretch gap-2 md:flex-row md:items-center">
+              <div className="relative w-full md:w-auto">
+                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                <Input
+                  type="search"
+                  placeholder="Search activities..."
+                  className="w-full pl-8 md:w-[250px]"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                />
+              </div>
               <Select value={typeFilter} onValueChange={setTypeFilter}>
                 <SelectTrigger className="w-full md:w-[220px]">
                   <SelectValue placeholder="Filter by event type" />
@@ -193,7 +208,10 @@ export default function ActivityLogPage() {
                   <TableCell colSpan={4} className="h-24 text-center">
                     <div className="flex flex-col items-center justify-center gap-2 text-muted-foreground">
                         <History className="size-12" />
-                        No activity recorded for the selected filter.
+                        {activities.length > 0
+                            ? 'No activities match the current filters.'
+                            : 'No activity has been recorded yet.'
+                        }
                     </div>
                   </TableCell>
                 </TableRow>
