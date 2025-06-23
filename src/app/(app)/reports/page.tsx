@@ -55,6 +55,7 @@ type Project = {
     name: string;
     budget: number;
     startDate: Timestamp;
+    status: 'In Progress' | 'Planning' | 'Completed' | 'On Hold';
 };
 
 
@@ -86,6 +87,14 @@ const chartConfig = {
   Expenses: {
     label: "Expenses",
     color: "hsl(var(--chart-3))",
+  },
+  Income: {
+    label: 'Income',
+    color: 'hsl(var(--chart-2))',
+  },
+  Expense: {
+    label: 'Expense',
+    color: 'hsl(var(--chart-5))',
   },
 } satisfies ChartConfig;
 
@@ -280,6 +289,26 @@ export default function ReportsPage() {
             Expenses: projectExpenses,
         };
     }).sort((a, b) => b.Budget - a.Budget);
+  }, [projects, transactions]);
+
+  const projectProfitabilityData = useMemo(() => {
+    const completedProjects = projects.filter(p => p.status === 'Completed');
+    
+    return completedProjects.map(project => {
+        const projectTransactions = transactions.filter(t => t.projectId === project.id);
+        const income = projectTransactions
+            .filter(t => t.type === 'Income')
+            .reduce((sum, t) => sum + t.amount, 0);
+        const expense = projectTransactions
+            .filter(t => t.type === 'Expense')
+            .reduce((sum, t) => sum + t.amount, 0);
+        
+        return {
+            name: project.name,
+            Income: income,
+            Expense: expense,
+        };
+    }).sort((a,b) => (b.Income - b.Expense) - (a.Income - a.Expense));
   }, [projects, transactions]);
 
 
@@ -489,6 +518,7 @@ export default function ReportsPage() {
                                 axisLine={false}
                                 angle={-35}
                                 textAnchor="end"
+                                interval={0}
                             />
                             <YAxis tickFormatter={(value) => `LE ${(Number(value) / 1000).toLocaleString()}k`} />
                             <ChartTooltip
@@ -504,6 +534,50 @@ export default function ReportsPage() {
                     <div className="flex flex-col items-center justify-center gap-2 py-8 text-center text-muted-foreground">
                         <DollarSign className="size-12" />
                         <p>No project data available to generate a report.</p>
+                    </div>
+                )}
+            </CardContent>
+        </Card>
+        <Card className="lg:col-span-2">
+            <CardHeader>
+                <CardTitle>Completed Project Profitability</CardTitle>
+                <CardDescription>
+                    An overview of income versus expenses for all completed projects.
+                </CardDescription>
+            </CardHeader>
+            <CardContent>
+                {isLoading ? (
+                    <Skeleton className="h-[400px] w-full" />
+                ) : projectProfitabilityData.length > 0 ? (
+                    <ChartContainer config={chartConfig} className="h-[400px] w-full">
+                        <BarChart 
+                            data={projectProfitabilityData}
+                            margin={{ top: 20, right: 30, left: 20, bottom: 60 }}
+                        >
+                            <CartesianGrid vertical={false} />
+                            <XAxis
+                                dataKey="name"
+                                tickLine={false}
+                                tickMargin={10}
+                                axisLine={false}
+                                angle={-35}
+                                textAnchor="end"
+                                interval={0}
+                            />
+                            <YAxis tickFormatter={(value) => `LE ${(Number(value) / 1000).toLocaleString()}k`} />
+                            <ChartTooltip
+                                cursor={false}
+                                content={<ChartTooltipContent indicator="line" />}
+                            />
+                            <Legend />
+                            <Bar dataKey="Income" fill="var(--color-Income)" radius={[4, 4, 0, 0]} />
+                            <Bar dataKey="Expense" fill="var(--color-Expense)" radius={[4, 4, 0, 0]} />
+                        </BarChart>
+                    </ChartContainer>
+                ) : (
+                    <div className="flex flex-col items-center justify-center gap-2 py-8 text-center text-muted-foreground">
+                        <DollarSign className="size-12" />
+                        <p>No completed projects with financial data found.</p>
                     </div>
                 )}
             </CardContent>
