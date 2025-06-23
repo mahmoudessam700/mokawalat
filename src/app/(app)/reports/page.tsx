@@ -18,15 +18,24 @@ import { useToast } from '@/hooks/use-toast';
 import { firestore } from '@/lib/firebase';
 import { collection, onSnapshot, query, type Timestamp } from 'firebase/firestore';
 import { useEffect, useMemo, useState } from 'react';
-import { Bar, BarChart, CartesianGrid, Pie, PieChart, XAxis, YAxis, Legend, Label } from 'recharts';
+import { Bar, BarChart, CartesianGrid, Pie, PieChart, XAxis, YAxis, Legend } from 'recharts';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
-import { Calendar as CalendarIcon } from 'lucide-react';
+import { Calendar as CalendarIcon, DollarSign } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
 import { subDays, format } from 'date-fns';
 import type { DateRange } from 'react-day-picker';
 import { cn } from '@/lib/utils';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
+import { Progress } from '@/components/ui/progress';
 
 // Types from other modules
 type TransactionType = 'Income' | 'Expense';
@@ -35,6 +44,7 @@ type Transaction = {
   amount: number;
   type: TransactionType;
   date: Timestamp;
+  projectId?: string;
 };
 type InventoryItem = {
   id:string;
@@ -47,6 +57,11 @@ type Employee = {
 type Client = {
   id: string;
   status: 'Lead' | 'Active' | 'Inactive';
+};
+type Project = {
+    id: string;
+    name: string;
+    budget: number;
 };
 
 
@@ -73,11 +88,20 @@ const chartConfig = {
   },
 } satisfies ChartConfig;
 
+const formatCurrency = (value: number) => {
+    const formatter = new Intl.NumberFormat('en-US', {
+        minimumFractionDigits: 0,
+    });
+    return `LE ${formatter.format(value)}`;
+};
+
+
 export default function ReportsPage() {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [inventory, setInventory] = useState<InventoryItem[]>([]);
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [clients, setClients] = useState<Client[]>([]);
+  const [projects, setProjects] = useState<Project[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
   
@@ -123,6 +147,15 @@ export default function ReportsPage() {
     }, (error) => {
         console.error("Error fetching clients: ", error);
         toast({ variant: 'destructive', title: 'Error', description: 'Failed to fetch client data.' });
+    }));
+
+    const qProjects = query(collection(firestore, 'projects'));
+    unsubscribes.push(onSnapshot(qProjects, (snapshot) => {
+        const data: Project[] = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Project));
+        setProjects(data);
+    }, (error) => {
+      console.error("Error fetching projects: ", error);
+      toast({ variant: 'destructive', title: 'Error', description: 'Failed to fetch project data.' });
     }));
 
 
@@ -214,6 +247,24 @@ export default function ReportsPage() {
         fill: colors[name],
     })).filter(d => d.value > 0);
 }, [clients]);
+
+ const projectFinancials = useMemo(() => {
+    return projects.map(project => {
+        const projectExpenses = transactions
+            .filter(t => t.projectId === project.id && t.type === 'Expense')
+            .reduce((acc, t) => acc + t.amount, 0);
+        
+        const remainingBudget = project.budget - projectExpenses;
+        const budgetConsumedPercentage = project.budget > 0 ? Math.round((projectExpenses / project.budget) * 100) : 0;
+
+        return {
+            ...project,
+            expenses: projectExpenses,
+            remaining: remainingBudget,
+            consumed: budgetConsumedPercentage > 100 ? 100 : budgetConsumedPercentage,
+        };
+    }).sort((a, b) => b.budget - a.budget);
+  }, [projects, transactions]);
 
 
   return (
@@ -369,6 +420,53 @@ export default function ReportsPage() {
            </CardContent>
          </Card>
       </div>
+
+       <Card>
+            <CardHeader>
+                <CardTitle>Project Budget vs. Actuals</CardTitle>
+                <CardDescription>
+                    An overview of budget consumption across all projects. This report includes all expenses ever linked to a project, regardless of the date range selected above.
+                </CardDescription>
+            </CardHeader>
+            <CardContent>
+                {isLoading ? (
+                    <Skeleton className="h-[250px] w-full" />
+                ) : projectFinancials.length > 0 ? (
+                    <Table>
+                        <TableHeader>
+                            <TableRow>
+                                <TableHead>Project</TableHead>
+                                <TableHead className="text-right">Budget</TableHead>
+                                <TableHead className="text-right">Expenses</TableHead>
+                                <TableHead className="text-right">Remaining</TableHead>
+                                <TableHead>Consumption</TableHead>
+                            </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                            {projectFinancials.map(proj => (
+                                <TableRow key={proj.id}>
+                                    <TableCell className="font-medium">{proj.name}</TableCell>
+                                    <TableCell className="text-right">{formatCurrency(proj.budget)}</TableCell>
+                                    <TableCell className="text-right text-destructive">{formatCurrency(proj.expenses)}</TableCell>
+                                    <TableCell className="text-right font-semibold">{formatCurrency(proj.remaining)}</TableCell>
+                                    <TableCell>
+                                        <div className="flex items-center gap-2">
+                                            <Progress value={proj.consumed} className="w-24" />
+                                            <span className="text-xs text-muted-foreground">{proj.consumed}%</span>
+                                        </div>
+                                    </TableCell>
+                                </TableRow>
+                            ))}
+                        </TableBody>
+                    </Table>
+                ) : (
+                    <div className="flex flex-col items-center justify-center gap-2 py-8 text-center text-muted-foreground">
+                        <DollarSign className="size-12" />
+                        <p>No project data available to generate a report.</p>
+                    </div>
+                )}
+            </CardContent>
+        </Card>
     </div>
   );
 }
