@@ -29,6 +29,7 @@ import {
   Wrench,
   ClipboardCheck,
   Receipt,
+  User as UserIcon,
 } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
@@ -51,6 +52,15 @@ import {
 } from '@/components/ui/alert-dialog';
 import { useAuth } from '@/hooks/use-auth';
 import { Skeleton } from './ui/skeleton';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { Button } from './ui/button';
 
 
 const menuItems = [
@@ -106,7 +116,7 @@ export function AppSidebar() {
   };
 
   return (
-    <>
+    <AlertDialog>
       <SidebarHeader>
         <div className="flex items-center gap-2">
           <Logo className="size-8 text-primary" />
@@ -114,7 +124,7 @@ export function AppSidebar() {
         </div>
       </SidebarHeader>
       <SidebarContent className="flex flex-col p-2">
-        <SidebarMenu>
+        <SidebarMenu className="flex-1">
           {menuItems.map((item) => (
             <SidebarMenuItem key={item.href}>
               <SidebarMenuButton asChild isActive={isActive(item.href)} tooltip={item.label}>
@@ -125,9 +135,6 @@ export function AppSidebar() {
               </SidebarMenuButton>
             </SidebarMenuItem>
           ))}
-        </SidebarMenu>
-
-        <SidebarMenu className="mt-auto">
             {profile?.role === 'admin' && (
               <SidebarMenuItem>
                   <SidebarMenuButton asChild isActive={isActive('/settings')} tooltip="Settings">
@@ -138,66 +145,82 @@ export function AppSidebar() {
                   </SidebarMenuButton>
               </SidebarMenuItem>
             )}
-            <SidebarMenuItem>
-                <AlertDialog>
-                    <AlertDialogTrigger asChild>
-                        <SidebarMenuButton
-                        variant="ghost"
-                        className="w-full justify-start text-sidebar-foreground hover:bg-destructive/10 hover:text-destructive"
-                        disabled={isLoggingOut}
-                        tooltip="Logout"
-                        >
-                        <LogOut />
-                        <span>Logout</span>
-                        </SidebarMenuButton>
-                    </AlertDialogTrigger>
-                    <AlertDialogContent>
-                        <AlertDialogHeader>
-                        <AlertDialogTitle>Are you sure you want to log out?</AlertDialogTitle>
-                        <AlertDialogDescription>
-                            You will be returned to the login page.
-                        </AlertDialogDescription>
-                        </AlertDialogHeader>
-                        <AlertDialogFooter>
-                        <AlertDialogCancel>Cancel</AlertDialogCancel>
-                        <AlertDialogAction onClick={handleLogout} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
-                            {isLoggingOut ? 'Logging out...' : 'Logout'}
-                        </AlertDialogAction>
-                        </AlertDialogFooter>
-                    </AlertDialogContent>
-                </AlertDialog>
-            </SidebarMenuItem>
         </SidebarMenu>
       </SidebarContent>
       <SidebarFooter className='mt-auto'>
          <Separator className="my-2" />
-         <div className="flex items-center gap-3 p-2">
-            {isAuthLoading ? (
-              <>
-                  <Skeleton className="h-10 w-10 rounded-full" />
-                  <div className="flex flex-col gap-2">
-                      <Skeleton className="h-4 w-20" />
-                      <Skeleton className="h-3 w-32" />
-                  </div>
-              </>
-            ) : profile && profile.email ? (
-              <>
-                  <Avatar>
-                      <AvatarImage src={`https://placehold.co/40x40.png`} alt={profile.email} data-ai-hint="profile picture" />
-                      <AvatarFallback>{profile.email.charAt(0).toUpperCase()}</AvatarFallback>
-                  </Avatar>
-                  <div className="flex flex-col overflow-hidden">
-                      <span className="text-sm font-semibold truncate">{profile.email.split('@')[0]}</span>
-                      <span className="text-xs text-muted-foreground truncate">{profile.email}</span>
-                  </div>
-              </>
-            ) : (
-                <div className="flex flex-col">
-                  <span className="text-sm font-semibold">Not logged in</span>
-              </div>
-            )}
-         </div>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+                <Button variant="ghost" className="w-full justify-start h-auto p-2">
+                    <div className="flex items-center gap-3 w-full">
+                        {isAuthLoading ? (
+                        <>
+                            <Skeleton className="h-10 w-10 rounded-full" />
+                            <div className="flex flex-col gap-2">
+                                <Skeleton className="h-4 w-20" />
+                                <Skeleton className="h-3 w-32" />
+                            </div>
+                        </>
+                        ) : profile && profile.email ? (
+                        <>
+                            <Avatar>
+                                <AvatarImage src={`https://placehold.co/40x40.png`} alt={profile.email} data-ai-hint="profile picture" />
+                                <AvatarFallback>{profile.email.charAt(0).toUpperCase()}</AvatarFallback>
+                            </Avatar>
+                            <div className="flex flex-col overflow-hidden text-left">
+                                <span className="text-sm font-semibold truncate">{profile.email.split('@')[0]}</span>
+                                <span className="text-xs text-muted-foreground truncate">{profile.email}</span>
+                            </div>
+                        </>
+                        ) : (
+                        <div className="flex flex-col">
+                            <span className="text-sm font-semibold">Not logged in</span>
+                        </div>
+                        )}
+                    </div>
+                </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent className="w-56 mb-2" align="end">
+                <DropdownMenuLabel>{profile?.email}</DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem asChild>
+                    <Link href="/profile">
+                        <UserIcon className="mr-2" />
+                        <span>Profile</span>
+                    </Link>
+                </DropdownMenuItem>
+                {profile?.role === 'admin' && (
+                    <DropdownMenuItem asChild>
+                        <Link href="/settings">
+                            <Settings className="mr-2" />
+                            <span>Settings</span>
+                        </Link>
+                    </DropdownMenuItem>
+                )}
+                <DropdownMenuSeparator />
+                <AlertDialogTrigger asChild>
+                    <DropdownMenuItem className="text-destructive focus:bg-destructive/10 focus:text-destructive" onSelect={(e) => e.preventDefault()}>
+                        <LogOut className="mr-2" />
+                        <span>Logout</span>
+                    </DropdownMenuItem>
+                </AlertDialogTrigger>
+            </DropdownMenuContent>
+        </DropdownMenu>
       </SidebarFooter>
-    </>
+      <AlertDialogContent>
+          <AlertDialogHeader>
+          <AlertDialogTitle>Are you sure you want to log out?</AlertDialogTitle>
+          <AlertDialogDescription>
+              You will be returned to the login page.
+          </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+          <AlertDialogCancel>Cancel</AlertDialogCancel>
+          <AlertDialogAction onClick={handleLogout} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              {isLoggingOut ? 'Logging out...' : 'Logout'}
+          </AlertDialogAction>
+          </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
   );
 }
