@@ -14,7 +14,18 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
-import { getCompanyProfile, updateCompanyProfile, companyProfileSchema, type CompanyProfileFormValues } from './actions';
+import { getCompanyProfile, updateCompanyProfile, type CompanyProfileFormValues } from './actions';
+import { z } from 'zod';
+
+const companyProfileSchema = z.object({
+  name: z.string().min(2, "Company name is required."),
+  address: z.string().optional(),
+  phone: z.string().optional(),
+  email: z.string().email({ message: "Invalid email address." }).optional().or(z.literal('')),
+  logoUrl: z.string().url().optional(),
+  logoPath: z.string().optional(),
+});
+
 
 export default function CompanyProfilePage() {
   const [profile, setProfile] = useState<CompanyProfileFormValues | null>(null);

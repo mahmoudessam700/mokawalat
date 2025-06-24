@@ -7,20 +7,26 @@ import { z } from 'zod';
 import { revalidatePath } from 'next/cache';
 import { getDownloadURL, ref, uploadBytes, deleteObject } from 'firebase/storage';
 
-export const companyProfileSchema = z.object({
+// Internal schema for validation, not exported.
+const companyProfileValidationSchema = z.object({
   name: z.string().min(2, "Company name is required."),
   address: z.string().optional(),
   phone: z.string().optional(),
   email: z.string().email({ message: "Invalid email address." }).optional().or(z.literal('')),
-  logoUrl: z.string().url().optional(),
-  logoPath: z.string().optional(),
 });
 
-export type CompanyProfileFormValues = z.infer<typeof companyProfileSchema>;
+export type CompanyProfileFormValues = {
+  name: string;
+  address?: string;
+  phone?: string;
+  email?: string;
+  logoUrl?: string;
+  logoPath?: string;
+};
 
 const profileDocRef = doc(firestore, 'company', 'main');
 
-export async function getCompanyProfile() {
+export async function getCompanyProfile(): Promise<CompanyProfileFormValues | null> {
   try {
     const docSnap = await getDoc(profileDocRef);
     if (docSnap.exists()) {
@@ -41,7 +47,7 @@ export async function updateCompanyProfile(formData: FormData) {
     email: formData.get('email'),
   };
 
-  const validatedFields = companyProfileSchema.omit({ logoUrl: true, logoPath: true }).safeParse(values);
+  const validatedFields = companyProfileValidationSchema.safeParse(values);
 
   if (!validatedFields.success) {
     return {
