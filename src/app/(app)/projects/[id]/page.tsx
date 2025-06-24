@@ -7,7 +7,7 @@ import { firestore } from '@/lib/firebase';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
-import { ArrowLeft, Briefcase, Calendar, DollarSign, Activity, Users, ShoppingCart, PackagePlus, PackageCheck, PackageX, PackageSearch, Lightbulb, TrendingUp, MapPin, BookText, ExternalLink, FileText, PlusCircle, Trash2, ListChecks, CheckCheck, MoreHorizontal, Contact, Sparkles, Wrench } from 'lucide-react';
+import { ArrowLeft, Briefcase, Calendar, DollarSign, Activity, Users, ShoppingCart, PackagePlus, PackageCheck, PackageX, PackageSearch, Lightbulb, TrendingUp, MapPin, BookText, ExternalLink, FileText, PlusCircle, Trash2, ListChecks, CheckCheck, MoreHorizontal, Contact, Wrench } from 'lucide-react';
 import { format, formatDistanceToNow } from 'date-fns';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
@@ -38,7 +38,6 @@ import { ProjectAiAssistant } from './project-ai-assistant';
 import { Progress } from '@/components/ui/progress';
 import { z } from 'zod';
 import { Textarea } from '@/components/ui/textarea';
-import { ProjectLogSummary } from './project-log-summary';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { updateMaterialRequestStatus } from '../../material-requests/actions';
 
@@ -648,10 +647,6 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
                             <CardDescription>All tasks required to complete the project.</CardDescription>
                         </div>
                         <div className="flex items-center gap-2">
-                            <Button variant="outline" onClick={handleSuggestTasks} disabled={isSuggestingTasks}>
-                                {isSuggestingTasks ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Sparkles className="mr-2" />}
-                                AI Suggest Tasks
-                            </Button>
                             <Dialog open={isTaskDialogOpen} onOpenChange={setIsTaskDialogOpen}>
                                 <DialogTrigger asChild><Button><PlusCircle className="mr-2" /> Add Task</Button></DialogTrigger>
                                 <DialogContent>
@@ -905,7 +900,6 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
                         <CardDescription>A chronological record of project updates and observations.</CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-6">
-                        <ProjectLogSummary projectId={project.id} />
                         <Form {...dailyLogForm}>
                             <form onSubmit={dailyLogForm.handleSubmit(onDailyLogSubmit)} className="space-y-4">
                                 <FormField
@@ -1080,7 +1074,11 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
                 </Card>
             </TabsContent>
              <TabsContent value="ai-assistant" className="pt-4">
-                <ProjectAiAssistant project={project} />
+                <ProjectAiAssistant
+                  project={project}
+                  onSuggestTasks={handleSuggestTasks}
+                  isSuggestingTasks={isSuggestingTasks}
+                />
             </TabsContent>
         </Tabs>
     </div>
