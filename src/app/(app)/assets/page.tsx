@@ -308,7 +308,7 @@ export default function AssetsPage() {
               <h1 className="font-headline text-3xl font-bold tracking-tight">Asset Management</h1>
               <p className="text-muted-foreground">Track vehicles, heavy machinery, and tools.</p>
             </div>
-            {profile?.role === 'admin' && (
+            {['admin', 'manager'].includes(profile?.role || '') && (
                 <Dialog open={isFormDialogOpen} onOpenChange={handleFormDialogOpenChange}>
                 <DialogTrigger asChild>
                     <Button onClick={() => setAssetToEdit(null)}>
@@ -408,7 +408,7 @@ export default function AssetsPage() {
                         </TableCell>
                         <TableCell><Badge variant={statusVariant[asset.status]}>{asset.status}</Badge></TableCell>
                         <TableCell className="text-right">
-                          {profile?.role === 'admin' && (
+                          {['admin', 'manager'].includes(profile?.role || '') && (
                             <DropdownMenu>
                               <DropdownMenuTrigger asChild><Button aria-haspopup="true" size="icon" variant="ghost"><MoreHorizontal className="h-4 w-4" /><span className="sr-only">Toggle menu</span></Button></DropdownMenuTrigger>
                               <DropdownMenuContent align="end">

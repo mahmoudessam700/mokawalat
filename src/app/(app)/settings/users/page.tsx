@@ -46,10 +46,8 @@ import { collection, onSnapshot, query, orderBy } from 'firebase/firestore';
 import { firestore } from '@/lib/firebase';
 import { Skeleton } from '@/components/ui/skeleton';
 import Link from 'next/link';
-import { useAuth } from '@/hooks/use-auth';
+import { useAuth, type UserRole } from '@/hooks/use-auth';
 import { useRouter } from 'next/navigation';
-
-type UserRole = 'admin' | 'user';
 
 type User = {
   uid: string;
@@ -57,13 +55,14 @@ type User = {
   role: UserRole;
 };
 
-const roleVariant: { [key in UserRole]: 'default' | 'secondary' } = {
+const roleVariant: { [key in UserRole]: 'default' | 'secondary' | 'destructive' } = {
   admin: 'default',
+  manager: 'destructive',
   user: 'secondary',
 };
 
 const updateUserRoleSchema = z.object({
-  role: z.enum(['admin', 'user']),
+  role: z.enum(['admin', 'manager', 'user']),
 });
 
 type UpdateUserRoleFormValues = z.infer<typeof updateUserRoleSchema>;
@@ -226,7 +225,7 @@ export default function UserManagementPage() {
                     <TableCell>
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
-                          <Button aria-haspopup="true" size="icon" variant="ghost">
+                          <Button aria-haspopup="true" size="icon" variant="ghost" disabled={user.uid === profile.uid}>
                             <MoreHorizontal className="h-4 w-4" />
                             <span className="sr-only">Toggle menu</span>
                           </Button>
@@ -280,6 +279,7 @@ export default function UserManagementPage() {
                         </FormControl>
                         <SelectContent>
                           <SelectItem value="admin">Admin</SelectItem>
+                          <SelectItem value="manager">Manager</SelectItem>
                           <SelectItem value="user">User</SelectItem>
                         </SelectContent>
                       </Select>

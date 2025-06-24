@@ -13,7 +13,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useState, useEffect, useMemo } from 'react';
 import { useToast } from '@/hooks/use-toast';
-import { collection, onSnapshot, query, where, orderBy, type Timestamp } from 'firebase/firestore';
+import { collection, onSnapshot, query, where, type Timestamp } from 'firebase/firestore';
 import { firestore } from '@/lib/firebase';
 import { Skeleton } from '@/components/ui/skeleton';
 import { format } from 'date-fns';
@@ -73,7 +73,7 @@ export default function ApprovalsPage() {
   const router = useRouter();
 
   useEffect(() => {
-    if (!isAuthLoading && profile?.role !== 'admin') {
+    if (!isAuthLoading && !['admin', 'manager'].includes(profile?.role || '')) {
         toast({
             variant: 'destructive',
             title: 'Access Denied',
@@ -84,7 +84,7 @@ export default function ApprovalsPage() {
   }, [profile, isAuthLoading, router, toast]);
 
   useEffect(() => {
-    if (profile?.role !== 'admin') return;
+    if (!['admin', 'manager'].includes(profile?.role || '')) return;
 
     const unsubscribes: (() => void)[] = [];
 
@@ -102,12 +102,12 @@ export default function ApprovalsPage() {
       setPurchaseOrders(data);
     }, (err) => console.error("Error fetching pending purchase orders: ", err)));
 
-    const qProjects = query(collection(firestore, 'projects'), orderBy('name', 'asc'));
+    const qProjects = query(collection(firestore, 'projects'), where('status', '!=', 'Completed'));
     unsubscribes.push(onSnapshot(qProjects, (snapshot) => {
       setProjects(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Project)));
     }, (err) => console.error("Error fetching projects: ", err)));
 
-    const qSuppliers = query(collection(firestore, 'suppliers'), orderBy('name', 'asc'));
+    const qSuppliers = query(collection(firestore, 'suppliers'), where('status', '==', 'Active'));
     unsubscribes.push(onSnapshot(qSuppliers, (snapshot) => {
       setSuppliers(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Supplier)));
     }, (err) => console.error("Error fetching suppliers: ", err)));
@@ -139,7 +139,7 @@ export default function ApprovalsPage() {
     }
   }
 
-  if (isAuthLoading || profile?.role !== 'admin') {
+  if (isAuthLoading || !['admin', 'manager'].includes(profile?.role || '')) {
     return (
         <div className="space-y-6">
             <div className="flex items-center gap-4">

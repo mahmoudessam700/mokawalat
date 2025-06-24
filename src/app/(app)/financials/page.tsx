@@ -395,14 +395,14 @@ export default function FinancialsPage() {
             <CardDescription>A list of all income and expense records.</CardDescription>
           </div>
           <div className="flex items-center gap-2">
-            {profile?.role === 'admin' && (
+            {['admin', 'manager'].includes(profile?.role || '') && (
                 <Button asChild variant="outline">
                     <Link href="/financials/accounts">
                         <Landmark className="mr-2"/> Manage Accounts
                     </Link>
                 </Button>
             )}
-            {profile?.role === 'admin' && (
+            {['admin', 'manager'].includes(profile?.role || '') && (
               <Dialog open={isFormDialogOpen} onOpenChange={handleFormDialogOpenChange}>
               <DialogTrigger asChild>
                   <Button onClick={() => setTransactionToEdit(null)} disabled={accounts.length === 0}>
@@ -495,7 +495,7 @@ export default function FinancialsPage() {
                         <TableCell><Badge variant={transaction.type === 'Income' ? 'secondary' : 'destructive'}>{transaction.type}</Badge></TableCell>
                         <TableCell className={`text-right font-semibold ${transaction.type === 'Income' ? 'text-success' : ''}`}>{formatCurrency(transaction.amount)}</TableCell>
                         <TableCell>
-                        {profile?.role === 'admin' && (
+                        {['admin', 'manager'].includes(profile?.role || '') && (
                             <DropdownMenu>
                             <DropdownMenuTrigger asChild><Button aria-haspopup="true" size="icon" variant="ghost"><MoreHorizontal className="h-4 w-4" /><span className="sr-only">Toggle menu</span></Button></DropdownMenuTrigger>
                             <DropdownMenuContent align="end">

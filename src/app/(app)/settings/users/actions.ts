@@ -7,7 +7,7 @@ import { z } from 'zod';
 import { revalidatePath } from 'next/cache';
 
 const updateUserRoleSchema = z.object({
-  role: z.enum(['admin', 'user']),
+  role: z.enum(['admin', 'manager', 'user']),
 });
 
 export type UpdateUserRoleFormValues = z.infer<typeof updateUserRoleSchema>;

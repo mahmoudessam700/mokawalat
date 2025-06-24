@@ -221,7 +221,7 @@ export default function ClientsPage() {
             Manage your current and potential clients.
           </p>
         </div>
-        {profile?.role === 'admin' && (
+        {['admin', 'manager'].includes(profile?.role || '') && (
           <Dialog open={isFormDialogOpen} onOpenChange={handleFormDialogOpenChange}>
             <DialogTrigger asChild>
               <Button onClick={() => setClientToEdit(null)}>
@@ -422,7 +422,7 @@ export default function ClientsPage() {
                           <DropdownMenuItem asChild>
                             <Link href={`/clients/${client.id}`}>View Details</Link>
                           </DropdownMenuItem>
-                          {profile?.role === 'admin' && (
+                          {['admin', 'manager'].includes(profile?.role || '') && (
                             <>
                               <DropdownMenuItem onSelect={() => {
                                 setClientToEdit(client);

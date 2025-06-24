@@ -3,63 +3,158 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // --- Helper Functions ---
+    // Helper functions to check user authentication and roles.
+    // These make the rules below cleaner and easier to understand.
     function isAuthenticated() {
       return request.auth != null;
     }
+    
+    function getUserData() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+    }
 
     function isAdmin() {
-      // This function can only be called if the user has read access to their own user document.
-      return isAuthenticated() && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+      return isAuthenticated() && getUserData().role == 'admin';
+    }
+    
+    function isManager() {
+      return isAuthenticated() && getUserData().role in ['admin', 'manager'];
     }
 
-    // --- Specific Collection Rules ---
+    // Rules are organized by collection for clarity.
 
-    // All authenticated users can read any user's profile information.
-    // Only an admin can change another user's role.
+    // USERS: Only admins can manage the list of users and their roles.
+    // Users can view their own profile information.
     match /users/{userId} {
       allow read: if isAuthenticated();
-      allow write: if isAdmin();
-    }
-
-    // Any authenticated user can read from any top-level collection.
-    // This simplifies rules for an internal ERP where most data is not secret among employees.
-    match /{collection}/{docId} {
-      allow read: if isAuthenticated();
+      allow list, write: if isAdmin();
     }
     
-    // Any authenticated user can read from any subcollection.
-    match /{collection}/{docId}/{subcollection}/{subDocId} {
-       allow read: if isAuthenticated();
+    // COMPANY PROFILE: Any authenticated user can read it, but only managers/admins can update it.
+    match /company/main {
+        allow read: if isAuthenticated();
+        allow write: if isManager();
     }
-
-    // --- Global Write Rules ---
-    // Admins have universal write access. This is a simple, powerful rule for admin functionality.
-    // Specific write rules for non-admins are defined below and will grant additional permissions.
-    match /{document=**} {
-      allow write: if isAdmin();
+    
+    // ACTIVITY LOG: Write access is restricted to prevent tampering.
+    match /activityLog/{logId} {
+        allow read: if isAuthenticated();
+        allow create: if isManager();
+        allow update, delete: if isAdmin();
     }
+    
+    // PROJECTS & SUB-COLLECTIONS: Managers control top-level projects,
+    // while any authenticated user (team member) can interact with sub-collections.
+    match /projects/{projectId} {
+        allow read: if isAuthenticated();
+        allow create, update, delete: if isManager();
 
-    // --- Specific Write Access for Non-Admins ---
-
-    // Allow authenticated users to create daily logs in a project.
-    match /projects/{projectId}/dailyLogs/{logId} {
-      allow create: if isAuthenticated();
+        match /tasks/{taskId} {
+            allow read, write: if isAuthenticated();
+        }
+        
+        match /documents/{docId} {
+            allow read: if isAuthenticated();
+            allow create, delete: if isAuthenticated();
+        }
+        
+        match /dailyLogs/{logId} {
+            allow read: if isAuthenticated();
+            allow create: if isAuthenticated();
+            allow update, delete: if isManager();
+        }
     }
-
-    // Allow authenticated users to update a task's status (for the Kanban board).
-    match /projects/{projectId}/tasks/{taskId} {
-      allow update: if isAuthenticated();
+    
+    // EMPLOYEES: Managed by HR/Managers.
+    match /employees/{employeeId} {
+        allow read: if isAuthenticated();
+        allow create, update, delete: if isManager();
     }
+    
+    // CLIENTS & SUB-COLLECTIONS: Managed by sales/managers.
+    match /clients/{clientId} {
+        allow read: if isAuthenticated();
+        allow create, update, delete: if isManager();
 
-    // Allow authenticated users to create material requests.
+        match /interactions/{interactionId} {
+            allow read: if isAuthenticated();
+            allow create: if isAuthenticated();
+            allow update, delete: if isManager();
+        }
+        
+        match /contracts/{contractId} {
+            allow read: if isAuthenticated();
+            allow create, delete: if isManager();
+        }
+    }
+    
+    // SUPPLIERS & SUB-COLLECTIONS: Managed by procurement/managers.
+    match /suppliers/{supplierId} {
+        allow read: if isAuthenticated();
+        allow create, update, delete: if isManager();
+
+        match /contracts/{contractId} {
+            allow read: if isAuthenticated();
+            allow create, delete: if isManager();
+        }
+    }
+    
+    // INVENTORY, CATEGORIES, WAREHOUSES: Inventory is managed by managers,
+    // but the system configuration (categories, warehouses) is admin-only.
+    match /inventory/{itemId} {
+        allow read: if isAuthenticated();
+        allow write: if isManager();
+    }
+    match /inventoryCategories/{categoryId} {
+        allow read: if isAuthenticated();
+        allow write: if isAdmin();
+    }
+    match /warehouses/{warehouseId} {
+        allow read: if isAuthenticated();
+        allow write: if isAdmin();
+    }
+    
+    // ASSETS: Managed by managers.
+    match /assets/{assetId} {
+        allow read: if isAuthenticated();
+        allow create, update, delete: if isManager();
+        
+        match /maintenanceLogs/{logId} {
+            allow read: if isAuthenticated();
+            allow create: if isManager();
+            allow update, delete: if isAdmin();
+        }
+    }
+    
+    // PROCUREMENT & MATERIAL REQUESTS: Any user can create requests, but managers approve them.
+    match /procurement/{requestId} {
+        allow read: if isAuthenticated();
+        allow create: if isAuthenticated();
+        allow update, delete: if isManager();
+    }
     match /materialRequests/{requestId} {
-      allow create: if isAuthenticated();
+        allow read: if isAuthenticated();
+        allow create: if isAuthenticated();
+        allow update, delete: if isManager();
     }
     
-    // Allow authenticated users to create interactions with clients.
-    match /clients/{clientId}/interactions/{interactionId} {
-      allow create: if isAuthenticated();
+    // FINANCIALS (Transactions, Invoices, Accounts): Handled by the finance team/managers.
+    match /transactions/{transactionId} {
+        allow read: if isAuthenticated();
+        allow write: if isManager();
+    }
+     match /invoices/{invoiceId} {
+        allow read: if isAuthenticated();
+        allow write: if isManager();
+    }
+    match /accounts/{accountId} {
+        allow read: if isAuthenticated();
+        allow write: if isManager();
+    }
+
+    // COLLECTION GROUP QUERIES: This is needed for features that query across all sub-collections.
+    match /{path=**}/contracts/{contractId} {
+        allow read: if isAuthenticated();
     }
   }
 }

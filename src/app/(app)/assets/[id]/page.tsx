@@ -247,7 +247,7 @@ export default function AssetDetailPage({ params }: { params: { id: string } }) 
                         <CardTitle>Maintenance History</CardTitle>
                         <CardDescription>A log of all maintenance performed on this asset.</CardDescription>
                     </div>
-                    {profile?.role === 'admin' && (
+                    {['admin', 'manager'].includes(profile?.role || '') && (
                         <Dialog open={isLogDialogOpen} onOpenChange={setIsLogDialogOpen}>
                             <DialogTrigger asChild><Button><PlusCircle className="mr-2" /> Log Maintenance</Button></DialogTrigger>
                             <DialogContent>

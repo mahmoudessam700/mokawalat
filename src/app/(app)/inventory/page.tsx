@@ -277,7 +277,7 @@ export default function InventoryPage() {
             Track and manage materials, tools, and equipment.
           </p>
         </div>
-        {profile?.role === 'admin' && (
+        {['admin', 'manager'].includes(profile?.role || '') && (
             <Dialog open={isDialogOpen} onOpenChange={handleFormDialogOpenChange}>
             <DialogTrigger asChild>
                 <Button onClick={() => setItemToEdit(null)}>
@@ -567,7 +567,7 @@ export default function InventoryPage() {
                       </Badge>
                     </TableCell>
                     <TableCell>
-                      {profile?.role === 'admin' && (
+                      {['admin', 'manager'].includes(profile?.role || '') && (
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
                             <Button

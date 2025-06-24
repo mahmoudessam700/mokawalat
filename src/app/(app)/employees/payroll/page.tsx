@@ -99,7 +99,7 @@ export default function PayrollSummaryPage() {
   });
 
   useEffect(() => {
-    if (!isAuthLoading && profile?.role !== 'admin') {
+    if (!isAuthLoading && !['admin', 'manager'].includes(profile?.role || '')) {
       toast({
           variant: 'destructive',
           title: 'Access Denied',
@@ -110,7 +110,7 @@ export default function PayrollSummaryPage() {
   }, [profile, isAuthLoading, router, toast]);
 
   useEffect(() => {
-    if (profile?.role !== 'admin') return;
+    if (!['admin', 'manager'].includes(profile?.role || '')) return;
     
     const unsubscribes: (() => void)[] = [];
 
@@ -159,7 +159,7 @@ export default function PayrollSummaryPage() {
     }
   }
 
-  if (isAuthLoading || profile?.role !== 'admin') {
+  if (isAuthLoading || !['admin', 'manager'].includes(profile?.role || '')) {
     return (
         <div className="space-y-6">
             <div className="flex items-center gap-4">

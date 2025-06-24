@@ -140,7 +140,7 @@ export default function MaterialRequestsPage() {
                 <TableHead>Project</TableHead>
                 <TableHead>Requested On</TableHead>
                 <TableHead>Status</TableHead>
-                {profile?.role === 'admin' && <TableHead className="text-right">Actions</TableHead>}
+                {['admin', 'manager'].includes(profile?.role || '') && <TableHead className="text-right">Actions</TableHead>}
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -152,7 +152,7 @@ export default function MaterialRequestsPage() {
                     <TableCell><Skeleton className="h-4 w-[150px]" /></TableCell>
                     <TableCell><Skeleton className="h-4 w-[100px]" /></TableCell>
                     <TableCell><Skeleton className="h-6 w-[80px] rounded-full" /></TableCell>
-                    {profile?.role === 'admin' && <TableCell><Skeleton className="h-8 w-[72px] ml-auto" /></TableCell>}
+                    {['admin', 'manager'].includes(profile?.role || '') && <TableCell><Skeleton className="h-8 w-[72px] ml-auto" /></TableCell>}
                   </TableRow>
                 ))
               ) : filteredRequests.length > 0 ? (
@@ -167,7 +167,7 @@ export default function MaterialRequestsPage() {
                     </TableCell>
                     <TableCell>{req.requestedAt ? format(req.requestedAt.toDate(), 'PPP') : 'N/A'}</TableCell>
                     <TableCell><Badge variant={statusVariant[req.status]}>{req.status}</Badge></TableCell>
-                    {profile?.role === 'admin' && (
+                    {['admin', 'manager'].includes(profile?.role || '') && (
                       <TableCell className="text-right">
                         {req.status === 'Pending' ? (
                           <div className="flex gap-2 justify-end">
@@ -185,7 +185,7 @@ export default function MaterialRequestsPage() {
                 ))
               ) : (
                 <TableRow>
-                  <TableCell colSpan={profile?.role === 'admin' ? 6 : 5} className="h-24 text-center">
+                  <TableCell colSpan={['admin', 'manager'].includes(profile?.role || '') ? 6 : 5} className="h-24 text-center">
                     No material requests match the current filter.
                   </TableCell>
                 </TableRow>

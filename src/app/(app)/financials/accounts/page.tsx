@@ -201,7 +201,7 @@ export default function AccountsPage() {
             <CardTitle>Accounts List</CardTitle>
             <CardDescription>A list of all bank accounts in the system.</CardDescription>
           </div>
-          {profile?.role === 'admin' && (
+          {['admin', 'manager'].includes(profile?.role || '') && (
             <Dialog open={isFormDialogOpen} onOpenChange={handleFormDialogOpenChange}>
             <DialogTrigger asChild>
                 <Button onClick={() => setAccountToEdit(null)}>
@@ -264,7 +264,7 @@ export default function AccountsPage() {
                         <TableCell className="text-right">{formatCurrency(account.initialBalance)}</TableCell>
                         <TableCell className="text-right font-semibold">{formatCurrency(accountBalances.get(account.id) || 0)}</TableCell>
                         <TableCell>
-                        {profile?.role === 'admin' && (
+                        {['admin', 'manager'].includes(profile?.role || '') && (
                             <DropdownMenu>
                             <DropdownMenuTrigger asChild><Button aria-haspopup="true" size="icon" variant="ghost"><MoreHorizontal className="h-4 w-4" /><span className="sr-only">Toggle menu</span></Button></DropdownMenuTrigger>
                             <DropdownMenuContent align="end">

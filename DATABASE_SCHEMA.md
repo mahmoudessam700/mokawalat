@@ -20,7 +20,7 @@ Stores authentication information and application-specific roles for each user.
 -   **Fields**:
     -   `uid` (string): The user's unique Firebase Authentication ID.
     -   `email` (string): The user's email address.
-    -   `role` (string): The user's role within the application (`admin` or `user`).
+    -   `role` (string): The user's role within the application (`admin`, `manager`, or `user`).
 
 ### `company`
 
@@ -292,7 +292,8 @@ The security of the database is enforced by rules defined in the `firestore.rule
 
 1.  **Authentication Required**: All access to the database requires a user to be authenticated.
 2.  **Role-Based Access Control (RBAC)**:
-    -   Users with the `admin` role generally have wider permissions, including creation and deletion rights on most top-level collections.
+    -   Users with the `admin` role generally have the widest permissions, including creation and deletion rights on all collections and system settings.
+    -   Users with the `manager` role have permissions to manage most day-to-day operational data (projects, clients, approvals) but cannot alter system settings or manage users.
     -   Users with the `user` role have more restricted permissions, typically limited to reading data and creating items in sub-collections (like daily logs or material requests).
 3.  **Ownership and Relationship-Based Rules**: For sub-collections, write access is often granted based on a user's relationship to the parent document (e.g., only team members of a project can add tasks).
 4.  **Data Validation**: Rules can enforce data types and constraints, though the primary validation is handled in the application's server actions.

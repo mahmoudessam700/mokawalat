@@ -227,7 +227,7 @@ export default function EmployeesPage() {
             View, add, and manage all company employees.
           </p>
         </div>
-        {profile?.role === 'admin' && (
+        {['admin', 'manager'].includes(profile?.role || '') && (
             <div className="flex items-center gap-2">
                 <Button asChild variant="outline">
                     <Link href="/employees/payroll">
@@ -501,7 +501,7 @@ export default function EmployeesPage() {
                           <DropdownMenuItem asChild>
                             <Link href={`/employees/${employee.id}`}>View Details</Link>
                           </DropdownMenuItem>
-                          {profile?.role === 'admin' && (
+                          {['admin', 'manager'].includes(profile?.role || '') && (
                             <>
                                 <DropdownMenuItem
                                     onSelect={() => {

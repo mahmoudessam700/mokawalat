@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useAuth } from '@/hooks/use-auth';
@@ -11,8 +12,9 @@ import { sendPasswordReset } from './actions';
 import { Loader2, KeyRound } from 'lucide-react';
 import { useState } from 'react';
 
-const roleVariant: { [key: string]: 'default' | 'secondary' } = {
+const roleVariant: { [key: string]: 'default' | 'secondary' | 'destructive' } = {
   admin: 'default',
+  manager: 'destructive',
   user: 'secondary',
 };
 

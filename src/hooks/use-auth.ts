@@ -6,7 +6,7 @@ import { onAuthStateChanged, type User as FirebaseAuthUser } from 'firebase/auth
 import { doc, onSnapshot } from 'firebase/firestore';
 import { auth, firestore } from '@/lib/firebase';
 
-export type UserRole = 'admin' | 'user';
+export type UserRole = 'admin' | 'manager' | 'user';
 
 export interface UserProfile {
   uid: string;

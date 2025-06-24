@@ -482,7 +482,7 @@ export default function ClientDetailPage({ params }: { params: { id: string } })
                             <CardTitle>Contract Management</CardTitle>
                             <CardDescription>A list of all contracts and agreements with this client.</CardDescription>
                         </div>
-                        {profile?.role === 'admin' && (
+                        {['admin', 'manager'].includes(profile?.role || '') && (
                             <Dialog open={isContractFormOpen} onOpenChange={setIsContractFormOpen}>
                                 <DialogTrigger asChild><Button size="sm"><PlusCircle className="mr-2" /> Add Contract</Button></DialogTrigger>
                                 <DialogContent>
@@ -504,7 +504,7 @@ export default function ClientDetailPage({ params }: { params: { id: string } })
                     </CardHeader>
                     <CardContent>
                         {contracts.length > 0 ? (
-                            <Table><TableHeader><TableRow><TableHead>Title</TableHead><TableHead>Value</TableHead><TableHead>Effective Date</TableHead><TableHead className="text-right">Actions</TableHead></TableRow></TableHeader><TableBody>{contracts.map(contract => (<TableRow key={contract.id}><TableCell className="font-medium">{contract.title}</TableCell><TableCell>{contract.value ? formatCurrency(contract.value) : 'N/A'}</TableCell><TableCell>{contract.effectiveDate ? format(contract.effectiveDate.toDate(), 'PPP') : 'N/A'}</TableCell><TableCell className="text-right"><div className="flex items-center justify-end gap-2">{contract.fileUrl && (<Button asChild variant="outline" size="icon" className="h-8 w-8"><Link href={contract.fileUrl} target="_blank" rel="noopener noreferrer"><ExternalLink className="size-4" /><span className="sr-only">View Contract</span></Link></Button>)}{profile?.role === 'admin' && (<Button variant="ghost" size="icon" className="text-destructive hover:text-destructive h-8 w-8" onClick={() => setContractToDelete(contract)}><Trash2 className="size-4" /></Button>)}</div></TableCell></TableRow>))}</TableBody></Table>
+                            <Table><TableHeader><TableRow><TableHead>Title</TableHead><TableHead>Value</TableHead><TableHead>Effective Date</TableHead><TableHead className="text-right">Actions</TableHead></TableRow></TableHeader><TableBody>{contracts.map(contract => (<TableRow key={contract.id}><TableCell className="font-medium">{contract.title}</TableCell><TableCell>{contract.value ? formatCurrency(contract.value) : 'N/A'}</TableCell><TableCell>{contract.effectiveDate ? format(contract.effectiveDate.toDate(), 'PPP') : 'N/A'}</TableCell><TableCell className="text-right"><div className="flex items-center justify-end gap-2">{contract.fileUrl && (<Button asChild variant="outline" size="icon" className="h-8 w-8"><Link href={contract.fileUrl} target="_blank" rel="noopener noreferrer"><ExternalLink className="size-4" /><span className="sr-only">View Contract</span></Link></Button>)}{['admin', 'manager'].includes(profile?.role || '') && (<Button variant="ghost" size="icon" className="text-destructive hover:text-destructive h-8 w-8" onClick={() => setContractToDelete(contract)}><Trash2 className="size-4" /></Button>)}</div></TableCell></TableRow>))}</TableBody></Table>
                         ) : (
                             <div className="flex flex-col items-center justify-center gap-2 py-8 text-center text-muted-foreground"><FileText className="size-12" /><p>No contracts found for this client.</p></div>
                         )}

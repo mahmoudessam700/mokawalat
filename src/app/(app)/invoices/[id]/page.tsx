@@ -206,10 +206,10 @@ export default function InvoiceDetailPage({ params }: { params: { id: string } }
                 </div>
             </div>
             <div className="flex items-center gap-2">
-                {profile?.role === 'admin' && invoice.status === 'Draft' && (
+                {['admin', 'manager'].includes(profile?.role || '') && invoice.status === 'Draft' && (
                     <Button onClick={handleEditClick} variant="outline"><Edit className="mr-2"/> Edit</Button>
                 )}
-                {profile?.role === 'admin' && invoice.status !== 'Paid' && invoice.status !== 'Void' && (
+                {['admin', 'manager'].includes(profile?.role || '') && invoice.status !== 'Paid' && invoice.status !== 'Void' && (
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild><Button variant="outline">Update Status <ChevronDown className="ml-2"/></Button></DropdownMenuTrigger>
                     <DropdownMenuContent align="end">

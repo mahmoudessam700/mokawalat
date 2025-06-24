@@ -183,7 +183,7 @@ export default function InvoicesPage() {
           <h1 className="font-headline text-3xl font-bold tracking-tight">Invoicing</h1>
           <p className="text-muted-foreground">Create and manage client invoices.</p>
         </div>
-        {profile?.role === 'admin' && (
+        {['admin', 'manager'].includes(profile?.role || '') && (
             <Dialog open={isFormDialogOpen} onOpenChange={setIsFormDialogOpen}>
             <DialogTrigger asChild>
                 <Button><FilePlus className="mr-2" /> Create Invoice</Button>
