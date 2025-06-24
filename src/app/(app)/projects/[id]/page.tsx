@@ -40,6 +40,7 @@ import { z } from 'zod';
 import { Textarea } from '@/components/ui/textarea';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { updateMaterialRequestStatus } from '../../material-requests/actions';
+import { ProjectTasksKanban } from './project-tasks-kanban';
 
 type ProjectStatus = 'In Progress' | 'Planning' | 'Completed' | 'On Hold';
 type TaskStatus = 'To Do' | 'In Progress' | 'Done';
@@ -70,7 +71,7 @@ type Client = {
     name: string;
 };
 
-type Task = {
+export type Task = {
   id: string;
   name: string;
   status: TaskStatus;
@@ -644,7 +645,7 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
                     <CardHeader className="flex-row items-center justify-between">
                         <div>
                             <CardTitle>Project Tasks</CardTitle>
-                            <CardDescription>All tasks required to complete the project.</CardDescription>
+                            <CardDescription>Drag and drop tasks to update their status.</CardDescription>
                         </div>
                         <div className="flex items-center gap-2">
                             <Dialog open={isTaskDialogOpen} onOpenChange={setIsTaskDialogOpen}>
@@ -663,11 +664,7 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
                         </div>
                     </CardHeader>
                     <CardContent>
-                        {tasks.length > 0 ? (
-                            <Table><TableHeader><TableRow><TableHead>Task</TableHead><TableHead>Due Date</TableHead><TableHead>Status</TableHead><TableHead className="text-right">Actions</TableHead></TableRow></TableHeader><TableBody>{tasks.map(task => (<TableRow key={task.id}><TableCell className="font-medium">{task.name}</TableCell><TableCell>{task.dueDate ? format(task.dueDate.toDate(), 'PPP') : 'N/A'}</TableCell><TableCell><Badge variant={taskStatusVariant[task.status]}>{task.status}</Badge></TableCell><TableCell className="text-right"><DropdownMenu><DropdownMenuTrigger asChild><Button variant="ghost" size="icon" className="h-8 w-8"><MoreHorizontal className="h-4 w-4" /></Button></DropdownMenuTrigger><DropdownMenuContent align="end"><DropdownMenuLabel>Actions</DropdownMenuLabel><DropdownMenuItem onSelect={() => handleTaskStatusUpdate(task.id, 'To Do')} disabled={task.status === 'To Do'}>To Do</DropdownMenuItem><DropdownMenuItem onSelect={() => handleTaskStatusUpdate(task.id, 'In Progress')} disabled={task.status === 'In Progress'}>In Progress</DropdownMenuItem><DropdownMenuItem onSelect={() => handleTaskStatusUpdate(task.id, 'Done')} disabled={task.status === 'Done'}>Done</DropdownMenuItem><DropdownMenuSeparator /><DropdownMenuItem className="text-destructive" onSelect={() => setTaskToDelete(task)}><Trash2 className="mr-2 h-4 w-4" />Delete</DropdownMenuItem></DropdownMenuContent></DropdownMenu></TableCell></TableRow>))}</TableBody></Table>
-                        ) : (
-                            <div className="flex flex-col items-center justify-center gap-2 py-8 text-center text-muted-foreground"><ListChecks className="size-12" /><p>No tasks have been added for this project yet.</p></div>
-                        )}
+                       <ProjectTasksKanban projectId={projectId} tasks={tasks} />
                     </CardContent>
                 </Card>
             </TabsContent>
@@ -844,7 +841,11 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
                                 <TableBody>
                                     {assets.map(asset => (
                                         <TableRow key={asset.id}>
-                                            <TableCell className="font-medium">{asset.name}</TableCell>
+                                            <TableCell className="font-medium">
+                                                <Link href={`/assets/${asset.id}`} className="hover:underline">
+                                                    {asset.name}
+                                                </Link>
+                                            </TableCell>
                                             <TableCell>{asset.category}</TableCell>
                                             <TableCell><Badge variant={assetStatusVariant[asset.status]}>{asset.status}</Badge></TableCell>
                                         </TableRow>
