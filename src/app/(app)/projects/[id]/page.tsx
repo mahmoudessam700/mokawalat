@@ -193,13 +193,13 @@ const formatCurrency = (value: number) => {
 
 const dailyLogFormSchema = z.object({
   notes: z.string().min(10, 'Log notes must be at least 10 characters long.').max(2000),
-  photo: z.instanceof(FileList).optional(),
+  photo: z.any().optional(),
 });
 type DailyLogFormValues = z.infer<typeof dailyLogFormSchema>;
 
 const documentFormSchema = z.object({
   title: z.string().min(3, 'Document title must be at least 3 characters long.'),
-  file: z.instanceof(FileList).refine(files => files.length > 0, 'A file is required.'),
+  file: z.any().refine(files => files?.length > 0, 'A file is required.'),
 });
 type DocumentFormValues = z.infer<typeof documentFormSchema>;
 

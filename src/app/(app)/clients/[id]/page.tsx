@@ -136,7 +136,7 @@ const contractFormSchema = z.object({
     message: 'Please select a valid date.',
   }),
   value: z.coerce.number().optional(),
-  file: z.instanceof(FileList).optional(),
+  file: z.any().optional(),
 });
 type ContractFormValues = z.infer<typeof contractFormSchema>;
 

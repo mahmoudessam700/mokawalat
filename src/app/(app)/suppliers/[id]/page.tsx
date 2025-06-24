@@ -95,7 +95,7 @@ const contractFormSchema = z.object({
   effectiveDate: z.string().refine((date) => !isNaN(Date.parse(date)), {
     message: 'Please select a valid date.',
   }),
-  file: z.instanceof(FileList).optional(),
+  file: z.any().optional(),
 });
 type ContractFormValues = z.infer<typeof contractFormSchema>;
 

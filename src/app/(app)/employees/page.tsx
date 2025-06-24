@@ -78,7 +78,7 @@ const employeeFormSchema = z.object({
   department: z.string().min(1, "Department is required."),
   status: z.enum(["Active", "On Leave", "Inactive"]),
   salary: z.coerce.number().optional(),
-  photo: z.instanceof(FileList).optional(),
+  photo: z.any().optional(),
 });
 
 type EmployeeFormValues = z.infer<typeof employeeFormSchema>;
