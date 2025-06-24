@@ -36,8 +36,17 @@ export function useAuth() {
           if (doc.exists()) {
             setAuthState({ user, profile: doc.data() as UserProfile, isLoading: false });
           } else {
-            // Profile doesn't exist yet, might be a new user
-             setAuthState({ user, profile: null, isLoading: false });
+            // Profile doesn't exist yet. Create a fallback profile to prevent UI issues.
+            // This can happen if the user was created in the auth console but not in Firestore.
+            setAuthState({ 
+                user, 
+                profile: {
+                    uid: user.uid,
+                    email: user.email || 'No email',
+                    role: 'user' // Default to 'user' as a safe fallback
+                }, 
+                isLoading: false 
+            });
           }
         }, (error) => {
             console.error("Error fetching user profile:", error);
