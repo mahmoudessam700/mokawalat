@@ -419,7 +419,11 @@ export default function ClientDetailPage({ params }: { params: { id: string } })
                                 <TableBody>
                                     {invoices.map(invoice => (
                                         <TableRow key={invoice.id}>
-                                            <TableCell className="font-mono">{invoice.invoiceNumber}</TableCell>
+                                            <TableCell className="font-mono">
+                                              <Link href={`/invoices/${invoice.id}`} className="hover:underline">
+                                                {invoice.invoiceNumber}
+                                              </Link>
+                                            </TableCell>
                                             <TableCell>{format(invoice.issueDate.toDate(), 'PPP')}</TableCell>
                                             <TableCell>{format(invoice.dueDate.toDate(), 'PPP')}</TableCell>
                                             <TableCell><Badge variant={invoiceStatusVariant[invoice.status]}>{invoice.status}</Badge></TableCell>
