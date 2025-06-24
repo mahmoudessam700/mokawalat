@@ -530,8 +530,11 @@ export default function SupplierDetailPage({ params }: { params: { id: string } 
         <AlertDialogFooter>
           <AlertDialogCancel onClick={() => setContractToDelete(null)}>Cancel</AlertDialogCancel>
           <AlertDialogAction onClick={handleDeleteContract} disabled={isDeletingContract} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
-             {isDeletingContract ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Trash2 className="mr-2 h-4 w-4" />}
-             Delete
+            {isDeletingContract ? (
+              <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Deleting...</>
+            ) : (
+              <><Trash2 className="mr-2 h-4 w-4" /> Delete</>
+            )}
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>
