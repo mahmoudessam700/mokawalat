@@ -565,10 +565,10 @@ export default function DashboardPage() {
                         return (
                            <div key={asset.id} className="flex items-center justify-between">
                                 <div>
-                                <p className="font-semibold">{asset.name}</p>
-                                <p className={cn("text-sm", isOverdue ? 'text-destructive' : 'text-muted-foreground')}>
-                                    {formatDistanceToNow(asset.nextMaintenanceDate.toDate(), { addSuffix: true })}
-                                </p>
+                                    <Link href={`/assets/${asset.id}`} className="font-semibold hover:underline">{asset.name}</Link>
+                                    <p className={cn("text-sm", isOverdue ? 'text-destructive' : 'text-muted-foreground')}>
+                                        {formatDistanceToNow(asset.nextMaintenanceDate.toDate(), { addSuffix: true })}
+                                    </p>
                                 </div>
                                 <AlertCircle className={cn('size-5', isOverdue ? 'text-destructive' : 'text-yellow-500')} />
                             </div>
