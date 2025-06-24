@@ -7,7 +7,7 @@
  */
 
 import { firestore } from '@/lib/firebase';
-import { collection, addDoc, serverTimestamp, doc, deleteDoc, updateDoc } from 'firebase/firestore';
+import { collection, addDoc, serverTimestamp, doc, deleteDoc, updateDoc, getDoc } from 'firebase/firestore';
 import { z } from 'zod';
 import { revalidatePath } from 'next/cache';
 
@@ -99,6 +99,14 @@ export async function updateTransaction(transactionId: string, values: Transacti
       ...validatedFields.data,
       date: new Date(validatedFields.data.date),
     });
+
+    await addDoc(collection(firestore, 'activityLog'), {
+        message: `Transaction updated: ${validatedFields.data.description}`,
+        type: "TRANSACTION_UPDATED",
+        link: `/financials`,
+        timestamp: serverTimestamp(),
+    });
+
     revalidatePath('/financials');
     revalidatePath('/financials/accounts');
     if (validatedFields.data.clientId) revalidatePath(`/clients/${validatedFields.data.clientId}`);
@@ -125,7 +133,21 @@ export async function deleteTransaction(transactionId: string) {
   }
 
   try {
-    await deleteDoc(doc(firestore, 'transactions', transactionId));
+    const transactionRef = doc(firestore, 'transactions', transactionId);
+    const transactionSnap = await getDoc(transactionRef);
+
+    if (transactionSnap.exists()) {
+        const transactionData = transactionSnap.data();
+        await addDoc(collection(firestore, 'activityLog'), {
+            message: `Transaction deleted: ${transactionData.description}`,
+            type: "TRANSACTION_DELETED",
+            link: `/financials`,
+            timestamp: serverTimestamp(),
+        });
+    }
+
+    await deleteDoc(transactionRef);
+    
     revalidatePath('/financials');
     revalidatePath('/financials/accounts');
     revalidatePath('/clients');

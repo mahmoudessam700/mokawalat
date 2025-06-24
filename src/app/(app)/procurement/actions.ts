@@ -92,6 +92,13 @@ export async function updatePurchaseRequest(requestId: string, values: Procureme
             totalCost,
         });
 
+        await addDoc(collection(firestore, 'activityLog'), {
+            message: `PO updated for: ${itemName}`,
+            type: "PO_UPDATED",
+            link: `/procurement/${requestId}`,
+            timestamp: serverTimestamp(),
+        });
+
         revalidatePath('/procurement');
         revalidatePath(`/procurement/${requestId}`);
         return { message: 'Purchase order updated successfully.', errors: null };
@@ -235,12 +242,14 @@ export async function markPOAsReceived(purchaseOrderId: string) {
     const poRef = doc(firestore, 'procurement', purchaseOrderId);
     
     try {
+        let poDataForLog: any;
         await runTransaction(firestore, async (transaction) => {
             const poDoc = await transaction.get(poRef);
             if (!poDoc.exists()) {
                 throw new Error("Purchase order not found.");
             }
             const poData = poDoc.data();
+            poDataForLog = poData;
 
             if (poData.status !== 'Ordered') {
                 throw new Error("Only 'Ordered' purchase orders can be marked as received.");
@@ -271,6 +280,15 @@ export async function markPOAsReceived(purchaseOrderId: string) {
             transaction.update(itemRef, { quantity: newQuantity, status: newItemStatus });
             transaction.update(poRef, { status: 'Received' });
         });
+
+        if (poDataForLog) {
+            await addDoc(collection(firestore, 'activityLog'), {
+                message: `PO for "${poDataForLog.itemName}" marked as Received`,
+                type: "PO_STATUS_CHANGED",
+                link: `/procurement/${purchaseOrderId}`,
+                timestamp: serverTimestamp(),
+            });
+        }
 
         revalidatePath('/procurement');
         revalidatePath('/inventory');

@@ -150,6 +150,17 @@ export async function evaluateSupplier(supplierId: string, values: EvaluateSuppl
       rating: validatedFields.data.rating,
       evaluationNotes: validatedFields.data.evaluationNotes || '',
     });
+
+    const supplierSnap = await getDoc(supplierRef);
+    const supplierName = supplierSnap.exists() ? supplierSnap.data().name : 'Unknown Supplier';
+
+    await addDoc(collection(firestore, 'activityLog'), {
+        message: `Supplier evaluated: ${supplierName} was given a rating of ${validatedFields.data.rating} stars.`,
+        type: "SUPPLIER_EVALUATED",
+        link: `/suppliers/${supplierId}`,
+        timestamp: serverTimestamp(),
+    });
+
     revalidatePath('/suppliers');
     revalidatePath(`/suppliers/${supplierId}`);
     return { message: 'Supplier evaluation updated successfully.', errors: null };

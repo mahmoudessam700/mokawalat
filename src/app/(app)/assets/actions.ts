@@ -42,7 +42,7 @@ export async function addAsset(values: AssetFormValues) {
     await addDoc(collection(firestore, 'activityLog'), {
         message: `New asset added: ${validatedFields.data.name}`,
         type: "ASSET_ADDED",
-        link: `/assets`,
+        link: `/assets/${assetRef.id}`,
         timestamp: serverTimestamp(),
     });
 
@@ -77,7 +77,15 @@ export async function updateAsset(assetId: string, values: AssetFormValues) {
       nextMaintenanceDate: validatedFields.data.nextMaintenanceDate ? new Date(validatedFields.data.nextMaintenanceDate) : null,
     });
     
+    await addDoc(collection(firestore, 'activityLog'), {
+        message: `Asset updated: ${validatedFields.data.name}`,
+        type: "ASSET_UPDATED",
+        link: `/assets/${assetId}`,
+        timestamp: serverTimestamp(),
+    });
+
     revalidatePath('/assets');
+    revalidatePath(`/assets/${assetId}`);
     return { message: 'Asset updated successfully.', errors: null };
   } catch (error) {
     console.error('Error updating asset:', error);

@@ -84,6 +84,14 @@ export async function updateInventoryItem(itemId: string, values: InventoryFormV
       ...validatedFields.data,
       name_lowercase: validatedFields.data.name.toLowerCase(),
     });
+    
+    await addDoc(collection(firestore, 'activityLog'), {
+        message: `Inventory item updated: ${validatedFields.data.name}`,
+        type: "INVENTORY_UPDATED",
+        link: `/inventory`,
+        timestamp: serverTimestamp(),
+    });
+
     revalidatePath('/inventory');
     return { message: 'Item updated successfully.', errors: null };
   } catch (error) {
@@ -158,6 +166,7 @@ export async function adjustStock(itemId: string, values: AdjustStockFormValues)
 
   try {
     const itemRef = doc(firestore, 'inventory', itemId);
+    let itemName = '';
     
     await runTransaction(firestore, async (transaction) => {
       const itemDoc = await transaction.get(itemRef);
@@ -165,6 +174,7 @@ export async function adjustStock(itemId: string, values: AdjustStockFormValues)
         throw new Error("Item not found.");
       }
 
+      itemName = itemDoc.data().name;
       const currentQuantity = itemDoc.data().quantity;
       const newQuantity = currentQuantity + adjustment;
 
@@ -182,6 +192,13 @@ export async function adjustStock(itemId: string, values: AdjustStockFormValues)
       }
 
       transaction.update(itemRef, { quantity: newQuantity, status: newStatus });
+    });
+
+    await addDoc(collection(firestore, 'activityLog'), {
+        message: `Stock for "${itemName}" adjusted by ${adjustment > 0 ? '+' : ''}${adjustment}`,
+        type: "INVENTORY_ADJUSTED",
+        link: `/inventory`,
+        timestamp: serverTimestamp(),
     });
 
     revalidatePath('/inventory');

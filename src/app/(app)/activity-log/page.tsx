@@ -38,6 +38,7 @@ import {
   Search,
   Wrench,
   Receipt,
+  Star,
 } from 'lucide-react';
 
 type Activity = {
@@ -59,14 +60,21 @@ const activityIcons: { [key: string]: React.ReactNode } = {
   EMPLOYEE_UPDATED: <Pencil className="size-4" />,
   EMPLOYEE_DELETED: <Trash2 className="size-4" />,
   TRANSACTION_ADDED: <DollarSign className="size-4" />,
+  TRANSACTION_UPDATED: <Pencil className="size-4" />,
+  TRANSACTION_DELETED: <Trash2 className="size-4" />,
   SUPPLIER_ADDED: <Truck className="size-4" />,
   SUPPLIER_UPDATED: <Pencil className="size-4" />,
   SUPPLIER_DELETED: <Trash2 className="size-4" />,
+  SUPPLIER_EVALUATED: <Star className="size-4" />,
   INVENTORY_ADDED: <Warehouse className="size-4" />,
   INVENTORY_DELETED: <Trash2 className="size-4" />,
+  INVENTORY_UPDATED: <Pencil className="size-4" />,
+  INVENTORY_ADJUSTED: <Wrench className="size-4" />,
   ASSET_ADDED: <Wrench className="size-4" />,
+  ASSET_UPDATED: <Pencil className="size-4" />,
   ASSET_DELETED: <Trash2 className="size-4" />,
   PO_CREATED: <ShoppingCart className="size-4" />,
+  PO_UPDATED: <Pencil className="size-4" />,
   PO_DELETED: <Trash2 className="size-4" />,
   PO_STATUS_CHANGED: <ListChecks className="size-4" />,
   CONTRACT_ADDED: <FileText className="size-4" />,
@@ -82,38 +90,7 @@ const activityIcons: { [key: string]: React.ReactNode } = {
   DEFAULT: <Bell className="size-4" />,
 };
 
-const activityTypes = [
-    "PROJECT_CREATED",
-    "PROJECT_UPDATED",
-    "PROJECT_DELETED",
-    "TASK_ADDED",
-    "TASK_STATUS_CHANGED",
-    "TASK_DELETED",
-    "DOCUMENT_UPLOADED",
-    "DOCUMENT_DELETED",
-    "CLIENT_ADDED",
-    "CLIENT_UPDATED",
-    "CLIENT_DELETED",
-    "EMPLOYEE_HIRED",
-    "EMPLOYEE_UPDATED",
-    "EMPLOYEE_DELETED",
-    "TRANSACTION_ADDED",
-    "SUPPLIER_ADDED",
-    "SUPPLIER_UPDATED",
-    "SUPPLIER_DELETED",
-    "INVENTORY_ADDED",
-    "INVENTORY_DELETED",
-    "ASSET_ADDED",
-    "ASSET_DELETED",
-    "PO_CREATED",
-    "PO_DELETED",
-    "PO_STATUS_CHANGED",
-    "CONTRACT_ADDED",
-    "CONTRACT_DELETED",
-    "MATERIAL_REQUESTED",
-    "INVOICE_CREATED",
-    "INVOICE_STATUS_CHANGED",
-];
+const activityTypes = Object.keys(activityIcons).filter(k => k !== 'DEFAULT').sort();
 
 const formatActivityType = (type: string) => {
     return type.replace(/_/g, ' ').replace(/\w\S*/g, (txt) => txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase());
@@ -188,7 +165,7 @@ export default function ActivityLogPage() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="All">All Event Types</SelectItem>
-                  {activityTypes.sort().map(type => (
+                  {activityTypes.map(type => (
                       <SelectItem key={type} value={type}>{formatActivityType(type)}</SelectItem>
                   ))}
                 </SelectContent>
