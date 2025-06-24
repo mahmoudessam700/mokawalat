@@ -1,4 +1,3 @@
-
 # Mokawalat ERP - Database Schema
 
 This document outlines the database structure for the Mokawalat ERP system, which is built on Firebase Firestore. Understanding this schema is crucial for extending functionality or debugging data-related issues.
@@ -248,6 +247,7 @@ Tracks all client invoices.
 -   **Document ID**: Auto-generated
 -   **Fields**:
     -   `invoiceNumber` (string): A unique, sequential identifier for the invoice.
+    -   `invoiceNumber_lowercase` (string): Lowercase version for searching.
     -   `clientId` (string): A reference to the `clients` collection document ID.
     -   `projectId` (string, optional): A reference to the `projects` collection document ID.
     -   `issueDate` (Timestamp): The date the invoice was issued.
