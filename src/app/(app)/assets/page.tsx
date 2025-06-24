@@ -100,7 +100,7 @@ const assetFormSchema = z.object({
     message: 'Please select a valid date.',
   }),
   purchaseCost: z.coerce.number().min(0, "Purchase cost must be a non-negative number."),
-  currentProjectId: z.string().optional().default(''),
+  currentProjectId: z.string().optional().default('none'),
   nextMaintenanceDate: z.string().optional(),
 });
 
@@ -234,7 +234,7 @@ export default function AssetsPage() {
       status: 'Available',
       purchaseDate: '',
       purchaseCost: 0,
-      currentProjectId: '',
+      currentProjectId: 'none',
       nextMaintenanceDate: '',
     },
   });
@@ -247,7 +247,7 @@ export default function AssetsPage() {
         ...assetToEdit,
         purchaseDate: assetToEdit.purchaseDate ? format(assetToEdit.purchaseDate.toDate(), 'yyyy-MM-dd') : '',
         nextMaintenanceDate: assetToEdit.nextMaintenanceDate ? format(assetToEdit.nextMaintenanceDate.toDate(), 'yyyy-MM-dd') : '',
-        currentProjectId: assetToEdit.currentProjectId || '',
+        currentProjectId: assetToEdit.currentProjectId || 'none',
       });
     } else {
       form.reset({
@@ -256,7 +256,7 @@ export default function AssetsPage() {
         status: 'Available',
         purchaseDate: new Date().toISOString().split('T')[0],
         purchaseCost: 0,
-        currentProjectId: '',
+        currentProjectId: 'none',
         nextMaintenanceDate: '',
       });
     }
@@ -333,7 +333,7 @@ export default function AssetsPage() {
                             <FormField control={form.control} name="purchaseCost" render={({ field }) => (<FormItem><FormLabel>Purchase Cost (LE)</FormLabel><FormControl><Input type="number" placeholder="e.g., 1500000" {...field} /></FormControl><FormMessage /></FormItem>)} />
                         </div>
                          <div className="grid grid-cols-2 gap-4">
-                            <FormField control={form.control} name="currentProjectId" render={({ field }) => (<FormItem><FormLabel>Assigned Project (Optional)</FormLabel><Select onValueChange={(value) => field.onChange(value === 'none' ? '' : value)} value={field.value || ''}><FormControl><SelectTrigger><SelectValue placeholder="Select a project" /></SelectTrigger></FormControl><SelectContent><SelectItem value="none">None</SelectItem>{projects.map(p => (<SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>))}</SelectContent></Select><FormMessage /></FormItem>)} />
+                            <FormField control={form.control} name="currentProjectId" render={({ field }) => (<FormItem><FormLabel>Assigned Project (Optional)</FormLabel><Select onValueChange={(value) => field.onChange(value === 'none' ? '' : value)} value={field.value || 'none'}><FormControl><SelectTrigger><SelectValue placeholder="Select a project" /></SelectTrigger></FormControl><SelectContent><SelectItem value="none">None</SelectItem>{projects.map(p => (<SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>))}</SelectContent></Select><FormMessage /></FormItem>)} />
                             <FormField control={form.control} name="nextMaintenanceDate" render={({ field }) => (<FormItem><FormLabel>Next Maintenance (Optional)</FormLabel><FormControl><Input type="date" {...field} /></FormControl><FormMessage /></FormItem>)} />
                         </div>
                         <DialogFooter>
