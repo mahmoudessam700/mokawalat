@@ -64,6 +64,7 @@ type Employee = {
     name: string;
     email: string;
     role: string;
+    photoUrl?: string;
 };
 
 type Client = {
@@ -690,7 +691,7 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
                                     <li key={member.id}>
                                         <Link href={`/employees/${member.id}`} className="flex items-center gap-4 rounded-md p-2 -m-2 hover:bg-accent transition-colors">
                                             <Avatar>
-                                                <AvatarImage src={`https://placehold.co/40x40.png`} alt={member.name} data-ai-hint="profile picture" />
+                                                <AvatarImage src={member.photoUrl || `https://placehold.co/40x40.png`} alt={member.name} data-ai-hint="profile picture" />
                                                 <AvatarFallback>{member.name.split(' ').map(n => n[0]).join('')}</AvatarFallback>
                                             </Avatar>
                                             <div>

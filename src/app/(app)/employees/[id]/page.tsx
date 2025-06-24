@@ -34,6 +34,7 @@ type Employee = {
   department: string;
   status: EmployeeStatus;
   salary?: number;
+  photoUrl?: string;
 };
 
 type Project = {
@@ -171,7 +172,7 @@ export default function EmployeeDetailPage({ params }: { params: { id: string } 
                     <CardHeader>
                         <div className="flex flex-col items-center gap-4">
                             <Avatar className="h-24 w-24">
-                                <AvatarImage src={`https://placehold.co/100x100.png`} data-ai-hint="profile picture" />
+                                <AvatarImage src={employee.photoUrl || `https://placehold.co/100x100.png`} data-ai-hint="profile picture" />
                                 <AvatarFallback>{employee.name.split(' ').map(n => n[0]).join('')}</AvatarFallback>
                             </Avatar>
                             <div className="text-center">

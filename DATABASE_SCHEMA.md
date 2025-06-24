@@ -1,3 +1,4 @@
+
 # Mokawalat ERP - Database Schema
 
 This document outlines the database structure for the Mokawalat ERP system, which is built on Firebase Firestore. Understanding this schema is crucial for extending functionality or debugging data-related issues.
@@ -86,6 +87,8 @@ Manages all employee profiles.
     -   `department` (string)
     -   `status` (string): Employment status (`Active`, `On Leave`, `Inactive`).
     -   `salary` (number, optional): The employee's monthly salary.
+    -   `photoUrl` (string, optional): A public URL to the employee's profile photo in Firebase Storage.
+    -   `photoPath` (string, optional): The full path to the photo file in Firebase Storage.
 
 ### `clients`
 

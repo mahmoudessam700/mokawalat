@@ -78,6 +78,7 @@ const employeeFormSchema = z.object({
   department: z.string().min(1, "Department is required."),
   status: z.enum(["Active", "On Leave", "Inactive"]),
   salary: z.coerce.number().optional(),
+  photo: z.instanceof(FileList).optional(),
 });
 
 type EmployeeFormValues = z.infer<typeof employeeFormSchema>;
@@ -138,21 +139,35 @@ export default function EmployeesPage() {
       department: '',
       status: 'Active',
       salary: undefined,
+      photo: undefined,
     },
   });
 
   useEffect(() => {
     if (employeeToEdit) {
-      form.reset(employeeToEdit);
+      form.reset({
+        ...employeeToEdit,
+        salary: employeeToEdit.salary ?? undefined,
+        photo: undefined,
+      });
     } else {
       form.reset(form.formState.defaultValues);
     }
   }, [employeeToEdit, form]);
 
   async function onSubmit(values: EmployeeFormValues) {
+    const formData = new FormData();
+    Object.entries(values).forEach(([key, value]) => {
+        if (key === 'photo' || value === undefined || value === null) return;
+        formData.append(key, String(value));
+    });
+    if (values.photo && values.photo.length > 0) {
+        formData.append('photo', values.photo[0]);
+    }
+
     const result = employeeToEdit
-      ? await updateEmployee(employeeToEdit.id, values)
-      : await addEmployee(values);
+      ? await updateEmployee(employeeToEdit.id, formData)
+      : await addEmployee(formData);
 
     if (result.errors) {
       toast({
@@ -227,7 +242,7 @@ export default function EmployeesPage() {
                     Add Employee
                     </Button>
                 </DialogTrigger>
-                <DialogContent className="sm:max-w-[425px]">
+                <DialogContent className="sm:max-w-md">
                     <DialogHeader>
                     <DialogTitle>{employeeToEdit ? 'Edit Employee' : 'Add New Employee'}</DialogTitle>
                     <DialogDescription>
@@ -351,6 +366,19 @@ export default function EmployeesPage() {
                               <FormMessage />
                               </FormItem>
                           )}
+                        />
+                        <FormField
+                            control={form.control}
+                            name="photo"
+                            render={() => (
+                                <FormItem>
+                                    <FormLabel>Profile Photo (Optional)</FormLabel>
+                                    <FormControl>
+                                        <Input type="file" accept="image/png, image/jpeg" {...form.register('photo')} />
+                                    </FormControl>
+                                    <FormMessage />
+                                </FormItem>
+                            )}
                         />
                         <DialogFooter>
                         <Button type="submit" disabled={form.formState.isSubmitting}>

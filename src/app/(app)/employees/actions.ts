@@ -1,10 +1,11 @@
 
 'use server';
 
-import { firestore } from '@/lib/firebase';
-import { collection, addDoc, doc, deleteDoc, updateDoc, serverTimestamp, query, where, getDocs, getDoc } from 'firebase/firestore';
+import { firestore, storage } from '@/lib/firebase';
+import { collection, addDoc, doc, deleteDoc, updateDoc, serverTimestamp, setDoc, getDoc } from 'firebase/firestore';
 import { z } from 'zod';
 import { revalidatePath } from 'next/cache';
+import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
 
 const employeeFormSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters long."),
@@ -17,26 +18,46 @@ const employeeFormSchema = z.object({
 
 export type EmployeeFormValues = z.infer<typeof employeeFormSchema>;
 
-export async function addEmployee(values: EmployeeFormValues) {
-  const validatedFields = employeeFormSchema.safeParse(values);
-
-  if (!validatedFields.success) {
-    return {
-      errors: validatedFields.error.flatten().fieldErrors,
-      message: 'Invalid data provided. Please check the form.',
-    };
+export async function addEmployee(formData: FormData) {
+  const formValues = {
+    name: formData.get('name'),
+    email: formData.get('email'),
+    role: formData.get('role'),
+    department: formData.get('department'),
+    status: formData.get('status'),
+    salary: formData.get('salary') ? Number(formData.get('salary')) : undefined,
   }
 
+  const validatedFields = employeeFormSchema.safeParse(formValues);
+  if (!validatedFields.success) {
+    return { errors: validatedFields.error.flatten().fieldErrors, message: 'Invalid data provided.' };
+  }
+  
+  const photoFile = formData.get('photo') as File | null;
+
   try {
-    const employeeRef = await addDoc(collection(firestore, 'employees'), {
+    const newEmployeeRef = doc(collection(firestore, 'employees'));
+    let photoUrl = '';
+    let photoPath = '';
+
+    if (photoFile && photoFile.size > 0) {
+      photoPath = `employees/${newEmployeeRef.id}/profile-${photoFile.name}`;
+      const storageRef = ref(storage, photoPath);
+      await uploadBytes(storageRef, photoFile);
+      photoUrl = await getDownloadURL(storageRef);
+    }
+    
+    await setDoc(newEmployeeRef, {
       ...validatedFields.data,
       name_lowercase: validatedFields.data.name.toLowerCase(),
+      photoUrl,
+      photoPath,
     });
     
     await addDoc(collection(firestore, 'activityLog'), {
         message: `New employee hired: ${validatedFields.data.name}`,
         type: "EMPLOYEE_HIRED",
-        link: `/employees/${employeeRef.id}`,
+        link: `/employees/${newEmployeeRef.id}`,
         timestamp: serverTimestamp(),
     });
     
@@ -48,27 +69,52 @@ export async function addEmployee(values: EmployeeFormValues) {
   }
 }
 
-export async function updateEmployee(employeeId: string, values: EmployeeFormValues) {
+export async function updateEmployee(employeeId: string, formData: FormData) {
   if (!employeeId) {
     return { message: 'Employee ID is required.', errors: { _server: ['Employee ID not provided.'] } };
   }
-
-  const validatedFields = employeeFormSchema.safeParse(values);
-
-  if (!validatedFields.success) {
-    return {
-      errors: validatedFields.error.flatten().fieldErrors,
-      message: 'Invalid data provided. Please check the form.',
-    };
+  
+  const formValues = {
+    name: formData.get('name'),
+    email: formData.get('email'),
+    role: formData.get('role'),
+    department: formData.get('department'),
+    status: formData.get('status'),
+    salary: formData.get('salary') ? Number(formData.get('salary')) : undefined,
   }
 
+  const validatedFields = employeeFormSchema.safeParse(formValues);
+  if (!validatedFields.success) {
+    return { errors: validatedFields.error.flatten().fieldErrors, message: 'Invalid data provided.' };
+  }
+  
+  const photoFile = formData.get('photo') as File | null;
+  const employeeRef = doc(firestore, 'employees', employeeId);
+
   try {
-    const employeeRef = doc(firestore, 'employees', employeeId);
+    const currentDoc = await getDoc(employeeRef);
+    const currentData = currentDoc.data() || {};
+    let { photoUrl, photoPath } = currentData;
+
+    if (photoFile && photoFile.size > 0) {
+      if (photoPath) {
+        await deleteObject(ref(storage, photoPath)).catch(err => console.error("Could not delete old photo:", err));
+      }
+      photoPath = `employees/${employeeId}/profile-${photoFile.name}`;
+      const storageRef = ref(storage, photoPath);
+      await uploadBytes(storageRef, photoFile);
+      photoUrl = await getDownloadURL(storageRef);
+    }
+
     await updateDoc(employeeRef, {
       ...validatedFields.data,
       name_lowercase: validatedFields.data.name.toLowerCase(),
+      photoUrl,
+      photoPath,
     });
+
     revalidatePath('/employees');
+    revalidatePath(`/employees/${employeeId}`);
     return { message: 'Employee updated successfully.', errors: null };
   } catch (error) {
     console.error('Error updating employee:', error);
@@ -87,7 +133,7 @@ export async function deleteEmployee(employeeId: string) {
     if (!employeeSnap.exists()) {
         return { success: false, message: 'Employee not found.' };
     }
-    const employeeName = employeeSnap.data().name;
+    const employeeData = employeeSnap.data();
 
     // Check if employee is assigned to any projects
     const projectsQuery = query(collection(firestore, 'projects'), where('teamMemberIds', 'array-contains', employeeId));
@@ -96,10 +142,15 @@ export async function deleteEmployee(employeeId: string) {
         return { success: false, message: 'Cannot delete employee assigned to one or more projects. Please remove them from project teams first.' };
     }
 
+    // Delete profile photo from storage
+    if (employeeData.photoPath) {
+        await deleteObject(ref(storage, employeeData.photoPath)).catch(err => console.error("Could not delete photo:", err));
+    }
+
     await deleteDoc(employeeRef);
 
     await addDoc(collection(firestore, 'activityLog'), {
-        message: `Employee deleted: ${employeeName}`,
+        message: `Employee deleted: ${employeeData.name}`,
         type: "EMPLOYEE_DELETED",
         link: `/employees`,
         timestamp: serverTimestamp(),
