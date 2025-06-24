@@ -35,7 +35,7 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Separator } from './ui/separator';
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { signOut } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
 import { useToast } from '@/hooks/use-toast';
@@ -62,25 +62,45 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Button } from './ui/button';
 
-
-const menuItems = [
-  { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
-  { href: '/approvals', label: 'Approvals', icon: ClipboardCheck },
-  { href: '/projects', label: 'Projects', icon: Briefcase },
-  { href: '/employees', label: 'Employees', icon: Users },
-  { href: '/suppliers', label: 'Suppliers', icon: Truck },
-  { href: '/assets', label: 'Asset Management', icon: Wrench },
-  { href: '/inventory', label: 'Inventory', icon: Warehouse },
-  { href: '/procurement', label: 'Purchase Orders', icon: ShoppingCart },
-  { href: '/material-requests', label: 'Material Requests', icon: ClipboardList },
-  { href: '/clients', label: 'Clients & Sales', icon: Contact },
-  { href: '/financials', label: 'Financials', icon: DollarSign },
-  { href: '/invoices', label: 'Invoicing', icon: Receipt },
-  { href: '/reports', label: 'Reports', icon: BarChart3 },
-  { href: '/activity-log', label: 'Activity Log', icon: History },
-  { href: '/iso-compliance', label: 'ISO Compliance', icon: CheckSquare },
-  { href: '/roadmap', label: 'Roadmap', icon: ListChecks },
+const menuGroups = [
+  {
+    items: [
+      { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
+      { href: '/approvals', label: 'Approvals', icon: ClipboardCheck },
+      { href: '/activity-log', label: 'Activity Log', icon: History },
+    ],
+  },
+  {
+    items: [
+      { href: '/projects', label: 'Projects', icon: Briefcase },
+      { href: '/assets', label: 'Asset Management', icon: Wrench },
+      { href: '/inventory', label: 'Inventory', icon: Warehouse },
+      { href: '/procurement', label: 'Purchase Orders', icon: ShoppingCart },
+      { href: '/material-requests', label: 'Material Requests', icon: ClipboardList },
+    ],
+  },
+  {
+    items: [
+      { href: '/clients', label: 'Clients & Sales', icon: Contact },
+      { href: '/suppliers', label: 'Suppliers', icon: Truck },
+      { href: '/employees', label: 'Employees', icon: Users },
+    ],
+  },
+  {
+    items: [
+      { href: '/financials', label: 'Financials', icon: DollarSign },
+      { href: '/invoices', label: 'Invoicing', icon: Receipt },
+      { href: '/reports', label: 'Reports', icon: BarChart3 },
+    ],
+  },
+   {
+    items: [
+      { href: '/iso-compliance', label: 'ISO Compliance', icon: CheckSquare },
+      { href: '/roadmap', label: 'Roadmap', icon: ListChecks },
+    ],
+  },
 ];
+
 
 export function AppSidebar() {
   const pathname = usePathname();
@@ -125,25 +145,33 @@ export function AppSidebar() {
       </SidebarHeader>
       <SidebarContent className="flex flex-col p-2">
         <SidebarMenu className="flex-1">
-          {menuItems.map((item) => (
-            <SidebarMenuItem key={item.href}>
-              <SidebarMenuButton asChild isActive={isActive(item.href)} tooltip={item.label}>
-                <Link href={item.href}>
-                  <item.icon />
-                  <span>{item.label}</span>
-                </Link>
-              </SidebarMenuButton>
-            </SidebarMenuItem>
+           {menuGroups.map((group, index) => (
+            <React.Fragment key={index}>
+              {group.items.map((item) => (
+                <SidebarMenuItem key={item.href}>
+                  <SidebarMenuButton asChild isActive={isActive(item.href)} tooltip={item.label}>
+                    <Link href={item.href}>
+                      <item.icon />
+                      <span>{item.label}</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              ))}
+              {index < menuGroups.length -1 && <Separator className="my-1" />}
+            </React.Fragment>
           ))}
             {profile?.role === 'admin' && (
-              <SidebarMenuItem>
-                  <SidebarMenuButton asChild isActive={isActive('/settings')} tooltip="Settings">
-                      <Link href="/settings">
-                          <Settings />
-                          <span>Settings</span>
-                      </Link>
-                  </SidebarMenuButton>
-              </SidebarMenuItem>
+              <>
+                <Separator className="my-1" />
+                <SidebarMenuItem>
+                    <SidebarMenuButton asChild isActive={isActive('/settings')} tooltip="Settings">
+                        <Link href="/settings">
+                            <Settings />
+                            <span>Settings</span>
+                        </Link>
+                    </SidebarMenuButton>
+                </SidebarMenuItem>
+              </>
             )}
         </SidebarMenu>
       </SidebarContent>
