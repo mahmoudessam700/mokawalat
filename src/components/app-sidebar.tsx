@@ -110,7 +110,7 @@ export function AppSidebar() {
   const { user, profile, isLoading: isAuthLoading } = useAuth();
 
   const isActive = (href: string) => {
-    if (href === '/dashboard' || href === '/approvals' || href === '/reports' || href === '/activity-log') {
+    if (href === '/dashboard' || href === '/approvals' || href === '/reports' || href === '/activity-log' || href === '/iso-compliance') {
       return pathname === href;
     }
     return pathname.startsWith(href);
