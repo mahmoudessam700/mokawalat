@@ -2,32 +2,36 @@ rules_version = '2';
 
 service firebase.storage {
   match /b/{bucket}/o {
-    // By default, allow reads for all files.
-    // Most files like logos, employee photos, daily log photos should be readable by anyone with the link.
-    match /{allPaths=**} {
-      allow read;
-    }
-
-    // Company logo can be uploaded by admins.
-    // Firestore rules will gate the UI, this is an additional layer.
-    match /company/{allPaths=**} {
-      allow write: if request.auth != null;
-    }
-
-    // Project files can be uploaded by authenticated users.
-    // Access to create the corresponding Firestore document is the real gatekeeper.
-    match /projects/{projectId}/{allPaths=**} {
-      allow write: if request.auth != null;
+    
+    function isAuthenticated() {
+      return request.auth != null;
     }
     
-    // Employee profile photos can be uploaded by authenticated users.
-    match /employees/{employeeId}/{allPaths=**} {
-      allow write: if request.auth != null;
+    // Company logo is publicly readable
+    match /company/logo/{fileName} {
+        allow read: if true;
+        allow write: if isAuthenticated();
     }
 
-    // Contract files can be uploaded by authenticated users.
-    match /contracts/{allPaths=**} {
-      allow write: if request.auth != null;
+    // Employee photos are publicly readable
+    match /employees/{userId}/{fileName} {
+      allow read: if true;
+      allow write: if isAuthenticated(); // Simplified: allow any logged-in user to upload photos for any employee
+    }
+
+    // Project documents and daily log photos
+    match /projects/{projectId}/{subcollection}/{docId}/{fileName} {
+        allow read, write: if isAuthenticated();
+    }
+
+    // Contracts (both client and supplier)
+    match /contracts/{type}/{parentId}/{contractId}/{fileName} {
+        allow read, write: if isAuthenticated();
+    }
+
+    // Deny any other access
+    match /{allPaths=**} {
+      allow read, write: if false;
     }
   }
 }
