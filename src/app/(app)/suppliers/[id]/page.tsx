@@ -7,7 +7,7 @@ import { firestore } from '@/lib/firebase';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
-import { ArrowLeft, User, Mail, Phone, Building, ShoppingCart, Truck, Star, FileText, PlusCircle, Trash2, Loader2, DollarSign, ExternalLink } from 'lucide-react';
+import { ArrowLeft, User, Mail, Phone, Building, ShoppingCart, Truck, Star, FileText, PlusCircle, Trash2, Loader2, DollarSign, ExternalLink, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import {
@@ -21,7 +21,6 @@ import {
 import { format } from 'date-fns';
 import { EvaluateSupplierDialog } from './evaluate-supplier-dialog';
 import { useAuth } from '@/hooks/use-auth';
-import { cn } from '@/lib/utils';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
