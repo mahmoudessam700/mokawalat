@@ -8,6 +8,7 @@ import type { Task } from './page';
 import { updateTaskStatus } from '../actions';
 import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
+import { Skeleton } from '@/components/ui/skeleton';
 
 interface ProjectTasksKanbanProps {
   tasks: Task[];
@@ -52,7 +53,7 @@ export function ProjectTasksKanban({ tasks, projectId }: ProjectTasksKanbanProps
   const tasksByStatus = columns.reduce((acc, status) => {
     acc[status] = tasks
         .filter(task => task.status === status)
-        .sort((a,b) => a.createdAt.toMillis() - b.createdAt.toMillis());
+        .sort((a,b) => (a.createdAt?.toMillis() || 0) - (b.createdAt?.toMillis() || 0));
     return acc;
   }, {} as Record<TaskStatus, Task[]>);
   
@@ -127,4 +128,3 @@ export function ProjectTasksKanban({ tasks, projectId }: ProjectTasksKanbanProps
     </DragDropContext>
   );
 }
-
