@@ -347,8 +347,8 @@ export default function ProjectsPage() {
                         <FormItem>
                           <FormLabel>Client (Optional)</FormLabel>
                           <Select
-                            onValueChange={field.onChange}
-                            value={field.value}
+                            onValueChange={(value) => field.onChange(value === 'none' ? '' : value)}
+                            value={field.value || ''}
                           >
                             <FormControl>
                               <SelectTrigger>
@@ -356,7 +356,7 @@ export default function ProjectsPage() {
                               </SelectTrigger>
                             </FormControl>
                             <SelectContent>
-                              <SelectItem value="">None</SelectItem>
+                              <SelectItem value="none">None</SelectItem>
                               {clients.map((client) => (
                                 <SelectItem key={client.id} value={client.id}>
                                   {client.name}
