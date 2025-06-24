@@ -30,6 +30,7 @@ import {
   Receipt,
   User as UserIcon,
   ListChecks,
+  Loader2,
 } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
@@ -118,12 +119,15 @@ export function AppSidebar() {
   const handleLogout = async () => {
     setIsLoggingOut(true);
     try {
+      // By pushing to the login page first, we ensure that all components
+      // with active Firestore listeners are unmounted, which prevents
+      // permission errors when the auth state changes.
+      router.push('/login');
       await signOut(auth);
       toast({
         title: 'Logged Out',
         description: 'You have been successfully logged out.',
       });
-      router.push('/login');
     } catch (error) {
       toast({
         variant: 'destructive',
@@ -243,8 +247,8 @@ export function AppSidebar() {
           </AlertDialogHeader>
           <AlertDialogFooter>
           <AlertDialogCancel>Cancel</AlertDialogCancel>
-          <AlertDialogAction onClick={handleLogout} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
-              {isLoggingOut ? 'Logging out...' : 'Logout'}
+          <AlertDialogAction onClick={handleLogout} disabled={isLoggingOut} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              {isLoggingOut ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Logging out...</> : 'Logout'}
           </AlertDialogAction>
           </AlertDialogFooter>
       </AlertDialogContent>
