@@ -6,7 +6,7 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
-import { ListChecks, CheckCircle } from "lucide-react"
+import { ListChecks, CheckCircle, Rocket } from "lucide-react"
 
 const roadmapPhases = [
   {
@@ -276,7 +276,7 @@ const roadmapPhases = [
     ]
   },
   {
-    title: "Phase 6: Documentation",
+    title: "Phase 6: Documentation & Deployment",
     objective: "Provide comprehensive and up-to-date documentation for the application, including code, database design, and user manual, to facilitate future maintenance, development, and compliance with ISO 9001 standards.",
     completed: true,
     subTasks: [
@@ -342,6 +342,20 @@ export default function RoadmapPage() {
           Following the plan to build a comprehensive ERP system.
         </p>
       </div>
+      
+       <Card className="bg-green-500/10 border-green-500/20">
+        <CardHeader className="flex flex-row items-center gap-4">
+          <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-full bg-green-500/20 text-green-600 dark:text-green-400">
+            <Rocket className="h-6 w-6" />
+          </div>
+          <div>
+            <CardTitle className="text-green-800 dark:text-green-300">Project Complete!</CardTitle>
+            <CardDescription className="text-green-700 dark:text-green-400/80">
+              Congratulations! All phases of the Mokawalat ERP are complete. The application is now feature-ready.
+            </CardDescription>
+          </div>
+        </CardHeader>
+      </Card>
 
       <Card>
         <CardHeader>
@@ -351,7 +365,7 @@ export default function RoadmapPage() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <Accordion type="single" collapsible className="w-full" defaultValue="item-0">
+          <Accordion type="single" collapsible className="w-full">
             {roadmapPhases.map((phase, index) => (
               <AccordionItem value={`item-${index}`} key={index}>
                 <AccordionTrigger className="text-lg font-semibold hover:no-underline">

@@ -37,3 +37,37 @@ To run the Genkit AI flows locally for development:
 ```bash
 npm run genkit:watch
 ```
+
+## Deployment
+
+This application is built with Next.js and is ready to be deployed to Firebase Hosting.
+
+1.  **Install the Firebase CLI:**
+    If you haven't already, install the Firebase Command Line Interface globally:
+    ```bash
+    npm install -g firebase-tools
+    ```
+
+2.  **Login to Firebase:**
+    ```bash
+    firebase login
+    ```
+
+3.  **Initialize Firebase in your project:**
+    It looks like Firebase is already initialized. If you need to re-initialize or connect to a different project, run:
+    ```bash
+    firebase init
+    ```
+    Select "Hosting: Configure files for Firebase Hosting and (optionally) set up GitHub Action deploys". Follow the prompts, but when asked "What do you want to use as your public directory?", enter `.next`. **Do not overwrite existing files.**
+
+4.  **Build the application:**
+    ```bash
+    npm run build
+    ```
+
+5.  **Deploy to Firebase Hosting:**
+    ```bash
+    firebase deploy --only hosting
+    ```
+
+Your application will be deployed and live at the URL provided by Firebase.

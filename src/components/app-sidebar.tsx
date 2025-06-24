@@ -31,6 +31,7 @@ import {
   User as UserIcon,
   ListChecks,
   Loader2,
+  ListOrdered,
 } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
@@ -97,6 +98,7 @@ const menuGroups = [
    {
     items: [
       { href: '/iso-compliance', label: 'ISO Compliance', icon: CheckSquare },
+      { href: '/roadmap', label: 'Project Roadmap', icon: ListOrdered },
     ],
   },
 ];
@@ -110,7 +112,7 @@ export function AppSidebar() {
   const { user, profile, isLoading: isAuthLoading } = useAuth();
 
   const isActive = (href: string) => {
-    if (href === '/dashboard' || href === '/approvals' || href === '/reports' || href === '/activity-log' || href === '/iso-compliance') {
+    if (href === '/dashboard' || href === '/approvals' || href === '/reports' || href === '/activity-log' || href === '/iso-compliance' || href === '/roadmap') {
       return pathname === href;
     }
     return pathname.startsWith(href);
