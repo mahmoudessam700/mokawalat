@@ -96,7 +96,6 @@ const menuGroups = [
    {
     items: [
       { href: '/iso-compliance', label: 'ISO Compliance', icon: CheckSquare },
-      { href: '/roadmap', label: 'Roadmap', icon: ListChecks },
     ],
   },
 ];

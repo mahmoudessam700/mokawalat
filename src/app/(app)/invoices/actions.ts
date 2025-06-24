@@ -50,7 +50,6 @@ export async function addInvoice(values: InvoiceFormValues) {
       totalAmount,
       status: 'Draft',
       invoiceNumber,
-      invoiceNumber_lowercase: invoiceNumber.toLowerCase(),
       createdAt: serverTimestamp(),
     });
 
