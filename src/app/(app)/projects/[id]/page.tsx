@@ -1090,11 +1090,7 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
             <AlertDialogFooter>
                 <AlertDialogCancel onClick={() => setDocumentToDelete(null)}>Cancel</AlertDialogCancel>
                 <AlertDialogAction onClick={handleDeleteDocument} disabled={isDeletingDocument} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
-                  {isDeletingDocument ? (
-                    <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Deleting...</>
-                  ) : (
-                    <><Trash2 className="mr-2 h-4 w-4" /> Delete</>
-                  )}
+                  {isDeletingDocument ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Deleting...</> : <><Trash2 className="mr-2 h-4 w-4" /> Delete</>}
                 </AlertDialogAction>
             </AlertDialogFooter>
         </AlertDialogContent>
@@ -1105,11 +1101,7 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
             <AlertDialogFooter>
                 <AlertDialogCancel onClick={() => setTaskToDelete(null)}>Cancel</AlertDialogCancel>
                 <AlertDialogAction onClick={handleDeleteTask} disabled={isDeletingTask} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
-                  {isDeletingTask ? (
-                    <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Deleting...</>
-                  ) : (
-                    <><Trash2 className="mr-2 h-4 w-4" /> Delete</>
-                  )}
+                  {isDeletingTask ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Deleting...</> : <><Trash2 className="mr-2 h-4 w-4" /> Delete</>}
                 </AlertDialogAction>
             </AlertDialogFooter>
         </AlertDialogContent>
