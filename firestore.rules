@@ -1,70 +1,78 @@
-
 rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
-  
-    // Helper functions
-    function isAuth() {
+
+    // --- Helper Functions ---
+    function isSignedIn() {
       return request.auth != null;
     }
 
     function isAdmin() {
-      // Check if the user is authenticated and their user document has the 'admin' role.
-      return isAuth() && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+      // Check if the signed-in user has the 'admin' role in their user document.
+      return isSignedIn() && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
     }
 
-    // Default deny all to ensure explicit rules are set for every path.
-    match /{document=**} {
-      allow read, write: if false;
+    // --- Admin Catch-All ---
+    // Admins have full read/write access to everything.
+    // This is the simplest and most robust way to handle admin permissions for this app.
+    match /{path=**} {
+      allow read, write: if isAdmin();
     }
 
-    // Rules for the 'users' collection
+    // --- General Authenticated User Rules ---
+
+    // Profile: Any signed-in user can read their own profile.
     match /users/{userId} {
-      // Admins can list all users for the user management page.
-      allow list: if isAdmin();
-      
-      // An admin can get any user's profile. A user can only get their own.
-      allow get: if isAdmin() || (isAuth() && request.auth.uid == userId);
-      
-      // Only admins can create, update, or delete users.
-      allow write: if isAdmin();
-    }
-    
-    // Rules for most top-level data collections.
-    // Any authenticated user can read (get or list) from these collections.
-    // Only admins can write (create, update, delete).
-    match /{collection}/{id}
-        where collection in ['projects', 'employees', 'clients', 'suppliers', 'inventory', 'inventoryCategories', 'warehouses', 'assets', 'procurement', 'materialRequests', 'invoices', 'accounts', 'activityLog', 'company'] {
-      allow read: if isAuth();
-      allow write: if isAdmin();
+      allow get: if isSignedIn() && request.auth.uid == userId;
+      // Listing users is an admin-only action, covered by the admin catch-all.
     }
 
-    // Rules for sub-collections. These are simplified for now.
-    // A more robust implementation would check for project membership, etc.
-    match /projects/{projectId}/{subcollection}/{documentId}
-      where subcollection in ['tasks', 'documents', 'dailyLogs'] {
-      allow read, write: if isAuth();
-    }
+    // READ Access: All signed-in users can read data from primary collections.
+    match /company/main { allow get: if isSignedIn(); }
+    match /projects/{projectId} { allow read: if isSignedIn(); }
+    match /clients/{clientId} { allow read: if isSignedIn(); }
+    match /suppliers/{supplierId} { allow read: if isSignedIn(); }
+    match /employees/{employeeId} { allow read: if isSignedIn(); }
+    match /inventory/{itemId} { allow read: if isSignedIn(); }
+    match /inventoryCategories/{categoryId} { allow read: if isSignedIn(); }
+    match /warehouses/{warehouseId} { allow read: if isSignedIn(); }
+    match /assets/{assetId} { allow read: if isSignedIn(); }
+    match /procurement/{poId} { allow read: if isSignedIn(); }
+    match /materialRequests/{reqId} { allow read: if isSignedIn(); }
+    match /transactions/{transactionId} { allow read: if isSignedIn(); }
+    match /invoices/{invoiceId} { allow read: if isSignedIn(); }
+    match /accounts/{accountId} { allow read: if isSignedIn(); }
+    match /activityLog/{logId} { allow read: if isSignedIn(); }
     
-    match /clients/{clientId}/{subcollection}/{documentId}
-      where subcollection in ['interactions', 'contracts'] {
-      allow read, write: if isAuth();
-    }
+    // SUB-COLLECTION READ Access
+    match /projects/{projectId}/{subcollection}/{docId} { allow read: if isSignedIn(); }
+    match /clients/{clientId}/{subcollection}/{docId} { allow read: if isSignedIn(); }
+    match /suppliers/{supplierId}/{subcollection}/{docId} { allow read: if isSignedIn(); }
+    match /assets/{assetId}/{subcollection}/{docId} { allow read: if isSignedIn(); }
+
+    // WRITE Access for specific actions by any authenticated user.
+    // Most writes are handled by server actions which run with service account privileges,
+    // but client-side actions need these permissions.
     
-    match /suppliers/{supplierId}/{subcollection}/{documentId}
-        where subcollection in ['contracts'] {
-        allow read, write: if isAuth();
-    }
-    
-    match /assets/{assetId}/maintenanceLogs/{logId} {
-        allow read, write: if isAuth();
+    // Anyone can create a material request.
+    match /materialRequests/{reqId} {
+      allow create: if isSignedIn();
     }
 
-    // This rule enables collection group queries on 'contracts'.
-    // Required for the financials page to link transactions to contracts.
-    match /{path=**}/contracts/{contractId} {
-      allow read: if isAuth();
+    // Anyone can interact with a project's subcollections in specific ways.
+    match /projects/{projectId} {
+      match /tasks/{taskId} {
+        allow create, delete: if isSignedIn();
+        // Allow only status updates from the Kanban board.
+        allow update: if isSignedIn() && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status']);
+      }
+      match /dailyLogs/{logId} {
+        allow create: if isSignedIn();
+      }
+      match /documents/{docId} {
+        allow create, delete: if isSignedIn();
+      }
     }
   }
 }
