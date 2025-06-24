@@ -8,13 +8,27 @@ import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
-import { sendPasswordReset } from './actions';
-import { Loader2, KeyRound, User, Palette } from 'lucide-react';
+import { sendPasswordReset, updateMyProfilePhoto } from './actions';
+import { Loader2, KeyRound, User, Palette, Camera } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { collection, query, where, getDocs, limit } from 'firebase/firestore';
 import { firestore } from '@/lib/firebase';
 import { ThemeToggle } from '@/components/theme-toggle';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { Input } from '@/components/ui/input';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
 
 const roleVariant: { [key: string]: 'default' | 'secondary' | 'destructive' } = {
   admin: 'default',
@@ -28,12 +42,21 @@ type EmployeeProfileLink = {
     photoUrl?: string;
 };
 
+const photoFormSchema = z.object({
+  photo: z.any().refine(files => files?.length > 0, 'A photo is required.'),
+});
+
 export default function ProfilePage() {
   const { profile, isLoading } = useAuth();
   const { toast } = useToast();
   const [isResetting, setIsResetting] = useState(false);
   const [employeeProfile, setEmployeeProfile] = useState<EmployeeProfileLink | null>(null);
   const [isEmployeeLoading, setIsEmployeeLoading] = useState(true);
+  const [isPhotoDialogOpen, setIsPhotoDialogOpen] = useState(false);
+
+  const photoForm = useForm<z.infer<typeof photoFormSchema>>({
+    resolver: zodResolver(photoFormSchema),
+  });
 
   useEffect(() => {
     if (profile?.email) {
@@ -74,6 +97,22 @@ export default function ProfilePage() {
     
     if (result.success) {
       toast({ title: 'Success', description: result.message });
+    } else {
+      toast({ variant: 'destructive', title: 'Error', description: result.message });
+    }
+  }
+  
+  async function onPhotoSubmit(values: z.infer<typeof photoFormSchema>) {
+    if (!profile?.uid) return;
+    
+    const formData = new FormData();
+    formData.append('photo', values.photo[0]);
+    
+    const result = await updateMyProfilePhoto(profile.uid, formData);
+    
+    if (result.success) {
+      toast({ title: 'Success', description: result.message });
+      setIsPhotoDialogOpen(false);
     } else {
       toast({ variant: 'destructive', title: 'Error', description: result.message });
     }
@@ -119,10 +158,55 @@ export default function ProfilePage() {
         <div className="md:col-span-1">
              <Card>
                 <CardContent className="p-6 text-center">
-                    <Avatar className="h-32 w-32 mx-auto">
-                        <AvatarImage src={displayAvatar} data-ai-hint="profile picture" />
-                        <AvatarFallback className="text-4xl">{avatarFallback}</AvatarFallback>
-                    </Avatar>
+                    <div className="relative group mx-auto w-fit">
+                        <Avatar className="h-32 w-32">
+                            <AvatarImage src={displayAvatar} data-ai-hint="profile picture" />
+                            <AvatarFallback className="text-4xl">{avatarFallback}</AvatarFallback>
+                        </Avatar>
+                        {employeeProfile && (
+                            <Dialog open={isPhotoDialogOpen} onOpenChange={setIsPhotoDialogOpen}>
+                                <DialogTrigger asChild>
+                                    <button className="absolute inset-0 bg-black/50 flex items-center justify-center rounded-full opacity-0 group-hover:opacity-100 transition-opacity">
+                                        <Camera className="text-white size-8" />
+                                        <span className="sr-only">Change photo</span>
+                                    </button>
+                                </DialogTrigger>
+                                <DialogContent>
+                                    <DialogHeader>
+                                        <DialogTitle>Update Profile Photo</DialogTitle>
+                                    </DialogHeader>
+                                    <Form {...photoForm}>
+                                        <form onSubmit={photoForm.handleSubmit(onPhotoSubmit)} className="space-y-4 py-4">
+                                            <FormField
+                                                control={photoForm.control}
+                                                name="photo"
+                                                render={({ field }) => (
+                                                    <FormItem>
+                                                        <FormLabel>New Photo</FormLabel>
+                                                        <FormControl>
+                                                            <Input
+                                                                type="file"
+                                                                accept="image/png, image/jpeg, image/webp"
+                                                                onChange={(e) => field.onChange(e.target.files)}
+                                                            />
+                                                        </FormControl>
+                                                        <FormMessage />
+                                                    </FormItem>
+                                                )}
+                                            />
+                                            <DialogFooter>
+                                                <Button type="submit" disabled={photoForm.formState.isSubmitting}>
+                                                    {photoForm.formState.isSubmitting ? (
+                                                        <><Loader2 className="mr-2 animate-spin" /> Uploading...</>
+                                                    ) : 'Upload Photo'}
+                                                </Button>
+                                            </DialogFooter>
+                                        </form>
+                                    </Form>
+                                </DialogContent>
+                            </Dialog>
+                        )}
+                    </div>
                     <h2 className="mt-4 text-2xl font-semibold">{displayName}</h2>
                     <p className="text-sm text-muted-foreground">{profile.email}</p>
                     <Badge variant={roleVariant[profile.role]} className="mt-4 capitalize">{profile.role}</Badge>
