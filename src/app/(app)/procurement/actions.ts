@@ -203,6 +203,17 @@ export async function updatePurchaseRequestStatus(requestId: string, newStatus: 
         await updateDoc(requestRef, { status: newStatus });
     }
     
+    const poDocForLog = await getDoc(requestRef);
+    if (poDocForLog.exists()) {
+      const poDataForLog = poDocForLog.data();
+      await addDoc(collection(firestore, 'activityLog'), {
+          message: `PO for "${poDataForLog.itemName}" status changed to ${newStatus}`,
+          type: "PO_STATUS_CHANGED",
+          link: `/procurement/${requestId}`,
+          timestamp: serverTimestamp(),
+      });
+    }
+    
     revalidatePath('/procurement');
     revalidatePath(`/procurement/${requestId}`);
     revalidatePath('/financials');
