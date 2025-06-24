@@ -229,7 +229,7 @@ export default function InvoiceDetailPage({ params }: { params: { id: string } }
             <CardHeader className="grid grid-cols-2 gap-6 p-8">
                 <div>
                     {company?.logoUrl ? <img src={company.logoUrl} alt={company.name} className="h-16 w-auto object-contain" /> : <Logo className="h-12 w-12 text-primary" />}
-                    <h2 className="mt-4 text-xl font-bold text-primary">{company?.name || 'ElitePlan'}</h2>
+                    <h2 className="mt-4 text-xl font-bold text-primary">{company?.name || 'Mokawalat'}</h2>
                     <p className="text-sm text-muted-foreground">{company?.address}</p>
                     <p className="text-sm text-muted-foreground">{company?.email} &middot; {company?.phone}</p>
                 </div>

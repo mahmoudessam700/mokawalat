@@ -1,4 +1,4 @@
-# ElitePlan ERP: A Feature-Complete AI-Powered ERP for Construction
+# Mokawalat ERP: A Feature-Complete AI-Powered ERP for Construction
 
 Congratulations! You have successfully built a comprehensive, AI-powered ERP system for a modern construction company using Firebase Studio. This application provides a full suite of integrated tools to manage every aspect of your business operations, from project inception to financial reporting.
 

@@ -142,7 +142,7 @@ export function AppSidebar() {
         // somehow doesn't unmount immediately.
         setIsLoggingOut(false);
       }
-    }, 500);
+    }, 1000);
   };
 
   return (
@@ -150,7 +150,7 @@ export function AppSidebar() {
       <SidebarHeader>
         <div className="flex items-center gap-2">
           <Logo className="size-8 text-primary" />
-          <span className="font-headline text-xl font-semibold">ElitePlan</span>
+          <span className="font-headline text-xl font-semibold">Mokawalat</span>
         </div>
       </SidebarHeader>
       <SidebarContent className="flex flex-col p-2">
