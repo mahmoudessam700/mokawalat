@@ -1,3 +1,4 @@
+
 import type { Metadata } from 'next';
 import { Inter, Lexend } from 'next/font/google';
 import { Toaster } from '@/components/ui/toaster';
@@ -17,7 +18,7 @@ const lexend = Lexend({
 });
 
 export const metadata: Metadata = {
-  title: 'Mokawalat ERP',
+  title: 'ElitePlan',
   description: 'Comprehensive ERP for Large Construction Companies',
 };
 
