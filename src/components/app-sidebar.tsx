@@ -107,7 +107,7 @@ export function AppSidebar() {
   const router = useRouter();
   const { toast } = useToast();
   const [isLoggingOut, setIsLoggingOut] = useState(false);
-  const { profile, isLoading: isAuthLoading } = useAuth();
+  const { user, profile, isLoading: isAuthLoading } = useAuth();
 
   const isActive = (href: string) => {
     if (href === '/dashboard' || href === '/approvals' || href === '/reports' || href === '/activity-log') {
@@ -196,15 +196,15 @@ export function AppSidebar() {
                                 <Skeleton className="h-3 w-32" />
                             </div>
                         </>
-                        ) : profile && profile.email ? (
+                        ) : user ? (
                         <>
                             <Avatar>
-                                <AvatarImage src={`https://placehold.co/40x40.png`} alt={profile.email} data-ai-hint="profile picture" />
-                                <AvatarFallback>{profile.email.charAt(0).toUpperCase()}</AvatarFallback>
+                                <AvatarImage src={`https://placehold.co/40x40.png`} alt={profile?.email || user.email || ''} data-ai-hint="profile picture" />
+                                <AvatarFallback>{(profile?.email || user.email || 'U').charAt(0).toUpperCase()}</AvatarFallback>
                             </Avatar>
                             <div className="flex flex-col overflow-hidden text-left">
-                                <span className="text-sm font-semibold truncate">{profile.email.split('@')[0]}</span>
-                                <span className="text-xs text-muted-foreground truncate">{profile.email}</span>
+                                <span className="text-sm font-semibold truncate">{(profile?.email || user.email || 'User').split('@')[0]}</span>
+                                <span className="text-xs text-muted-foreground truncate">{profile?.email || user.email}</span>
                             </div>
                         </>
                         ) : (
@@ -216,7 +216,7 @@ export function AppSidebar() {
                 </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent className="w-56 mb-2" align="end">
-                <DropdownMenuLabel>{profile?.email}</DropdownMenuLabel>
+                <DropdownMenuLabel>{profile?.email || user?.email}</DropdownMenuLabel>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem asChild>
                     <Link href="/profile">
