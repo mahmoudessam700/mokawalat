@@ -142,7 +142,7 @@ export function AppSidebar() {
         // somehow doesn't unmount immediately.
         setIsLoggingOut(false);
       }
-    }, 1000);
+    }, 1500);
   };
 
   return (
@@ -206,8 +206,8 @@ export function AppSidebar() {
                                 <AvatarFallback>{(user.email || 'U').charAt(0).toUpperCase()}</AvatarFallback>
                             </Avatar>
                             <div className="flex flex-col overflow-hidden text-left">
-                                <span className="text-sm font-semibold truncate">{(user.email || 'User').split('@')[0]}</span>
-                                <span className="text-xs text-muted-foreground truncate">{user.email}</span>
+                                <span className="text-sm font-semibold truncate">{profile?.email || user.email}</span>
+                                <span className="text-xs text-muted-foreground capitalize">{profile?.role || 'User'}</span>
                             </div>
                         </>
                         ) : (
