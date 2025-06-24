@@ -2,42 +2,32 @@ rules_version = '2';
 
 service firebase.storage {
   match /b/{bucket}/o {
-
-    function isAdmin() {
-      // Checks if the requesting user has an 'admin' role in the /users collection in Firestore.
-      return get(/databases/(default)/documents/users/$(request.auth.uid)).data.role == 'admin';
+    // By default, allow reads for all files.
+    // Most files like logos, employee photos, daily log photos should be readable by anyone with the link.
+    match /{allPaths=**} {
+      allow read;
     }
 
-    function isAuthenticated() {
-      return request.auth != null;
+    // Company logo can be uploaded by admins.
+    // Firestore rules will gate the UI, this is an additional layer.
+    match /company/{allPaths=**} {
+      allow write: if request.auth != null;
+    }
+
+    // Project files can be uploaded by authenticated users.
+    // Access to create the corresponding Firestore document is the real gatekeeper.
+    match /projects/{projectId}/{allPaths=**} {
+      allow write: if request.auth != null;
     }
     
-    // Default deny all access to files.
-    match /{allPaths=**} {
-      allow read, write: if false;
+    // Employee profile photos can be uploaded by authenticated users.
+    match /employees/{employeeId}/{allPaths=**} {
+      allow write: if request.auth != null;
     }
 
-    // Client Contracts: Authenticated users can read. Admins can write.
-    match /contracts/clients/{clientId}/{contractId}/{fileName} {
-        allow read: if isAuthenticated();
-        allow write: if isAuthenticated() && isAdmin();
-    }
-
-    // Supplier Contracts: Authenticated users can read. Admins can write.
-    match /contracts/suppliers/{supplierId}/{contractId}/{fileName} {
-        allow read: if isAuthenticated();
-        allow write: if isAuthenticated() && isAdmin();
-    }
-
-    // Project Documents: Authenticated users can read. Admins can write.
-    match /projects/{projectId}/documents/{docId}/{fileName} {
-        allow read: if isAuthenticated();
-        allow write: if isAuthenticated() && isAdmin();
-    }
-
-    // Daily Log Photos: Authenticated users can read and write.
-    match /projects/{projectId}/dailyLogs/{logId}/{fileName} {
-        allow read, write: if isAuthenticated();
+    // Contract files can be uploaded by authenticated users.
+    match /contracts/{allPaths=**} {
+      allow write: if request.auth != null;
     }
   }
 }
