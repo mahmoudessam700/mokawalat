@@ -2,57 +2,64 @@ rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
-    
+
     // --- Helper Functions ---
-    function isSignedIn() {
+    function isAuthenticated() {
       return request.auth != null;
     }
 
     function isAdmin() {
-      return exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
-             get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+      // This function can only be called if the user has read access to their own user document.
+      return isAuthenticated() && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
     }
 
-    // --- Default Rules ---
-    // Default allow reads for any signed-in user, and writes only for admins.
-    // This is a simpler, more permissive read model to avoid permission issues,
-    // while keeping writes secure.
-    match /{document=**} {
-      allow read: if isSignedIn();
+    // --- Specific Collection Rules ---
+
+    // All authenticated users can read any user's profile information.
+    // Only an admin can change another user's role.
+    match /users/{userId} {
+      allow read: if isAuthenticated();
       allow write: if isAdmin();
     }
-    
-    // --- Specific Rule Overrides ---
 
-    // Users can create and update their own user document.
-    match /users/{userId} {
-      allow create: if request.auth.uid == userId;
-      allow update(diff) : if request.auth.uid == userId && !(diff.hasAny(['role']));
-      // Admins can change anything, including roles, based on the default rule.
+    // Any authenticated user can read from any top-level collection.
+    // This simplifies rules for an internal ERP where most data is not secret among employees.
+    match /{collection}/{docId} {
+      allow read: if isAuthenticated();
     }
     
-    // Any signed-in user can create these items.
+    // Any authenticated user can read from any subcollection.
+    match /{collection}/{docId}/{subcollection}/{subDocId} {
+       allow read: if isAuthenticated();
+    }
+
+    // --- Global Write Rules ---
+    // Admins have universal write access. This is a simple, powerful rule for admin functionality.
+    // Specific write rules for non-admins are defined below and will grant additional permissions.
+    match /{document=**} {
+      allow write: if isAdmin();
+    }
+
+    // --- Specific Write Access for Non-Admins ---
+
+    // Allow authenticated users to create daily logs in a project.
     match /projects/{projectId}/dailyLogs/{logId} {
-      allow create: if isSignedIn();
-    }
-    match /clients/{clientId}/interactions/{interactionId} {
-      allow create: if isSignedIn();
-    }
-    match /materialRequests/{reqId} {
-      allow create: if isSignedIn();
-    }
-    match /procurement/{reqId} {
-      allow create: if isSignedIn();
+      allow create: if isAuthenticated();
     }
 
-    match /projects/{projectId}/documents/{docId} {
-      allow create: if isSignedIn();
-    }
-
-    // Any signed-in user can update a task's status (for the Kanban board).
-    // The default admin rule covers create/delete.
+    // Allow authenticated users to update a task's status (for the Kanban board).
     match /projects/{projectId}/tasks/{taskId} {
-      allow update: if isSignedIn();
+      allow update: if isAuthenticated();
+    }
+
+    // Allow authenticated users to create material requests.
+    match /materialRequests/{requestId} {
+      allow create: if isAuthenticated();
+    }
+    
+    // Allow authenticated users to create interactions with clients.
+    match /clients/{clientId}/interactions/{interactionId} {
+      allow create: if isAuthenticated();
     }
   }
 }
