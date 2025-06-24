@@ -447,6 +447,16 @@ export async function addProjectDocument(projectId: string, formData: FormData) 
     
     await setDoc(newDocRef, documentData);
 
+    const projectSnap = await getDoc(doc(firestore, 'projects', projectId));
+    const projectName = projectSnap.exists() ? projectSnap.data().name : 'Unknown Project';
+
+    await addDoc(collection(firestore, 'activityLog'), {
+        message: `Document "${validatedFields.data.title}" added to project: ${projectName}`,
+        type: "DOCUMENT_UPLOADED",
+        link: `/projects/${projectId}`,
+        timestamp: serverTimestamp(),
+    });
+
     revalidatePath(`/projects/${projectId}`);
     return { message: 'Document added successfully.', errors: null };
   } catch (error) {
@@ -522,6 +532,15 @@ export async function addTask(projectId: string, values: TaskFormValues) {
             dueDate: validatedFields.data.dueDate ? new Date(validatedFields.data.dueDate) : null,
             status: 'To Do',
             createdAt: serverTimestamp(),
+        });
+
+        const projectSnap = await getDoc(doc(firestore, 'projects', projectId));
+        const projectName = projectSnap.exists() ? projectSnap.data().name : 'Unknown Project';
+        await addDoc(collection(firestore, 'activityLog'), {
+            message: `Task "${validatedFields.data.name}" added to project: ${projectName}`,
+            type: "TASK_ADDED",
+            link: `/projects/${projectId}`,
+            timestamp: serverTimestamp(),
         });
 
         await recalculateProjectProgress(projectId);
