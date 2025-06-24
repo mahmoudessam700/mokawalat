@@ -119,6 +119,8 @@ export async function updateMaterialRequestStatus(requestId: string, newStatus: 
         revalidatePath(`/projects/${projectId}`);
     }
     revalidatePath('/material-requests');
+    revalidatePath('/approvals');
+    revalidatePath('/inventory');
 
     return { success: true, message: `Request has been ${newStatus.toLowerCase()}.` };
 

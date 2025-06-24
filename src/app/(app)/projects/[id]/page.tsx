@@ -676,7 +676,7 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
                             <CardTitle>Assigned Team</CardTitle>
                             <CardDescription>Team members assigned to this project.</CardDescription>
                         </div>
-                        {profile?.role === 'admin' && (
+                        {['admin', 'manager'].includes(profile?.role || '') && (
                             <AssignTeamDialog
                                 projectId={project.id}
                                 employees={employees}
@@ -706,7 +706,7 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
                             <div className="flex flex-col items-center justify-center gap-2 p-4 text-center text-muted-foreground">
                                 <Users className="size-12" />
                                 <p>No team members assigned yet.</p>
-                                {profile?.role === 'admin' && (
+                                {['admin', 'manager'].includes(profile?.role || '') && (
                                     <p className="text-xs">Use the "Assign Team" button to add members.</p>
                                 )}
                             </div>
@@ -791,7 +791,7 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
                                         <TableHead>Item</TableHead>
                                         <TableHead>Qty</TableHead>
                                         <TableHead>Status</TableHead>
-                                        {profile?.role === 'admin' && <TableHead className="text-right">Actions</TableHead>}
+                                        {['admin', 'manager'].includes(profile?.role || '') && <TableHead className="text-right">Actions</TableHead>}
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>
@@ -800,7 +800,7 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
                                             <TableCell className="font-medium">{req.itemName}</TableCell>
                                             <TableCell>{req.quantity}</TableCell>
                                             <TableCell><Badge variant={materialRequestStatusVariant[req.status]}>{req.status}</Badge></TableCell>
-                                            {profile?.role === 'admin' && (
+                                            {['admin', 'manager'].includes(profile?.role || '') && (
                                                 <TableCell className="text-right">
                                                     {req.status === 'Pending' && (
                                                         <div className="flex gap-2 justify-end">
