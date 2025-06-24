@@ -110,32 +110,36 @@ export function AppSidebar() {
   const { profile, isLoading: isAuthLoading } = useAuth();
 
   const isActive = (href: string) => {
-    if (href === '/dashboard' || href === '/approvals' || href === '/reports') {
+    if (href === '/dashboard' || href === '/approvals' || href === '/reports' || href === '/activity-log') {
       return pathname === href;
     }
     return pathname.startsWith(href);
   };
   
-  const handleLogout = async () => {
+  const handleLogout = () => {
     setIsLoggingOut(true);
-    try {
-      // By pushing to the login page first, we ensure that all components
-      // with active Firestore listeners are unmounted, which prevents
-      // permission errors when the auth state changes.
-      router.push('/login');
-      await signOut(auth);
-      toast({
-        title: 'Logged Out',
-        description: 'You have been successfully logged out.',
-      });
-    } catch (error) {
-      toast({
-        variant: 'destructive',
-        title: 'Logout Failed',
-        description: 'An error occurred while logging out.',
-      });
-      setIsLoggingOut(false);
-    }
+    // Navigate away first. This will start the process of unmounting
+    // all the components that have active database listeners.
+    router.push('/login');
+
+    // We defer the actual sign-out call slightly. This gives Next.js
+    // time to complete the navigation and unmount the old page, which
+    // prevents the "insufficient permissions" error from the old listeners.
+    setTimeout(async () => {
+      try {
+        await signOut(auth);
+        toast({
+          title: 'Logged Out',
+          description: 'You have been successfully logged out.',
+        });
+      } catch (error) {
+        toast({
+          variant: 'destructive',
+          title: 'Logout Failed',
+          description: 'An error occurred while signing out.',
+        });
+      }
+    }, 150);
   };
 
   return (
@@ -143,7 +147,7 @@ export function AppSidebar() {
       <SidebarHeader>
         <div className="flex items-center gap-2">
           <Logo className="size-8 text-primary" />
-          <span className="font-headline text-xl font-semibold">Mokawalat ERP</span>
+          <span className="font-headline text-xl font-semibold">ElitePlan</span>
         </div>
       </SidebarHeader>
       <SidebarContent className="flex flex-col p-2">
