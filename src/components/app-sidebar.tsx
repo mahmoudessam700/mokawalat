@@ -122,9 +122,8 @@ export function AppSidebar() {
     // all the components that have active database listeners.
     router.push('/login');
 
-    // We defer the actual sign-out call slightly. This gives Next.js
-    // time to complete the navigation and unmount the old page, which
-    // prevents the "insufficient permissions" error from the old listeners.
+    // We defer the actual sign-out call. A longer delay makes it more robust,
+    // ensuring Next.js has time to unmount components and their listeners.
     setTimeout(async () => {
       try {
         await signOut(auth);
@@ -138,8 +137,12 @@ export function AppSidebar() {
           title: 'Logout Failed',
           description: 'An error occurred while signing out.',
         });
+      } finally {
+        // This state change is for completeness, in case the component
+        // somehow doesn't unmount immediately.
+        setIsLoggingOut(false);
       }
-    }, 150);
+    }, 500);
   };
 
   return (
@@ -200,11 +203,11 @@ export function AppSidebar() {
                         <>
                             <Avatar>
                                 <AvatarImage src={`https://placehold.co/40x40.png`} alt={profile?.email || user.email || ''} data-ai-hint="profile picture" />
-                                <AvatarFallback>{(profile?.email || user.email || 'U').charAt(0).toUpperCase()}</AvatarFallback>
+                                <AvatarFallback>{(user.email || 'U').charAt(0).toUpperCase()}</AvatarFallback>
                             </Avatar>
                             <div className="flex flex-col overflow-hidden text-left">
-                                <span className="text-sm font-semibold truncate">{(profile?.email || user.email || 'User').split('@')[0]}</span>
-                                <span className="text-xs text-muted-foreground truncate">{profile?.email || user.email}</span>
+                                <span className="text-sm font-semibold truncate">{(user.email || 'User').split('@')[0]}</span>
+                                <span className="text-xs text-muted-foreground truncate">{user.email}</span>
                             </div>
                         </>
                         ) : (
