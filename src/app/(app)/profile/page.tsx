@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useAuth } from '@/hooks/use-auth';
@@ -74,7 +73,7 @@ export default function ProfilePage() {
             <div className="flex items-center gap-6">
                 <Avatar className="h-24 w-24">
                     <AvatarImage src={`https://placehold.co/100x100.png`} data-ai-hint="profile picture" />
-                    <AvatarFallback>{profile.email.charAt(0).toUpperCase()}</AvatarFallback>
+                    <AvatarFallback>{(profile.email || 'U').charAt(0).toUpperCase()}</AvatarFallback>
                 </Avatar>
                 <div>
                     <CardTitle className="text-2xl">{profile.email}</CardTitle>
