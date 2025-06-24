@@ -88,14 +88,18 @@ export default function ApprovalsPage() {
 
     const unsubscribes: (() => void)[] = [];
 
-    const qMaterial = query(collection(firestore, 'materialRequests'), where('status', '==', 'Pending'), orderBy('requestedAt', 'desc'));
+    const qMaterial = query(collection(firestore, 'materialRequests'), where('status', '==', 'Pending'));
     unsubscribes.push(onSnapshot(qMaterial, (snapshot) => {
-      setMaterialRequests(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as MaterialRequest)));
+      const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as MaterialRequest));
+      data.sort((a,b) => (b.requestedAt?.toMillis() || 0) - (a.requestedAt?.toMillis() || 0));
+      setMaterialRequests(data);
     }, (err) => console.error("Error fetching pending material requests: ", err)));
 
-    const qPOs = query(collection(firestore, 'procurement'), where('status', '==', 'Pending'), orderBy('requestedAt', 'desc'));
+    const qPOs = query(collection(firestore, 'procurement'), where('status', '==', 'Pending'));
     unsubscribes.push(onSnapshot(qPOs, (snapshot) => {
-      setPurchaseOrders(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as PurchaseOrder)));
+      const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as PurchaseOrder));
+      data.sort((a,b) => (b.requestedAt?.toMillis() || 0) - (a.requestedAt?.toMillis() || 0));
+      setPurchaseOrders(data);
     }, (err) => console.error("Error fetching pending purchase orders: ", err)));
 
     const qProjects = query(collection(firestore, 'projects'), orderBy('name', 'asc'));
