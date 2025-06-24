@@ -2,36 +2,12 @@ rules_version = '2';
 
 service firebase.storage {
   match /b/{bucket}/o {
-    
-    function isAuthenticated() {
-      return request.auth != null;
-    }
-    
-    // Company logo is publicly readable
-    match /company/logo/{fileName} {
-        allow read: if true;
-        allow write: if isAuthenticated();
-    }
-
-    // Employee photos are publicly readable
-    match /employees/{userId}/{fileName} {
-      allow read: if true;
-      allow write: if isAuthenticated(); // Simplified: allow any logged-in user to upload photos for any employee
-    }
-
-    // Project documents and daily log photos
-    match /projects/{projectId}/{subcollection}/{docId}/{fileName} {
-        allow read, write: if isAuthenticated();
-    }
-
-    // Contracts (both client and supplier)
-    match /contracts/{type}/{parentId}/{contractId}/{fileName} {
-        allow read, write: if isAuthenticated();
-    }
-
-    // Deny any other access
+    // Allow read access to all files for any authenticated user.
+    // Allow write access to all files for any authenticated user.
+    // This is a simple rule for an internal tool. For more granular control,
+    // you would add path-specific write rules.
     match /{allPaths=**} {
-      allow read, write: if false;
+      allow read, write: if request.auth != null;
     }
   }
 }

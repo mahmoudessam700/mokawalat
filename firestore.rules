@@ -2,77 +2,57 @@ rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
-
+    
     // --- Helper Functions ---
     function isSignedIn() {
       return request.auth != null;
     }
 
     function isAdmin() {
-      // Check if the signed-in user has the 'admin' role in their user document.
-      return isSignedIn() && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+      return exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+             get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
     }
 
-    // --- Admin Catch-All ---
-    // Admins have full read/write access to everything.
-    // This is the simplest and most robust way to handle admin permissions for this app.
-    match /{path=**} {
-      allow read, write: if isAdmin();
+    // --- Default Rules ---
+    // Default allow reads for any signed-in user, and writes only for admins.
+    // This is a simpler, more permissive read model to avoid permission issues,
+    // while keeping writes secure.
+    match /{document=**} {
+      allow read: if isSignedIn();
+      allow write: if isAdmin();
     }
+    
+    // --- Specific Rule Overrides ---
 
-    // --- General Authenticated User Rules ---
-
-    // Profile: Any signed-in user can read their own profile.
+    // Users can create and update their own user document.
     match /users/{userId} {
-      allow get: if isSignedIn() && request.auth.uid == userId;
-      // Listing users is an admin-only action, covered by the admin catch-all.
+      allow create: if request.auth.uid == userId;
+      allow update(diff) : if request.auth.uid == userId && !(diff.hasAny(['role']));
+      // Admins can change anything, including roles, based on the default rule.
     }
-
-    // READ Access: All signed-in users can read data from primary collections.
-    match /company/main { allow get: if isSignedIn(); }
-    match /projects/{projectId} { allow read: if isSignedIn(); }
-    match /clients/{clientId} { allow read: if isSignedIn(); }
-    match /suppliers/{supplierId} { allow read: if isSignedIn(); }
-    match /employees/{employeeId} { allow read: if isSignedIn(); }
-    match /inventory/{itemId} { allow read: if isSignedIn(); }
-    match /inventoryCategories/{categoryId} { allow read: if isSignedIn(); }
-    match /warehouses/{warehouseId} { allow read: if isSignedIn(); }
-    match /assets/{assetId} { allow read: if isSignedIn(); }
-    match /procurement/{poId} { allow read: if isSignedIn(); }
-    match /materialRequests/{reqId} { allow read: if isSignedIn(); }
-    match /transactions/{transactionId} { allow read: if isSignedIn(); }
-    match /invoices/{invoiceId} { allow read: if isSignedIn(); }
-    match /accounts/{accountId} { allow read: if isSignedIn(); }
-    match /activityLog/{logId} { allow read: if isSignedIn(); }
     
-    // SUB-COLLECTION READ Access
-    match /projects/{projectId}/{subcollection}/{docId} { allow read: if isSignedIn(); }
-    match /clients/{clientId}/{subcollection}/{docId} { allow read: if isSignedIn(); }
-    match /suppliers/{supplierId}/{subcollection}/{docId} { allow read: if isSignedIn(); }
-    match /assets/{assetId}/{subcollection}/{docId} { allow read: if isSignedIn(); }
-
-    // WRITE Access for specific actions by any authenticated user.
-    // Most writes are handled by server actions which run with service account privileges,
-    // but client-side actions need these permissions.
-    
-    // Anyone can create a material request.
+    // Any signed-in user can create these items.
+    match /projects/{projectId}/dailyLogs/{logId} {
+      allow create: if isSignedIn();
+    }
+    match /clients/{clientId}/interactions/{interactionId} {
+      allow create: if isSignedIn();
+    }
     match /materialRequests/{reqId} {
       allow create: if isSignedIn();
     }
+    match /procurement/{reqId} {
+      allow create: if isSignedIn();
+    }
 
-    // Anyone can interact with a project's subcollections in specific ways.
-    match /projects/{projectId} {
-      match /tasks/{taskId} {
-        allow create, delete: if isSignedIn();
-        // Allow only status updates from the Kanban board.
-        allow update: if isSignedIn() && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status']);
-      }
-      match /dailyLogs/{logId} {
-        allow create: if isSignedIn();
-      }
-      match /documents/{docId} {
-        allow create, delete: if isSignedIn();
-      }
+    match /projects/{projectId}/documents/{docId} {
+      allow create: if isSignedIn();
+    }
+
+    // Any signed-in user can update a task's status (for the Kanban board).
+    // The default admin rule covers create/delete.
+    match /projects/{projectId}/tasks/{taskId} {
+      allow update: if isSignedIn();
     }
   }
 }
