@@ -1,3 +1,4 @@
+
 import { SidebarTrigger } from '@/components/ui/sidebar';
 import { GlobalSearch } from './global-search';
 import { ThemeToggle } from './theme-toggle';
