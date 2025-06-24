@@ -68,6 +68,14 @@ export async function updateSupplier(supplierId: string, values: SupplierFormVal
       ...validatedFields.data,
       name_lowercase: validatedFields.data.name.toLowerCase(),
     });
+    
+    await addDoc(collection(firestore, 'activityLog'), {
+        message: `Supplier updated: ${validatedFields.data.name}`,
+        type: "SUPPLIER_UPDATED",
+        link: `/suppliers/${supplierId}`,
+        timestamp: serverTimestamp(),
+    });
+
     revalidatePath('/suppliers');
     revalidatePath(`/suppliers/${supplierId}`);
     return { message: 'Supplier updated successfully.', errors: null };

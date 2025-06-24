@@ -2,7 +2,7 @@
 'use server';
 
 import { firestore, storage } from '@/lib/firebase';
-import { collection, addDoc, doc, deleteDoc, updateDoc, serverTimestamp, setDoc, getDoc } from 'firebase/firestore';
+import { collection, addDoc, doc, deleteDoc, updateDoc, serverTimestamp, setDoc, getDoc, query, where, getDocs } from 'firebase/firestore';
 import { z } from 'zod';
 import { revalidatePath } from 'next/cache';
 import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
@@ -111,6 +111,13 @@ export async function updateEmployee(employeeId: string, formData: FormData) {
       name_lowercase: validatedFields.data.name.toLowerCase(),
       photoUrl,
       photoPath,
+    });
+
+    await addDoc(collection(firestore, 'activityLog'), {
+        message: `Employee updated: ${validatedFields.data.name}`,
+        type: "EMPLOYEE_UPDATED",
+        link: `/employees/${employeeId}`,
+        timestamp: serverTimestamp(),
     });
 
     revalidatePath('/employees');

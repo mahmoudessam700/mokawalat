@@ -68,7 +68,16 @@ export async function updateClient(clientId: string, values: ClientFormValues) {
       ...validatedFields.data,
       name_lowercase: validatedFields.data.name.toLowerCase(),
     });
+    
+    await addDoc(collection(firestore, 'activityLog'), {
+        message: `Client updated: ${validatedFields.data.name}`,
+        type: "CLIENT_UPDATED",
+        link: `/clients/${clientId}`,
+        timestamp: serverTimestamp(),
+    });
+
     revalidatePath('/clients');
+    revalidatePath(`/clients/${clientId}`);
     return { message: 'Client updated successfully.', errors: null };
   } catch (error) {
     console.error('Error updating client:', error);
