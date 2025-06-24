@@ -13,12 +13,14 @@ import {
   ChartTooltip,
   ChartTooltipContent,
   type ChartConfig,
+  ChartLegend,
+  ChartLegendContent,
 } from '@/components/ui/chart';
 import { useToast } from '@/hooks/use-toast';
 import { firestore } from '@/lib/firebase';
 import { collection, onSnapshot, query, type Timestamp } from 'firebase/firestore';
 import { useEffect, useMemo, useState } from 'react';
-import { Bar, BarChart, CartesianGrid, Pie, PieChart, XAxis, YAxis, Legend, ResponsiveContainer } from 'recharts';
+import { Bar, BarChart, CartesianGrid, Pie, PieChart, XAxis, YAxis } from 'recharts';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
 import { Calendar as CalendarIcon, DollarSign, Briefcase, Contact } from 'lucide-react';
@@ -317,7 +319,7 @@ export default function ReportsPage() {
        <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div>
             <h1 className="font-headline text-3xl font-bold tracking-tight">
-            Reporting &amp; Analytics
+            Reporting & Analytics
             </h1>
             <p className="text-muted-foreground">
             Generate and view detailed reports on all business activities.
@@ -440,7 +442,7 @@ export default function ReportsPage() {
                       cy="50%"
                       outerRadius={80}
                     />
-                    <Legend/>
+                    <ChartLegend content={<ChartLegendContent />} />
                   </PieChart>
                 </ChartContainer>
              )}
@@ -464,7 +466,7 @@ export default function ReportsPage() {
                       cy="50%"
                       outerRadius={80}
                     />
-                    <Legend/>
+                    <ChartLegend content={<ChartLegendContent />} />
                   </PieChart>
                 </ChartContainer>
              )}
@@ -488,7 +490,7 @@ export default function ReportsPage() {
                       cy="50%"
                       outerRadius={80}
                     />
-                    <Legend/>
+                    <ChartLegend content={<ChartLegendContent />} />
                   </PieChart>
                 </ChartContainer>
              )}
@@ -525,7 +527,7 @@ export default function ReportsPage() {
                                 cursor={false}
                                 content={<ChartTooltipContent indicator="line" />}
                             />
-                            <Legend />
+                            <ChartLegend content={<ChartLegendContent />} />
                             <Bar dataKey="Budget" fill="var(--color-Budget)" radius={[4, 4, 0, 0]} />
                             <Bar dataKey="Expenses" fill="var(--color-Expenses)" radius={[4, 4, 0, 0]} />
                         </BarChart>
@@ -569,7 +571,7 @@ export default function ReportsPage() {
                                 cursor={false}
                                 content={<ChartTooltipContent indicator="line" />}
                             />
-                            <Legend />
+                            <ChartLegend content={<ChartLegendContent />} />
                             <Bar dataKey="Income" fill="var(--color-Income)" radius={[4, 4, 0, 0]} />
                             <Bar dataKey="Expense" fill="var(--color-Expense)" radius={[4, 4, 0, 0]} />
                         </BarChart>
