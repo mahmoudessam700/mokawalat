@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect, createContext, useContext, type ReactNode } from 'react';
 import { onAuthStateChanged, type User as FirebaseAuthUser } from 'firebase/auth';
 import { doc, onSnapshot } from 'firebase/firestore';
 import { auth, firestore } from '@/lib/firebase';
@@ -20,7 +20,9 @@ interface AuthState {
   isLoading: boolean;
 }
 
-export function useAuth() {
+const AuthContext = createContext<AuthState | undefined>(undefined);
+
+export function AuthProvider({ children }: { children: ReactNode }) {
   const [authState, setAuthState] = useState<AuthState>({
     user: null,
     profile: null,
@@ -64,6 +66,14 @@ export function useAuth() {
     // Cleanup subscription on unmount
     return () => unsubscribeAuth();
   }, []);
+  
+  return React.createElement(AuthContext.Provider, { value: authState }, children);
+}
 
-  return authState;
+export function useAuth() {
+  const context = useContext(AuthContext);
+  if (context === undefined) {
+    throw new Error('useAuth must be used within an AuthProvider');
+  }
+  return context;
 }
