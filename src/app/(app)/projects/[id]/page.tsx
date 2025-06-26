@@ -41,6 +41,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { updateMaterialRequestStatus } from '../../material-requests/actions';
 import { ProjectTasksKanban } from './project-tasks-kanban';
+import { useLanguage } from '@/hooks/use-language';
 
 type ProjectStatus = 'In Progress' | 'Planning' | 'Completed' | 'On Hold';
 type TaskStatus = 'To Do' | 'In Progress' | 'Done';
@@ -78,6 +79,8 @@ export type Task = {
   status: TaskStatus;
   dueDate?: Timestamp;
   createdAt: Timestamp;
+  assignedTo?: string;
+  assignedToName?: string;
 };
 
 type ProcurementRequest = {
@@ -98,6 +101,7 @@ type MaterialRequest = {
 const taskFormSchema = z.object({
   name: z.string().min(3, "Task name must be at least 3 characters long."),
   dueDate: z.string().optional(),
+  assignedTo: z.string().optional(),
 });
 
 const materialRequestFormSchema = z.object({
@@ -227,6 +231,7 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
   const [isSuggestingTasks, setIsSuggestingTasks] = useState(false);
   const { profile } = useAuth();
   const { toast } = useToast();
+  const { t } = useLanguage();
   
   const projectId = params.id;
 
@@ -339,7 +344,7 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
 
   const taskForm = useForm<TaskFormValues>({
     resolver: zodResolver(taskFormSchema),
-    defaultValues: { name: '', dueDate: ''},
+    defaultValues: { name: '', dueDate: '', assignedTo: ''},
   });
 
   const dailyLogForm = useForm<DailyLogFormValues>({
@@ -656,7 +661,34 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
                                     <Form {...taskForm}>
                                         <form onSubmit={taskForm.handleSubmit(onTaskSubmit)} className="space-y-4 py-4">
                                             <FormField control={taskForm.control} name="name" render={({ field }) => (<FormItem><FormLabel>Task Name</FormLabel><FormControl><Input placeholder="e.g., Lay building foundations" {...field} /></FormControl><FormMessage /></FormItem>)} />
-                                            <FormField control={taskForm.control} name="dueDate" render={({ field }) => (<FormItem><FormLabel>Due Date (Optional)</FormLabel><FormControl><Input type="date" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                                            <div className="grid grid-cols-2 gap-4">
+                                                <FormField control={taskForm.control} name="dueDate" render={({ field }) => (<FormItem><FormLabel>Due Date (Optional)</FormLabel><FormControl><Input type="date" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                                                <FormField
+                                                    control={taskForm.control}
+                                                    name="assignedTo"
+                                                    render={({ field }) => (
+                                                        <FormItem>
+                                                            <FormLabel>Assign To (Optional)</FormLabel>
+                                                            <Select onValueChange={field.onChange} value={field.value || ''}>
+                                                                <FormControl>
+                                                                    <SelectTrigger>
+                                                                        <SelectValue placeholder="Select a team member" />
+                                                                    </SelectTrigger>
+                                                                </FormControl>
+                                                                <SelectContent>
+                                                                    <SelectItem value="">Unassigned</SelectItem>
+                                                                    {assignedTeam.map(member => (
+                                                                        <SelectItem key={member.id} value={member.id}>
+                                                                            {member.name}
+                                                                        </SelectItem>
+                                                                    ))}
+                                                                </SelectContent>
+                                                            </Select>
+                                                            <FormMessage />
+                                                        </FormItem>
+                                                    )}
+                                                />
+                                            </div>
                                             <DialogFooter><Button type="submit" disabled={taskForm.formState.isSubmitting}>{taskForm.formState.isSubmitting ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Saving...</> : 'Save Task'}</Button></DialogFooter>
                                         </form>
                                     </Form>
@@ -665,7 +697,7 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
                         </div>
                     </CardHeader>
                     <CardContent>
-                       <ProjectTasksKanban projectId={projectId} tasks={tasks} />
+                       <ProjectTasksKanban projectId={projectId} tasks={tasks} team={assignedTeam} />
                     </CardContent>
                 </Card>
             </TabsContent>

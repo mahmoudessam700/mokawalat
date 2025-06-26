@@ -10,17 +10,26 @@ import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useLanguage } from '@/hooks/use-language';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+
+interface Employee {
+  id: string;
+  name: string;
+  photoUrl?: string;
+}
 
 interface ProjectTasksKanbanProps {
   tasks: Task[];
   projectId: string;
+  team: Employee[];
 }
 
 type TaskStatus = 'To Do' | 'In Progress' | 'Done';
 
 const columns: TaskStatus[] = ['To Do', 'In Progress', 'Done'];
 
-export function ProjectTasksKanban({ tasks, projectId }: ProjectTasksKanbanProps) {
+export function ProjectTasksKanban({ tasks, projectId, team }: ProjectTasksKanbanProps) {
   const [isClient, setIsClient] = useState(false);
   const { toast } = useToast();
   const { t } = useLanguage();
@@ -71,62 +80,82 @@ export function ProjectTasksKanban({ tasks, projectId }: ProjectTasksKanbanProps
 
   return (
     <DragDropContext onDragEnd={onDragEnd}>
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        {columns.map((columnId) => (
-          <div key={columnId}>
-            <Card className="bg-muted/50">
-              <CardHeader>
-                <CardTitle className="text-lg flex justify-between items-center">
-                    <span>{columnId}</span>
-                    <span className="text-sm font-normal text-muted-foreground bg-muted px-2 py-1 rounded-md">{tasksByStatus[columnId].length}</span>
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <Droppable droppableId={columnId}>
-                  {(provided, snapshot) => (
-                    <div
-                      {...provided.droppableProps}
-                      ref={provided.innerRef}
-                      className={`min-h-[400px] space-y-4 rounded-md p-2 transition-colors ${
-                        snapshot.isDraggingOver ? 'bg-accent' : ''
-                      }`}
-                    >
-                      {tasksByStatus[columnId].length > 0 ? (
-                        tasksByStatus[columnId].map((task, index) => (
-                        <Draggable key={task.id} draggableId={task.id} index={index}>
-                          {(provided, snapshot) => (
-                            <div
-                              ref={provided.innerRef}
-                              {...provided.draggableProps}
-                              {...provided.dragHandleProps}
-                            >
-                              <Card className={`bg-card hover:bg-card/90 ${snapshot.isDragging ? 'shadow-lg ring-2 ring-primary' : ''}`}>
-                                <CardContent className="p-3">
-                                  <p className="font-medium text-sm">{task.name}</p>
-                                  {task.dueDate && (
-                                    <p className="text-xs text-muted-foreground mt-2">
-                                      {t('due')}: {format(task.dueDate.toDate(), 'PPP')}
-                                    </p>
-                                  )}
-                                </CardContent>
-                              </Card>
-                            </div>
-                          )}
-                        </Draggable>
-                      ))) : (
-                        <div className="flex items-center justify-center h-40 text-sm text-muted-foreground">
-                            {t('projects.no_tasks_in_column')}
-                        </div>
-                      )}
-                      {provided.placeholder}
-                    </div>
-                  )}
-                </Droppable>
-              </CardContent>
-            </Card>
-          </div>
-        ))}
-      </div>
+      <TooltipProvider>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          {columns.map((columnId) => (
+            <div key={columnId}>
+              <Card className="bg-muted/50">
+                <CardHeader>
+                  <CardTitle className="text-lg flex justify-between items-center">
+                      <span>{columnId}</span>
+                      <span className="text-sm font-normal text-muted-foreground bg-muted px-2 py-1 rounded-md">{tasksByStatus[columnId].length}</span>
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <Droppable droppableId={columnId}>
+                    {(provided, snapshot) => (
+                      <div
+                        {...provided.droppableProps}
+                        ref={provided.innerRef}
+                        className={`min-h-[400px] space-y-4 rounded-md p-2 transition-colors ${
+                          snapshot.isDraggingOver ? 'bg-accent' : ''
+                        }`}
+                      >
+                        {tasksByStatus[columnId].length > 0 ? (
+                          tasksByStatus[columnId].map((task, index) => {
+                            const assignedEmployee = team.find(member => member.id === task.assignedTo);
+                            return (
+                              <Draggable key={task.id} draggableId={task.id} index={index}>
+                                {(provided, snapshot) => (
+                                  <div
+                                    ref={provided.innerRef}
+                                    {...provided.draggableProps}
+                                    {...provided.dragHandleProps}
+                                  >
+                                    <Card className={`bg-card hover:bg-card/90 ${snapshot.isDragging ? 'shadow-lg ring-2 ring-primary' : ''}`}>
+                                      <CardContent className="p-3">
+                                        <div className="flex justify-between items-start">
+                                          <p className="font-medium text-sm pr-2">{task.name}</p>
+                                          {assignedEmployee && (
+                                            <Tooltip>
+                                              <TooltipTrigger>
+                                                <Avatar className="size-6">
+                                                  <AvatarImage src={assignedEmployee.photoUrl || `https://placehold.co/40x40.png`} alt={assignedEmployee.name} data-ai-hint="profile picture" />
+                                                  <AvatarFallback>{assignedEmployee.name.split(' ').map(n => n[0]).join('')}</AvatarFallback>
+                                                </Avatar>
+                                              </TooltipTrigger>
+                                              <TooltipContent>
+                                                <p>Assigned to {assignedEmployee.name}</p>
+                                              </TooltipContent>
+                                            </Tooltip>
+                                          )}
+                                        </div>
+                                        {task.dueDate && (
+                                          <p className="text-xs text-muted-foreground mt-2">
+                                            {t('due')}: {format(task.dueDate.toDate(), 'PPP')}
+                                          </p>
+                                        )}
+                                      </CardContent>
+                                    </Card>
+                                  </div>
+                                )}
+                              </Draggable>
+                            )
+                          })) : (
+                          <div className="flex items-center justify-center h-40 text-sm text-muted-foreground">
+                              {t('projects.no_tasks_in_column')}
+                          </div>
+                        )}
+                        {provided.placeholder}
+                      </div>
+                    )}
+                  </Droppable>
+                </CardContent>
+              </Card>
+            </div>
+          ))}
+        </div>
+      </TooltipProvider>
     </DragDropContext>
   );
 }

@@ -1,3 +1,4 @@
+
 # Mokawalat - Database Schema
 
 This document outlines the database structure for the Mokawalat ERP system, which is built on Firebase Firestore. Understanding this schema is crucial for extending functionality or debugging data-related issues.
@@ -58,6 +59,8 @@ Contains all information related to construction projects.
         -   `name` (string): The name of the task.
         -   `status` (string): The task status (`To Do`, `In Progress`, `Done`).
         -   `dueDate` (Timestamp, optional): The deadline for the task.
+        -   `assignedTo` (string, optional): The UID of the employee assigned to the task.
+        -   `assignedToName` (string, optional): The name of the assigned employee for display.
         -   `createdAt` (Timestamp)
     -   `documents`: Stores metadata for uploaded project files.
         -   `title` (string): The user-defined title for the document.

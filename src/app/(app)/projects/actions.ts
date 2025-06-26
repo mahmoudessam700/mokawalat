@@ -41,6 +41,7 @@ const dailyLogFormSchema = z.object({
 const taskFormSchema = z.object({
   name: z.string().min(3, "Task name must be at least 3 characters long."),
   dueDate: z.string().optional(),
+  assignedTo: z.string().optional(),
 });
 
 export type ProjectFormValues = z.infer<typeof projectFormSchema>;
@@ -527,9 +528,21 @@ export async function addTask(projectId: string, values: TaskFormValues) {
     }
 
     try {
+        const { assignedTo, ...taskData } = validatedFields.data;
+        let assignedToName = '';
+
+        if (assignedTo) {
+            const employeeDoc = await getDoc(doc(firestore, 'employees', assignedTo));
+            if (employeeDoc.exists()) {
+                assignedToName = employeeDoc.data().name;
+            }
+        }
+
         await addDoc(collection(firestore, 'projects', projectId, 'tasks'), {
-            ...validatedFields.data,
-            dueDate: validatedFields.data.dueDate ? new Date(validatedFields.data.dueDate) : null,
+            ...taskData,
+            assignedTo: assignedTo || null,
+            assignedToName: assignedToName || '',
+            dueDate: taskData.dueDate ? new Date(taskData.dueDate) : null,
             status: 'To Do',
             createdAt: serverTimestamp(),
         });
