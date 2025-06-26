@@ -22,6 +22,7 @@ import {
 import { format } from 'date-fns';
 import { useAuth } from '@/hooks/use-auth';
 import { EmployeeAiSummary } from './employee-ai-summary';
+import { useLanguage } from '@/hooks/use-language';
 
 type EmployeeStatus = 'Active' | 'On Leave' | 'Inactive';
 type ProjectStatus = 'In Progress' | 'Planning' | 'Completed' | 'On Hold';
@@ -74,6 +75,7 @@ export default function EmployeeDetailPage({ params }: { params: { id: string } 
   const [error, setError] = useState<string | null>(null);
   const { profile } = useAuth();
   const employeeId = params.id;
+  const { t } = useLanguage();
 
   useEffect(() => {
     if (!employeeId) return;
@@ -138,7 +140,7 @@ export default function EmployeeDetailPage({ params }: { params: { id: string } 
          <Button asChild variant="outline" className="mt-4">
           <Link href="/employees">
             <ArrowLeft className="mr-2" />
-            Back to Employees
+            {t('employees.back_to_employees')}
           </Link>
         </Button>
       </div>
@@ -153,7 +155,7 @@ export default function EmployeeDetailPage({ params }: { params: { id: string } 
             <Button asChild variant="outline" size="icon">
                 <Link href="/employees">
                     <ArrowLeft />
-                    <span className="sr-only">Back to Employees</span>
+                    <span className="sr-only">{t('employees.back_to_employees')}</span>
                 </Link>
             </Button>
             <div>
@@ -161,7 +163,7 @@ export default function EmployeeDetailPage({ params }: { params: { id: string } 
                     {employee.name}
                 </h1>
                 <p className="text-muted-foreground">
-                    Detailed employee profile and project assignments.
+                    {t('employees.detail_page_desc')}
                 </p>
             </div>
         </div>
@@ -192,28 +194,28 @@ export default function EmployeeDetailPage({ params }: { params: { id: string } 
                         </div>
                         <div className="flex items-center gap-4">
                             <CheckCircle className="size-4 text-muted-foreground" />
-                            <Badge variant={statusVariant[employee.status]}>{employee.status}</Badge>
+                            <Badge variant={statusVariant[employee.status]}>{t(`employees.status.${employee.status}`)}</Badge>
                         </div>
                         {profile?.role === 'admin' && employee.salary && (
                             <div className="flex items-center gap-4 border-t pt-4">
                                 <DollarSign className="size-4 text-muted-foreground" />
-                                <span className="text-sm">{formatCurrency(employee.salary)} / month</span>
+                                <span className="text-sm">{formatCurrency(employee.salary)} / {t('employees.per_month')}</span>
                             </div>
                         )}
                     </CardContent>
                 </Card>
                 <Card>
                     <CardHeader>
-                        <CardTitle>Assigned Projects</CardTitle>
-                        <CardDescription>A list of all projects this employee is assigned to.</CardDescription>
+                        <CardTitle>{t('employees.assigned_projects_title')}</CardTitle>
+                        <CardDescription>{t('employees.assigned_projects_desc')}</CardDescription>
                     </CardHeader>
                     <CardContent>
                         {projects.length > 0 ? (
                             <Table>
                                 <TableHeader>
                                     <TableRow>
-                                        <TableHead>Project Name</TableHead>
-                                        <TableHead>Status</TableHead>
+                                        <TableHead>{t('clients.project_name_header')}</TableHead>
+                                        <TableHead>{t('status')}</TableHead>
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>
@@ -236,7 +238,7 @@ export default function EmployeeDetailPage({ params }: { params: { id: string } 
                         ) : (
                             <div className="flex flex-col items-center justify-center gap-2 py-8 text-center text-muted-foreground">
                                 <ListTodo className="size-12" />
-                                <p>This employee is not assigned to any projects yet.</p>
+                                <p>{t('employees.not_assigned_to_projects')}</p>
                             </div>
                         )}
                     </CardContent>

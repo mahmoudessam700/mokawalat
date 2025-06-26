@@ -9,6 +9,7 @@ import { getSupplierPerformanceSummary } from './actions';
 import type { SummarizeSupplierPerformanceOutput } from '@/ai/flows/summarize-supplier-performance';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useLanguage } from '@/hooks/use-language';
 
 interface SupplierAiSummaryProps {
   supplierId: string;
@@ -20,6 +21,7 @@ export function SupplierAiSummary({ supplierId, supplierName, headerActions }: S
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [summary, setSummary] = useState<SummarizeSupplierPerformanceOutput | null>(null);
+  const { t } = useLanguage();
 
   const fetchSummary = useCallback(async () => {
     setIsLoading(true);
@@ -48,10 +50,10 @@ export function SupplierAiSummary({ supplierId, supplierName, headerActions }: S
         <div>
             <CardTitle className="flex items-center gap-2">
                 <Sparkles className="size-5 text-primary"/>
-                AI Performance Summary
+                {t('suppliers.ai_summary_title')}
             </CardTitle>
             <CardDescription>
-              An AI-generated performance summary for {supplierName}.
+              {t('suppliers.ai_summary_desc', { supplierName })}
             </CardDescription>
         </div>
         {headerActions}
@@ -69,11 +71,11 @@ export function SupplierAiSummary({ supplierId, supplierName, headerActions }: S
         {error && !isLoading && (
             <Alert variant="destructive">
                 <AlertCircle className="h-4 w-4" />
-                <AlertTitle>Summary Failed</AlertTitle>
+                <AlertTitle>{t('clients.summary_failed')}</AlertTitle>
                 <AlertDescription>{error}</AlertDescription>
                  <div className="flex justify-end mt-4">
                     <Button onClick={fetchSummary} variant="outline" size="sm" disabled={isLoading}>
-                       Regenerate
+                       {t('clients.regenerate')}
                     </Button>
                 </div>
             </Alert>
@@ -85,8 +87,8 @@ export function SupplierAiSummary({ supplierId, supplierName, headerActions }: S
                 <div className="flex justify-end mt-4">
                     <Button onClick={fetchSummary} variant="outline" size="sm" disabled={isLoading}>
                         {isLoading ? (
-                            <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Regenerating...</>
-                        ) : ( 'Regenerate' )}
+                            <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> {t('clients.regenerating')}</>
+                        ) : ( t('clients.regenerate') )}
                     </Button>
                 </div>
             </div>

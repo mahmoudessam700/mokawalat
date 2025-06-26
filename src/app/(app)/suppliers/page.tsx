@@ -60,6 +60,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import Link from 'next/link';
 import { useAuth } from '@/hooks/use-auth';
 import { cn } from '@/lib/utils';
+import { useLanguage } from '@/hooks/use-language';
 
 // Define the supplier type
 type Supplier = {
@@ -108,6 +109,7 @@ export default function SuppliersPage() {
   const [isDeleting, setIsDeleting] = useState(false);
   const { toast } = useToast();
   const { profile } = useAuth();
+  const { t } = useLanguage();
   
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('All');
@@ -232,10 +234,10 @@ export default function SuppliersPage() {
        <div className="flex items-center justify-between">
         <div>
           <h1 className="font-headline text-3xl font-bold tracking-tight">
-            Supplier Management
+            {t('suppliers.page_title')}
           </h1>
           <p className="text-muted-foreground">
-            Manage all your company's suppliers and vendors.
+            {t('suppliers.page_desc')}
           </p>
         </div>
         {profile?.role === 'admin' && (
@@ -243,14 +245,14 @@ export default function SuppliersPage() {
             <DialogTrigger asChild>
                 <Button onClick={() => setSupplierToEdit(null)}>
                 <PlusCircle className="mr-2" />
-                Add Supplier
+                {t('suppliers.add_button')}
                 </Button>
             </DialogTrigger>
             <DialogContent className="sm:max-w-[480px]">
                 <DialogHeader>
-                <DialogTitle>{supplierToEdit ? 'Edit Supplier' : 'Add New Supplier'}</DialogTitle>
+                <DialogTitle>{supplierToEdit ? t('suppliers.edit_title') : t('suppliers.add_title')}</DialogTitle>
                 <DialogDescription>
-                    {supplierToEdit ? "Update the supplier's details below." : 'Fill in the details below to add a new supplier.'}
+                    {supplierToEdit ? t('suppliers.edit_desc') : t('suppliers.add_desc')}
                 </DialogDescription>
                 </DialogHeader>
                 <Form {...form}>
@@ -260,9 +262,9 @@ export default function SuppliersPage() {
                     name="name"
                     render={({ field }) => (
                         <FormItem>
-                        <FormLabel>Supplier Name</FormLabel>
+                        <FormLabel>{t('suppliers.name_label')}</FormLabel>
                         <FormControl>
-                            <Input placeholder="e.g., Al-Foulad Steel Co." {...field} />
+                            <Input placeholder={t('suppliers.name_placeholder')} {...field} />
                         </FormControl>
                         <FormMessage />
                         </FormItem>
@@ -273,9 +275,9 @@ export default function SuppliersPage() {
                     name="contactPerson"
                     render={({ field }) => (
                         <FormItem>
-                        <FormLabel>Contact Person</FormLabel>
+                        <FormLabel>{t('suppliers.contact_person_label')}</FormLabel>
                         <FormControl>
-                            <Input placeholder="e.g., Ahmed Saleh" {...field} />
+                            <Input placeholder={t('suppliers.contact_person_placeholder')} {...field} />
                         </FormControl>
                         <FormMessage />
                         </FormItem>
@@ -287,9 +289,9 @@ export default function SuppliersPage() {
                         name="email"
                         render={({ field }) => (
                         <FormItem>
-                            <FormLabel>Email</FormLabel>
+                            <FormLabel>{t('email')}</FormLabel>
                             <FormControl>
-                            <Input placeholder="e.g., sales@al-foulad.com" type="email" {...field} />
+                            <Input placeholder={t('suppliers.email_placeholder')} type="email" {...field} />
                             </FormControl>
                             <FormMessage />
                         </FormItem>
@@ -300,9 +302,9 @@ export default function SuppliersPage() {
                         name="phone"
                         render={({ field }) => (
                         <FormItem>
-                            <FormLabel>Phone Number</FormLabel>
+                            <FormLabel>{t('phone')}</FormLabel>
                             <FormControl>
-                            <Input placeholder="e.g., +966 11 123 4567" type="tel" {...field} />
+                            <Input placeholder={t('suppliers.phone_placeholder')} type="tel" {...field} />
                             </FormControl>
                             <FormMessage />
                         </FormItem>
@@ -314,16 +316,16 @@ export default function SuppliersPage() {
                     name="status"
                     render={({ field }) => (
                         <FormItem>
-                        <FormLabel>Status</FormLabel>
+                        <FormLabel>{t('status')}</FormLabel>
                         <Select onValueChange={field.onChange} defaultValue={field.value}>
                             <FormControl>
                             <SelectTrigger>
-                                <SelectValue placeholder="Select status" />
+                                <SelectValue placeholder={t('clients.select_status')} />
                             </SelectTrigger>
                             </FormControl>
                             <SelectContent>
-                            <SelectItem value="Active">Active</SelectItem>
-                            <SelectItem value="Inactive">Inactive</SelectItem>
+                            <SelectItem value="Active">{t('suppliers.status.Active')}</SelectItem>
+                            <SelectItem value="Inactive">{t('suppliers.status.Inactive')}</SelectItem>
                             </SelectContent>
                         </Select>
                         <FormMessage />
@@ -335,10 +337,10 @@ export default function SuppliersPage() {
                         {form.formState.isSubmitting ? (
                         <>
                             <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                            Saving...
+                            {t('saving')}
                         </>
                         ) : (
-                        supplierToEdit ? 'Save Changes' : 'Save Supplier'
+                        supplierToEdit ? t('save_changes') : t('suppliers.save_supplier_button')
                         )}
                     </Button>
                     </DialogFooter>
@@ -353,15 +355,15 @@ export default function SuppliersPage() {
         <CardHeader>
           <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
             <div>
-              <CardTitle>Supplier List</CardTitle>
-              <CardDescription>A list of all suppliers in the system.</CardDescription>
+              <CardTitle>{t('suppliers.list_title')}</CardTitle>
+              <CardDescription>{t('suppliers.list_desc')}</CardDescription>
             </div>
             <div className="flex flex-col items-stretch gap-2 md:flex-row md:items-center">
                <div className="relative w-full md:w-auto">
                 <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
                 <Input
                   type="search"
-                  placeholder="Search by name or contact..."
+                  placeholder={t('suppliers.search_placeholder')}
                   className="w-full pl-8 md:w-[250px]"
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
@@ -369,22 +371,22 @@ export default function SuppliersPage() {
               </div>
               <Select value={statusFilter} onValueChange={setStatusFilter}>
                 <SelectTrigger className="w-full md:w-[150px]">
-                  <SelectValue placeholder="Filter by status" />
+                  <SelectValue placeholder={t('clients.filter_by_status')} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="All">All Statuses</SelectItem>
-                  <SelectItem value="Active">Active</SelectItem>
-                  <SelectItem value="Inactive">Inactive</SelectItem>
+                  <SelectItem value="All">{t('clients.all_statuses')}</SelectItem>
+                  <SelectItem value="Active">{t('suppliers.status.Active')}</SelectItem>
+                  <SelectItem value="Inactive">{t('suppliers.status.Inactive')}</SelectItem>
                 </SelectContent>
               </Select>
                <Select value={ratingFilter} onValueChange={setRatingFilter}>
                 <SelectTrigger className="w-full md:w-[150px]">
-                  <SelectValue placeholder="Filter by rating" />
+                  <SelectValue placeholder={t('suppliers.filter_by_rating')} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="All">All Ratings</SelectItem>
-                  <SelectItem value="Rated">Rated</SelectItem>
-                  <SelectItem value="Unrated">Unrated</SelectItem>
+                  <SelectItem value="All">{t('suppliers.all_ratings')}</SelectItem>
+                  <SelectItem value="Rated">{t('suppliers.rated')}</SelectItem>
+                  <SelectItem value="Unrated">{t('suppliers.unrated')}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -394,12 +396,12 @@ export default function SuppliersPage() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Supplier Name</TableHead>
-                <TableHead className="hidden md:table-cell">Contact Person</TableHead>
-                <TableHead>Rating</TableHead>
-                <TableHead>Status</TableHead>
+                <TableHead>{t('suppliers.name_header')}</TableHead>
+                <TableHead className="hidden md:table-cell">{t('suppliers.contact_person_header')}</TableHead>
+                <TableHead>{t('suppliers.rating_header')}</TableHead>
+                <TableHead>{t('status')}</TableHead>
                 <TableHead>
-                  <span className="sr-only">Actions</span>
+                  <span className="sr-only">{t('actions')}</span>
                 </TableHead>
               </TableRow>
             </TableHeader>
@@ -414,7 +416,7 @@ export default function SuppliersPage() {
                     <TableCell>
                       <Button aria-haspopup="true" size="icon" variant="ghost" disabled>
                         <MoreHorizontal className="h-4 w-4" />
-                        <span className="sr-only">Toggle menu</span>
+                        <span className="sr-only">{t('toggle_menu')}</span>
                       </Button>
                     </TableCell>
                   </TableRow>
@@ -427,7 +429,7 @@ export default function SuppliersPage() {
                     <TableCell><StarRatingDisplay rating={supplier.rating} /></TableCell>
                     <TableCell>
                       <Badge variant={supplier.status === 'Active' ? 'secondary' : 'destructive'}>
-                        {supplier.status}
+                        {t(`suppliers.status.${supplier.status}`)}
                       </Badge>
                     </TableCell>
                     <TableCell>
@@ -435,13 +437,13 @@ export default function SuppliersPage() {
                         <DropdownMenuTrigger asChild>
                           <Button aria-haspopup="true" size="icon" variant="ghost">
                             <MoreHorizontal className="h-4 w-4" />
-                            <span className="sr-only">Toggle menu</span>
+                            <span className="sr-only">{t('toggle_menu')}</span>
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
-                          <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                          <DropdownMenuLabel>{t('actions')}</DropdownMenuLabel>
                           <DropdownMenuItem asChild>
-                            <Link href={`/suppliers/${supplier.id}`}>View Details</Link>
+                            <Link href={`/suppliers/${supplier.id}`}>{t('view_details')}</Link>
                           </DropdownMenuItem>
                           {profile?.role === 'admin' && (
                             <>
@@ -449,7 +451,7 @@ export default function SuppliersPage() {
                                   setSupplierToEdit(supplier);
                                   setIsFormDialogOpen(true);
                               }}>
-                                  Edit
+                                  {t('edit')}
                               </DropdownMenuItem>
                               <DropdownMenuItem
                                   className="text-destructive"
@@ -459,7 +461,7 @@ export default function SuppliersPage() {
                                   }}
                               >
                                   <Trash2 className="mr-2 h-4 w-4" />
-                                  Delete
+                                  {t('delete')}
                               </DropdownMenuItem>
                             </>
                           )}
@@ -471,7 +473,7 @@ export default function SuppliersPage() {
               ) : (
                  <TableRow>
                   <TableCell colSpan={6} className="h-24 text-center">
-                    {suppliers.length > 0 ? "No suppliers match the current filters." : "No suppliers found. Add one to get started."}
+                    {suppliers.length > 0 ? t('suppliers.no_suppliers_match_filters') : t('suppliers.no_suppliers_found')}
                   </TableCell>
                 </TableRow>
               )}
@@ -483,22 +485,22 @@ export default function SuppliersPage() {
     <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
         <AlertDialogContent>
             <AlertDialogHeader>
-                <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                <AlertDialogTitle>{t('are_you_sure')}</AlertDialogTitle>
                 <AlertDialogDescription>
-                    This action cannot be undone. This will permanently delete the supplier "{supplierToDelete?.name}" from your records.
+                    {t('suppliers.delete_confirm_desc', { name: supplierToDelete?.name })}
                 </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
-                <AlertDialogCancel onClick={() => setSupplierToDelete(null)}>Cancel</AlertDialogCancel>
+                <AlertDialogCancel onClick={() => setSupplierToDelete(null)}>{t('cancel')}</AlertDialogCancel>
                 <AlertDialogAction
                     onClick={handleDeleteSupplier}
                     disabled={isDeleting}
                     className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                 >
                   {isDeleting ? (
-                    <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Deleting...</>
+                    <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> {t('deleting')}</>
                   ) : (
-                    <><Trash2 className="mr-2 h-4 w-4" /> Delete</>
+                    <><Trash2 className="mr-2 h-4 w-4" /> {t('delete')}</>
                   )}
                 </AlertDialogAction>
             </AlertDialogFooter>

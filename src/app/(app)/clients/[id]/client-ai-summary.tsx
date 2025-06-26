@@ -8,6 +8,7 @@ import { AlertCircle, Loader2, Sparkles } from 'lucide-react';
 import { getInteractionSummary } from './actions';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useLanguage } from '@/hooks/use-language';
 
 interface ClientAiSummaryProps {
   clientId: string;
@@ -18,6 +19,7 @@ export function ClientAiSummary({ clientId, clientName }: ClientAiSummaryProps) 
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [summary, setSummary] = useState<{ summary: string } | null>(null);
+  const { t } = useLanguage();
 
   const fetchSummary = useCallback(async () => {
     setIsLoading(true);
@@ -45,10 +47,10 @@ export function ClientAiSummary({ clientId, clientName }: ClientAiSummaryProps) 
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
             <Sparkles className="size-5 text-primary"/>
-            AI Interaction Summary
+            {t('clients.ai_summary_title')}
         </CardTitle>
         <CardDescription>
-          An AI-generated summary of the interaction history with {clientName}.
+          {t('clients.ai_summary_desc', { clientName })}
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -64,11 +66,11 @@ export function ClientAiSummary({ clientId, clientName }: ClientAiSummaryProps) 
         {error && !isLoading && (
             <Alert variant="destructive">
                 <AlertCircle className="h-4 w-4" />
-                <AlertTitle>Summary Failed</AlertTitle>
+                <AlertTitle>{t('clients.summary_failed')}</AlertTitle>
                 <AlertDescription>{error}</AlertDescription>
                  <div className="flex justify-end mt-4">
                     <Button onClick={fetchSummary} variant="outline" size="sm" disabled={isLoading}>
-                       Regenerate
+                       {t('clients.regenerate')}
                     </Button>
                 </div>
             </Alert>
@@ -80,8 +82,8 @@ export function ClientAiSummary({ clientId, clientName }: ClientAiSummaryProps) 
                 <div className="flex justify-end mt-4">
                     <Button onClick={fetchSummary} variant="outline" size="sm" disabled={isLoading}>
                         {isLoading ? (
-                            <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Regenerating...</>
-                        ) : ( 'Regenerate' )}
+                            <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> {t('clients.regenerating')}</>
+                        ) : ( t('clients.regenerate') )}
                     </Button>
                 </div>
             </div>

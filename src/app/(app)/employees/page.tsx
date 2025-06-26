@@ -59,6 +59,7 @@ import { firestore } from '@/lib/firebase';
 import { Skeleton } from '@/components/ui/skeleton';
 import Link from 'next/link';
 import { useAuth } from '@/hooks/use-auth';
+import { useLanguage } from '@/hooks/use-language';
 
 // Define the employee type based on the schema and database structure
 type Employee = {
@@ -94,6 +95,7 @@ export default function EmployeesPage() {
   const [isDeleting, setIsDeleting] = useState(false);
   const { toast } = useToast();
   const { profile } = useAuth();
+  const { t } = useLanguage();
 
   const [departmentFilter, setDepartmentFilter] = useState('All');
   const [statusFilter, setStatusFilter] = useState('All');
@@ -221,10 +223,10 @@ export default function EmployeesPage() {
        <div className="flex items-center justify-between">
         <div>
           <h1 className="font-headline text-3xl font-bold tracking-tight">
-            Employee Management
+            {t('employees.page_title')}
           </h1>
           <p className="text-muted-foreground">
-            View, add, and manage all company employees.
+            {t('employees.page_desc')}
           </p>
         </div>
         {['admin', 'manager'].includes(profile?.role || '') && (
@@ -232,21 +234,21 @@ export default function EmployeesPage() {
                 <Button asChild variant="outline">
                     <Link href="/employees/payroll">
                         <DollarSign className="mr-2" />
-                        Payroll Summary
+                        {t('employees.payroll_summary_button')}
                     </Link>
                 </Button>
                 <Dialog open={isFormDialogOpen} onOpenChange={handleFormDialog_onOpenChange}>
                 <DialogTrigger asChild>
                     <Button onClick={() => setEmployeeToEdit(null)}>
                     <PlusCircle className="mr-2" />
-                    Add Employee
+                    {t('employees.add_employee_button')}
                     </Button>
                 </DialogTrigger>
                 <DialogContent className="sm:max-w-md">
                     <DialogHeader>
-                    <DialogTitle>{employeeToEdit ? 'Edit Employee' : 'Add New Employee'}</DialogTitle>
+                    <DialogTitle>{employeeToEdit ? t('employees.edit_employee_title') : t('employees.add_employee_title')}</DialogTitle>
                     <DialogDescription>
-                        {employeeToEdit ? 'Update the details of the employee.' : 'Fill in the details below to add a new employee to the system.'}
+                        {employeeToEdit ? t('employees.edit_employee_desc') : t('employees.add_employee_desc')}
                     </DialogDescription>
                     </DialogHeader>
                     <Form {...form}>
@@ -256,9 +258,9 @@ export default function EmployeesPage() {
                         name="name"
                         render={({ field }) => (
                             <FormItem>
-                            <FormLabel>Full Name</FormLabel>
+                            <FormLabel>{t('employees.full_name_label')}</FormLabel>
                             <FormControl>
-                                <Input placeholder="e.g., John Doe" {...field} />
+                                <Input placeholder={t('employees.full_name_placeholder')} {...field} />
                             </FormControl>
                             <FormMessage />
                             </FormItem>
@@ -269,9 +271,9 @@ export default function EmployeesPage() {
                         name="email"
                         render={({ field }) => (
                             <FormItem>
-                            <FormLabel>Email</FormLabel>
+                            <FormLabel>{t('email')}</FormLabel>
                             <FormControl>
-                                <Input placeholder="e.g., john.doe@example.com" type="email" {...field} />
+                                <Input placeholder={t('employees.email_placeholder')} type="email" {...field} />
                             </FormControl>
                             <FormMessage />
                             </FormItem>
@@ -282,11 +284,11 @@ export default function EmployeesPage() {
                         name="role"
                         render={({ field }) => (
                             <FormItem>
-                            <FormLabel>Role</FormLabel>
+                            <FormLabel>{t('role')}</FormLabel>
                             <Select onValueChange={field.onChange} value={field.value}>
                                 <FormControl>
                                 <SelectTrigger>
-                                    <SelectValue placeholder="Select a role" />
+                                    <SelectValue placeholder={t('select_role')} />
                                 </SelectTrigger>
                                 </FormControl>
                                 <SelectContent>
@@ -307,11 +309,11 @@ export default function EmployeesPage() {
                         name="department"
                         render={({ field }) => (
                             <FormItem>
-                            <FormLabel>Department</FormLabel>
+                            <FormLabel>{t('department')}</FormLabel>
                             <Select onValueChange={field.onChange} value={field.value}>
                                 <FormControl>
                                 <SelectTrigger>
-                                    <SelectValue placeholder="Select a department" />
+                                    <SelectValue placeholder={t('employees.select_department')} />
                                 </SelectTrigger>
                                 </FormControl>
                                 <SelectContent>
@@ -331,17 +333,17 @@ export default function EmployeesPage() {
                         name="status"
                         render={({ field }) => (
                             <FormItem>
-                            <FormLabel>Status</FormLabel>
+                            <FormLabel>{t('status')}</FormLabel>
                             <Select onValueChange={field.onChange} value={field.value}>
                                 <FormControl>
                                 <SelectTrigger>
-                                    <SelectValue placeholder="Select status" />
+                                    <SelectValue placeholder={t('clients.select_status')} />
                                 </SelectTrigger>
                                 </FormControl>
                                 <SelectContent>
-                                <SelectItem value="Active">Active</SelectItem>
-                                <SelectItem value="On Leave">On Leave</SelectItem>
-                                <SelectItem value="Inactive">Inactive</SelectItem>
+                                <SelectItem value="Active">{t('employees.status.Active')}</SelectItem>
+                                <SelectItem value="On Leave">{t('employees.status.On Leave')}</SelectItem>
+                                <SelectItem value="Inactive">{t('employees.status.Inactive')}</SelectItem>
                                 </SelectContent>
                             </Select>
                             <FormMessage />
@@ -353,11 +355,11 @@ export default function EmployeesPage() {
                           name="salary"
                           render={({ field }) => (
                               <FormItem>
-                              <FormLabel>Salary (LE) (Optional)</FormLabel>
+                              <FormLabel>{t('employees.salary_label')}</FormLabel>
                               <FormControl>
                                   <Input
                                     type="number"
-                                    placeholder="e.g., 8000"
+                                    placeholder={t('employees.salary_placeholder')}
                                     {...field}
                                     value={field.value ?? ''}
                                     onChange={(e) => field.onChange(e.target.value === '' ? undefined : +e.target.value)}
@@ -372,7 +374,7 @@ export default function EmployeesPage() {
                             name="photo"
                             render={() => (
                                 <FormItem>
-                                    <FormLabel>Profile Photo (Optional)</FormLabel>
+                                    <FormLabel>{t('employees.photo_label')}</FormLabel>
                                     <FormControl>
                                         <Input type="file" accept="image/png, image/jpeg" {...form.register('photo')} />
                                     </FormControl>
@@ -385,10 +387,10 @@ export default function EmployeesPage() {
                             {form.formState.isSubmitting ? (
                             <>
                                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                Saving...
+                                {t('saving')}
                             </>
                             ) : (
-                            employeeToEdit ? 'Save Changes' : 'Save Employee'
+                            employeeToEdit ? t('save_changes') : t('employees.save_employee_button')
                             )}
                         </Button>
                         </DialogFooter>
@@ -404,16 +406,16 @@ export default function EmployeesPage() {
         <CardHeader>
           <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
             <div>
-              <CardTitle>Employee List</CardTitle>
-              <CardDescription>A list of all employees in the system.</CardDescription>
+              <CardTitle>{t('employees.list_title')}</CardTitle>
+              <CardDescription>{t('employees.list_desc')}</CardDescription>
             </div>
             <div className="flex flex-col items-stretch gap-2 md:flex-row md:items-center">
               <Select value={departmentFilter} onValueChange={setDepartmentFilter}>
                 <SelectTrigger className="w-full md:w-[180px]">
-                  <SelectValue placeholder="Filter by department" />
+                  <SelectValue placeholder={t('employees.filter_by_department')} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="All">All Departments</SelectItem>
+                  <SelectItem value="All">{t('employees.all_departments')}</SelectItem>
                   <SelectItem value="Engineering">Engineering</SelectItem>
                   <SelectItem value="Human Resources">Human Resources</SelectItem>
                   <SelectItem value="Finance">Finance</SelectItem>
@@ -423,20 +425,20 @@ export default function EmployeesPage() {
               </Select>
               <Select value={statusFilter} onValueChange={setStatusFilter}>
                 <SelectTrigger className="w-full md:w-[150px]">
-                  <SelectValue placeholder="Filter by status" />
+                  <SelectValue placeholder={t('clients.filter_by_status')} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="All">All Statuses</SelectItem>
-                  <SelectItem value="Active">Active</SelectItem>
-                  <SelectItem value="On Leave">On Leave</SelectItem>
-                  <SelectItem value="Inactive">Inactive</SelectItem>
+                  <SelectItem value="All">{t('clients.all_statuses')}</SelectItem>
+                  <SelectItem value="Active">{t('employees.status.Active')}</SelectItem>
+                  <SelectItem value="On Leave">{t('employees.status.On Leave')}</SelectItem>
+                  <SelectItem value="Inactive">{t('employees.status.Inactive')}</SelectItem>
                 </SelectContent>
               </Select>
               <div className="relative w-full md:w-auto">
                 <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
                 <Input
                   type="search"
-                  placeholder="Search by name or email..."
+                  placeholder={t('employees.search_placeholder')}
                   className="w-full pl-8 md:w-[250px]"
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
@@ -449,13 +451,13 @@ export default function EmployeesPage() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Name</TableHead>
-                <TableHead className="hidden md:table-cell">Email</TableHead>
-                <TableHead>Role</TableHead>
-                <TableHead className="hidden md:table-cell">Department</TableHead>
-                <TableHead>Status</TableHead>
+                <TableHead>{t('name')}</TableHead>
+                <TableHead className="hidden md:table-cell">{t('email')}</TableHead>
+                <TableHead>{t('role')}</TableHead>
+                <TableHead className="hidden md:table-cell">{t('department')}</TableHead>
+                <TableHead>{t('status')}</TableHead>
                 <TableHead>
-                  <span className="sr-only">Actions</span>
+                  <span className="sr-only">{t('actions')}</span>
                 </TableHead>
               </TableRow>
             </TableHeader>
@@ -471,7 +473,7 @@ export default function EmployeesPage() {
                     <TableCell>
                       <Button aria-haspopup="true" size="icon" variant="ghost" disabled>
                         <MoreHorizontal className="h-4 w-4" />
-                        <span className="sr-only">Toggle menu</span>
+                        <span className="sr-only">{t('toggle_menu')}</span>
                       </Button>
                     </TableCell>
                   </TableRow>
@@ -485,7 +487,7 @@ export default function EmployeesPage() {
                     <TableCell className="hidden md:table-cell">{employee.department}</TableCell>
                     <TableCell>
                       <Badge variant={employee.status === 'Active' ? 'secondary' : employee.status === 'On Leave' ? 'outline' : 'destructive'}>
-                        {employee.status}
+                        {t(`employees.status.${employee.status}`)}
                       </Badge>
                     </TableCell>
                     <TableCell>
@@ -493,13 +495,13 @@ export default function EmployeesPage() {
                         <DropdownMenuTrigger asChild>
                           <Button aria-haspopup="true" size="icon" variant="ghost">
                             <MoreHorizontal className="h-4 w-4" />
-                            <span className="sr-only">Toggle menu</span>
+                            <span className="sr-only">{t('toggle_menu')}</span>
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
-                          <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                          <DropdownMenuLabel>{t('actions')}</DropdownMenuLabel>
                           <DropdownMenuItem asChild>
-                            <Link href={`/employees/${employee.id}`}>View Details</Link>
+                            <Link href={`/employees/${employee.id}`}>{t('view_details')}</Link>
                           </DropdownMenuItem>
                           {['admin', 'manager'].includes(profile?.role || '') && (
                             <>
@@ -509,7 +511,7 @@ export default function EmployeesPage() {
                                         setIsFormDialogOpen(true);
                                     }}
                                 >
-                                    Edit
+                                    {t('edit')}
                                 </DropdownMenuItem>
                                 <DropdownMenuItem
                                     className="text-destructive"
@@ -519,7 +521,7 @@ export default function EmployeesPage() {
                                     }}
                                 >
                                     <Trash2 className="mr-2 h-4 w-4" />
-                                    Delete
+                                    {t('delete')}
                                 </DropdownMenuItem>
                             </>
                           )}
@@ -532,8 +534,8 @@ export default function EmployeesPage() {
                  <TableRow>
                   <TableCell colSpan={6} className="h-24 text-center">
                     {employees.length > 0
-                      ? 'No employees match the current filters.'
-                      : 'No employees found. Add one to get started.'}
+                      ? t('employees.no_employees_match_filters')
+                      : t('employees.no_employees_found')}
                   </TableCell>
                 </TableRow>
               )}
@@ -545,22 +547,22 @@ export default function EmployeesPage() {
     <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
         <AlertDialogContent>
             <AlertDialogHeader>
-                <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                <AlertDialogTitle>{t('are_you_sure')}</AlertDialogTitle>
                 <AlertDialogDescription>
-                    This action cannot be undone. This will permanently delete the employee "{employeeToDelete?.name}" and their data.
+                    {t('employees.delete_confirm_desc', { name: employeeToDelete?.name })}
                 </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
-                <AlertDialogCancel onClick={() => setEmployeeToDelete(null)}>Cancel</AlertDialogCancel>
+                <AlertDialogCancel onClick={() => setEmployeeToDelete(null)}>{t('cancel')}</AlertDialogCancel>
                 <AlertDialogAction
                     onClick={handleDeleteEmployee}
                     disabled={isDeleting}
                     className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                 >
                   {isDeleting ? (
-                    <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Deleting...</>
+                    <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> {t('deleting')}</>
                   ) : (
-                    <><Trash2 className="mr-2 h-4 w-4" /> Delete</>
+                    <><Trash2 className="mr-2 h-4 w-4" /> {t('delete')}</>
                   )}
                 </AlertDialogAction>
             </AlertDialogFooter>

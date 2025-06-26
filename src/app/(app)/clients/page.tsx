@@ -59,6 +59,7 @@ import { firestore } from '@/lib/firebase';
 import { Skeleton } from '@/components/ui/skeleton';
 import Link from 'next/link';
 import { useAuth } from '@/hooks/use-auth';
+import { useLanguage } from '@/hooks/use-language';
 
 type ClientStatus = 'Lead' | 'Active' | 'Inactive';
 
@@ -100,6 +101,7 @@ export default function ClientsPage() {
   const [isDeleting, setIsDeleting] = useState(false);
   const { toast } = useToast();
   const { profile } = useAuth();
+  const { t } = useLanguage();
 
   useEffect(() => {
     const q = query(collection(firestore, 'clients'), orderBy('createdAt', 'desc'));
@@ -215,10 +217,10 @@ export default function ClientsPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="font-headline text-3xl font-bold tracking-tight">
-            Client & Sales Management
+            {t('clients.page_title')}
           </h1>
           <p className="text-muted-foreground">
-            Manage your current and potential clients.
+            {t('clients.page_desc')}
           </p>
         </div>
         {['admin', 'manager'].includes(profile?.role || '') && (
@@ -226,14 +228,14 @@ export default function ClientsPage() {
             <DialogTrigger asChild>
               <Button onClick={() => setClientToEdit(null)}>
                 <PlusCircle className="mr-2" />
-                Add Client
+                {t('clients.add_button')}
               </Button>
             </DialogTrigger>
             <DialogContent className="sm:max-w-[480px]">
               <DialogHeader>
-                <DialogTitle>{clientToEdit ? 'Edit Client' : 'Add New Client'}</DialogTitle>
+                <DialogTitle>{clientToEdit ? t('clients.edit_title') : t('clients.add_title')}</DialogTitle>
                 <DialogDescription>
-                  {clientToEdit ? "Update the client's details below." : 'Fill in the details below to add a new client.'}
+                  {clientToEdit ? t('clients.edit_desc') : t('clients.add_desc')}
                 </DialogDescription>
               </DialogHeader>
               <Form {...form}>
@@ -244,9 +246,9 @@ export default function ClientsPage() {
                       name="name"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Client Name</FormLabel>
+                          <FormLabel>{t('clients.name_label')}</FormLabel>
                           <FormControl>
-                            <Input placeholder="e.g., Sarah Johnson" {...field} />
+                            <Input placeholder={t('clients.name_placeholder')} {...field} />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -257,9 +259,9 @@ export default function ClientsPage() {
                       name="company"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Company (Optional)</FormLabel>
+                          <FormLabel>{t('clients.company_label')}</FormLabel>
                           <FormControl>
-                            <Input placeholder="e.g., Future Homes Inc." {...field} />
+                            <Input placeholder={t('clients.company_placeholder')} {...field} />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -272,9 +274,9 @@ export default function ClientsPage() {
                       name="email"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Email</FormLabel>
+                          <FormLabel>{t('email')}</FormLabel>
                           <FormControl>
-                            <Input placeholder="e.g., sarah@futurehomes.com" type="email" {...field} />
+                            <Input placeholder={t('clients.email_placeholder')} type="email" {...field} />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -285,9 +287,9 @@ export default function ClientsPage() {
                       name="phone"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Phone Number</FormLabel>
+                          <FormLabel>{t('phone')}</FormLabel>
                           <FormControl>
-                            <Input placeholder="e.g., +1 555-123-4567" type="tel" {...field} />
+                            <Input placeholder={t('clients.phone_placeholder')} type="tel" {...field} />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -299,17 +301,17 @@ export default function ClientsPage() {
                     name="status"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Status</FormLabel>
+                        <FormLabel>{t('status')}</FormLabel>
                         <Select onValueChange={field.onChange} defaultValue={field.value}>
                           <FormControl>
                             <SelectTrigger>
-                              <SelectValue placeholder="Select status" />
+                              <SelectValue placeholder={t('clients.select_status')} />
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
-                            <SelectItem value="Lead">Lead</SelectItem>
-                            <SelectItem value="Active">Active</SelectItem>
-                            <SelectItem value="Inactive">Inactive</SelectItem>
+                            <SelectItem value="Lead">{t('clients.status.Lead')}</SelectItem>
+                            <SelectItem value="Active">{t('clients.status.Active')}</SelectItem>
+                            <SelectItem value="Inactive">{t('clients.status.Inactive')}</SelectItem>
                           </SelectContent>
                         </Select>
                         <FormMessage />
@@ -321,10 +323,10 @@ export default function ClientsPage() {
                       {form.formState.isSubmitting ? (
                         <>
                           <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                          Saving...
+                          {t('saving')}
                         </>
                       ) : (
-                        clientToEdit ? 'Save Changes' : 'Save Client'
+                        clientToEdit ? t('save_changes') : t('clients.save_client_button')
                       )}
                     </Button>
                   </DialogFooter>
@@ -339,15 +341,15 @@ export default function ClientsPage() {
         <CardHeader>
           <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
             <div>
-              <CardTitle>Client List</CardTitle>
-              <CardDescription>A list of all clients in the system.</CardDescription>
+              <CardTitle>{t('clients.list_title')}</CardTitle>
+              <CardDescription>{t('clients.list_desc')}</CardDescription>
             </div>
             <div className="flex flex-col items-stretch gap-2 md:flex-row md:items-center">
               <div className="relative w-full md:w-auto">
                 <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
                 <Input
                   type="search"
-                  placeholder="Search by name, email, or company..."
+                  placeholder={t('clients.search_placeholder')}
                   className="w-full pl-8 md:w-[250px]"
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
@@ -355,13 +357,13 @@ export default function ClientsPage() {
               </div>
               <Select value={statusFilter} onValueChange={setStatusFilter}>
                 <SelectTrigger className="w-full md:w-[180px]">
-                  <SelectValue placeholder="Filter by status" />
+                  <SelectValue placeholder={t('clients.filter_by_status')} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="All">All Statuses</SelectItem>
-                  <SelectItem value="Lead">Lead</SelectItem>
-                  <SelectItem value="Active">Active</SelectItem>
-                  <SelectItem value="Inactive">Inactive</SelectItem>
+                  <SelectItem value="All">{t('clients.all_statuses')}</SelectItem>
+                  <SelectItem value="Lead">{t('clients.status.Lead')}</SelectItem>
+                  <SelectItem value="Active">{t('clients.status.Active')}</SelectItem>
+                  <SelectItem value="Inactive">{t('clients.status.Inactive')}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -371,13 +373,13 @@ export default function ClientsPage() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Name</TableHead>
-                <TableHead className="hidden md:table-cell">Company</TableHead>
-                <TableHead className="hidden lg:table-cell">Email</TableHead>
-                <TableHead className="hidden md:table-cell">Phone</TableHead>
-                <TableHead>Status</TableHead>
+                <TableHead>{t('name')}</TableHead>
+                <TableHead className="hidden md:table-cell">{t('company')}</TableHead>
+                <TableHead className="hidden lg:table-cell">{t('email')}</TableHead>
+                <TableHead className="hidden md:table-cell">{t('phone')}</TableHead>
+                <TableHead>{t('status')}</TableHead>
                 <TableHead>
-                  <span className="sr-only">Actions</span>
+                  <span className="sr-only">{t('actions')}</span>
                 </TableHead>
               </TableRow>
             </TableHeader>
@@ -406,7 +408,7 @@ export default function ClientsPage() {
                     <TableCell className="hidden md:table-cell">{client.phone}</TableCell>
                     <TableCell>
                       <Badge variant={statusVariant[client.status]}>
-                        {client.status}
+                        {t(`clients.status.${client.status}`)}
                       </Badge>
                     </TableCell>
                     <TableCell>
@@ -414,20 +416,20 @@ export default function ClientsPage() {
                         <DropdownMenuTrigger asChild>
                           <Button aria-haspopup="true" size="icon" variant="ghost">
                             <MoreHorizontal className="h-4 w-4" />
-                            <span className="sr-only">Toggle menu</span>
+                            <span className="sr-only">{t('toggle_menu')}</span>
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
-                          <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                          <DropdownMenuLabel>{t('actions')}</DropdownMenuLabel>
                           <DropdownMenuItem asChild>
-                            <Link href={`/clients/${client.id}`}>View Details</Link>
+                            <Link href={`/clients/${client.id}`}>{t('view_details')}</Link>
                           </DropdownMenuItem>
                           {['admin', 'manager'].includes(profile?.role || '') && (
                             <>
                               <DropdownMenuItem onSelect={() => {
                                 setClientToEdit(client);
                                 setIsFormDialogOpen(true);
-                              }}>Edit</DropdownMenuItem>
+                              }}>{t('edit')}</DropdownMenuItem>
                               <DropdownMenuItem
                                 className="text-destructive"
                                 onSelect={() => {
@@ -436,7 +438,7 @@ export default function ClientsPage() {
                                 }}
                               >
                                 <Trash2 className="mr-2 h-4 w-4" />
-                                Delete
+                                {t('delete')}
                               </DropdownMenuItem>
                             </>
                           )}
@@ -449,8 +451,8 @@ export default function ClientsPage() {
                  <TableRow>
                   <TableCell colSpan={6} className="h-24 text-center">
                     {clients.length > 0
-                      ? 'No clients match the current filters.'
-                      : 'No clients found. Add one to get started.'}
+                      ? t('clients.no_clients_match_filters')
+                      : t('clients.no_clients_found')}
                   </TableCell>
                 </TableRow>
               )}
@@ -462,22 +464,22 @@ export default function ClientsPage() {
     <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
         <AlertDialogContent>
             <AlertDialogHeader>
-                <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                <AlertDialogTitle>{t('are_you_sure')}</AlertDialogTitle>
                 <AlertDialogDescription>
-                    This action cannot be undone. This will permanently delete the client "{clientToDelete?.name}" from your records.
+                    {t('clients.delete_confirm_desc', { name: clientToDelete?.name })}
                 </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
-                <AlertDialogCancel onClick={() => setClientToDelete(null)}>Cancel</AlertDialogCancel>
+                <AlertDialogCancel onClick={() => setClientToDelete(null)}>{t('cancel')}</AlertDialogCancel>
                 <AlertDialogAction
                     onClick={handleDeleteClient}
                     disabled={isDeleting}
                     className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                 >
                   {isDeleting ? (
-                    <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Deleting...</>
+                    <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> {t('deleting')}</>
                   ) : (
-                    <><Trash2 className="mr-2 h-4 w-4" /> Delete</>
+                    <><Trash2 className="mr-2 h-4 w-4" /> {t('delete')}</>
                   )}
                 </AlertDialogAction>
             </AlertDialogFooter>

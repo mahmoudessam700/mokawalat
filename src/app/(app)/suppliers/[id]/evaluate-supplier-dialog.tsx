@@ -1,3 +1,4 @@
+
 'use client';
 
 import {
@@ -20,6 +21,7 @@ import { Loader2, Star } from 'lucide-react';
 import { evaluateSupplier } from '../actions';
 import { Textarea } from '@/components/ui/textarea';
 import { cn } from '@/lib/utils';
+import { useLanguage } from '@/hooks/use-language';
 
 type Supplier = {
   id: string;
@@ -67,6 +69,7 @@ function StarRatingInput({ value, onChange }: { value: number; onChange: (value:
 export function EvaluateSupplierDialog({ supplier }: EvaluateSupplierDialogProps) {
   const [isOpen, setIsOpen] = useState(false);
   const { toast } = useToast();
+  const { t } = useLanguage();
 
   const form = useForm<EvaluateSupplierFormValues>({
     resolver: zodResolver(evaluateSupplierFormSchema),
@@ -97,13 +100,13 @@ export function EvaluateSupplierDialog({ supplier }: EvaluateSupplierDialogProps
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>
-        <Button variant="outline"><Star className="mr-2" /> Evaluate</Button>
+        <Button variant="outline"><Star className="mr-2" /> {t('suppliers.evaluate_button')}</Button>
       </DialogTrigger>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
-          <DialogTitle>Evaluate Supplier: {supplier.name}</DialogTitle>
+          <DialogTitle>{t('suppliers.evaluate_dialog_title', { name: supplier.name })}</DialogTitle>
           <DialogDescription>
-            Rate their performance and provide feedback.
+            {t('suppliers.evaluate_dialog_desc')}
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>
@@ -113,7 +116,7 @@ export function EvaluateSupplierDialog({ supplier }: EvaluateSupplierDialogProps
               name="rating"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Overall Rating</FormLabel>
+                  <FormLabel>{t('suppliers.overall_rating_label')}</FormLabel>
                   <FormControl>
                     <StarRatingInput value={field.value} onChange={field.onChange} />
                   </FormControl>
@@ -126,10 +129,10 @@ export function EvaluateSupplierDialog({ supplier }: EvaluateSupplierDialogProps
               name="evaluationNotes"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Evaluation Notes</FormLabel>
+                  <FormLabel>{t('suppliers.evaluation_notes_label')}</FormLabel>
                   <FormControl>
                     <Textarea
-                      placeholder="e.g., Consistently delivers on time, good quality materials."
+                      placeholder={t('suppliers.evaluation_notes_placeholder')}
                       {...field}
                     />
                   </FormControl>
@@ -140,9 +143,9 @@ export function EvaluateSupplierDialog({ supplier }: EvaluateSupplierDialogProps
             <DialogFooter>
               <Button type="submit" disabled={form.formState.isSubmitting}>
                 {form.formState.isSubmitting ? (
-                  <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Saving...</>
+                  <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> {t('saving')}</>
                 ) : (
-                  'Save Evaluation'
+                  t('suppliers.save_evaluation_button')
                 )}
               </Button>
             </DialogFooter>

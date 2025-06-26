@@ -51,6 +51,7 @@ import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { runPayroll } from './actions';
 import { format } from 'date-fns';
+import { useLanguage } from '@/hooks/use-language';
 
 type Employee = {
   id: string;
@@ -89,6 +90,7 @@ export default function PayrollSummaryPage() {
   const { toast } = useToast();
   const { profile, isLoading: isAuthLoading } = useAuth();
   const router = useRouter();
+  const { t } = useLanguage();
 
   const form = useForm<RunPayrollFormValues>({
     resolver: zodResolver(runPayrollSchema),
@@ -181,29 +183,29 @@ export default function PayrollSummaryPage() {
             <Button asChild variant="outline" size="icon">
                 <Link href="/employees">
                     <ArrowLeft />
-                    <span className="sr-only">Back to Employees</span>
+                    <span className="sr-only">{t('employees.back_to_employees')}</span>
                 </Link>
             </Button>
             <div>
               <h1 className="font-headline text-3xl font-bold tracking-tight">
-                Payroll Summary
+                {t('employees.payroll_summary_title')}
               </h1>
               <p className="text-muted-foreground">
-                A summary of monthly salary expenses for all active employees.
+                {t('employees.payroll_summary_desc')}
               </p>
             </div>
         </div>
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
             <DialogTrigger asChild>
                 <Button disabled={employees.length === 0 || accounts.length === 0}>
-                    <CalendarClock className="mr-2"/> Run Monthly Payroll
+                    <CalendarClock className="mr-2"/> {t('employees.run_payroll_button')}
                 </Button>
             </DialogTrigger>
             <DialogContent>
                 <DialogHeader>
-                    <DialogTitle>Confirm Payroll Run</DialogTitle>
+                    <DialogTitle>{t('employees.confirm_payroll_title')}</DialogTitle>
                     <DialogDescription>
-                        This will create {employees.length} expense transactions totaling <strong>{formatCurrency(totalPayroll)}</strong>. This action cannot be undone.
+                        {t('employees.confirm_payroll_desc', { count: employees.length, total: formatCurrency(totalPayroll) })}
                     </DialogDescription>
                 </DialogHeader>
                  <Form {...form}>
@@ -213,11 +215,11 @@ export default function PayrollSummaryPage() {
                             name="accountId"
                             render={({ field }) => (
                                 <FormItem>
-                                    <FormLabel>Payment Account</FormLabel>
+                                    <FormLabel>{t('employees.payment_account_label')}</FormLabel>
                                     <Select onValueChange={field.onChange} defaultValue={field.value}>
                                     <FormControl>
                                         <SelectTrigger>
-                                        <SelectValue placeholder="Select an account to pay from" />
+                                        <SelectValue placeholder={t('employees.select_account_placeholder')} />
                                         </SelectTrigger>
                                     </FormControl>
                                     <SelectContent>
@@ -235,7 +237,7 @@ export default function PayrollSummaryPage() {
                             name="payrollDate"
                             render={({ field }) => (
                                 <FormItem>
-                                    <FormLabel>Payroll Date</FormLabel>
+                                    <FormLabel>{t('employees.payroll_date_label')}</FormLabel>
                                     <FormControl>
                                         <Input type="date" {...field} />
                                     </FormControl>
@@ -244,9 +246,9 @@ export default function PayrollSummaryPage() {
                             )}
                         />
                         <DialogFooter>
-                            <Button variant="outline" onClick={() => setIsDialogOpen(false)}>Cancel</Button>
+                            <Button variant="outline" onClick={() => setIsDialogOpen(false)}>{t('cancel')}</Button>
                             <Button type="submit" disabled={form.formState.isSubmitting} className="bg-destructive hover:bg-destructive/90">
-                                {form.formState.isSubmitting ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Processing...</> : 'Confirm & Run Payroll'}
+                                {form.formState.isSubmitting ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> {t('employees.processing')}</> : t('employees.confirm_run_payroll_button')}
                             </Button>
                         </DialogFooter>
                     </form>
@@ -257,17 +259,17 @@ export default function PayrollSummaryPage() {
 
       <Card>
         <CardHeader>
-            <CardTitle>Employee Salaries</CardTitle>
-            <CardDescription>A list of all active employees with defined salaries, sorted by highest salary.</CardDescription>
+            <CardTitle>{t('employees.salaries_title')}</CardTitle>
+            <CardDescription>{t('employees.salaries_desc')}</CardDescription>
         </CardHeader>
         <CardContent>
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Employee Name</TableHead>
-                <TableHead>Department</TableHead>
-                <TableHead>Role</TableHead>
-                <TableHead className="text-right">Monthly Salary</TableHead>
+                <TableHead>{t('employees.employee_name_header')}</TableHead>
+                <TableHead>{t('department')}</TableHead>
+                <TableHead>{t('role')}</TableHead>
+                <TableHead className="text-right">{t('employees.monthly_salary_header')}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -294,7 +296,7 @@ export default function PayrollSummaryPage() {
                   <TableCell colSpan={4} className="h-24 text-center">
                     <div className="flex flex-col items-center justify-center gap-2 text-muted-foreground">
                         <Users className="size-12" />
-                        No active employees with salaries found.
+                        {t('employees.no_active_employees_with_salaries')}
                     </div>
                   </TableCell>
                 </TableRow>
@@ -302,7 +304,7 @@ export default function PayrollSummaryPage() {
             </TableBody>
             <TableFooter>
                 <TableRow>
-                    <TableCell colSpan={3} className="font-bold text-lg">Total Monthly Payroll</TableCell>
+                    <TableCell colSpan={3} className="font-bold text-lg">{t('employees.total_monthly_payroll')}</TableCell>
                     <TableCell className="text-right font-bold text-lg font-mono">{formatCurrency(totalPayroll)}</TableCell>
                 </TableRow>
             </TableFooter>

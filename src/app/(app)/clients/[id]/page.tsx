@@ -35,6 +35,7 @@ import { useAuth } from '@/hooks/use-auth';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import React from 'react';
 import { ClientAiSummary } from './client-ai-summary';
+import { useLanguage } from '@/hooks/use-language';
 
 
 type ClientStatus = 'Lead' | 'Active' | 'Inactive';
@@ -163,6 +164,7 @@ export default function ClientDetailPage({ params }: { params: { id: string } })
   const { toast } = useToast();
   const { profile } = useAuth();
   const clientId = params.id;
+  const { t } = useLanguage();
 
   useEffect(() => {
     if (!clientId) return;
@@ -303,7 +305,7 @@ export default function ClientDetailPage({ params }: { params: { id: string } })
          <Button asChild variant="outline" className="mt-4">
           <Link href="/clients">
             <ArrowLeft className="mr-2" />
-            Back to Clients
+            {t('clients.back_to_clients')}
           </Link>
         </Button>
       </div>
@@ -319,7 +321,7 @@ export default function ClientDetailPage({ params }: { params: { id: string } })
             <Button asChild variant="outline" size="icon">
                 <Link href="/clients">
                     <ArrowLeft />
-                    <span className="sr-only">Back to Clients</span>
+                    <span className="sr-only">{t('clients.back_to_clients')}</span>
                 </Link>
             </Button>
             <div>
@@ -327,30 +329,30 @@ export default function ClientDetailPage({ params }: { params: { id: string } })
                     {client.name}
                 </h1>
                 <p className="text-muted-foreground">
-                    Detailed client view and interaction history.
+                    {t('clients.detail_page_desc')}
                 </p>
             </div>
         </div>
         
         <Tabs defaultValue="overview">
             <TabsList>
-                <TabsTrigger value="overview">Overview</TabsTrigger>
-                <TabsTrigger value="projects">Projects</TabsTrigger>
-                <TabsTrigger value="invoices">Invoices</TabsTrigger>
-                <TabsTrigger value="interactions">Interactions</TabsTrigger>
-                <TabsTrigger value="contracts">Contracts</TabsTrigger>
-                <TabsTrigger value="financials">Financials</TabsTrigger>
+                <TabsTrigger value="overview">{t('clients.overview_tab')}</TabsTrigger>
+                <TabsTrigger value="projects">{t('clients.projects_tab')}</TabsTrigger>
+                <TabsTrigger value="invoices">{t('clients.invoices_tab')}</TabsTrigger>
+                <TabsTrigger value="interactions">{t('clients.interactions_tab')}</TabsTrigger>
+                <TabsTrigger value="contracts">{t('clients.contracts_tab')}</TabsTrigger>
+                <TabsTrigger value="financials">{t('clients.financials_tab')}</TabsTrigger>
             </TabsList>
             <TabsContent value="overview" className="pt-4">
                  <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
                     <div className="lg:col-span-1 space-y-6">
                         <Card>
-                            <CardHeader><CardTitle>Client Information</CardTitle></CardHeader>
+                            <CardHeader><CardTitle>{t('clients.info_card_title')}</CardTitle></CardHeader>
                             <CardContent className="space-y-4">
                                 <div className="flex items-center gap-4"><Briefcase className="size-4 text-muted-foreground" /><span className="text-sm">{client.company || 'N/A'}</span></div>
                                 <div className="flex items-center gap-4"><Mail className="size-4 text-muted-foreground" /><a href={`mailto:${client.email}`} className="text-sm hover:underline">{client.email}</a></div>
                                 <div className="flex items-center gap-4"><Phone className="size-4 text-muted-foreground" /><span className="text-sm">{client.phone}</span></div>
-                                <div className="flex items-center gap-4"><User className="size-4 text-muted-foreground" /><Badge variant={statusVariant[client.status]}>{client.status}</Badge></div>
+                                <div className="flex items-center gap-4"><User className="size-4 text-muted-foreground" /><Badge variant={statusVariant[client.status]}>{t(`clients.status.${client.status}`)}</Badge></div>
                             </CardContent>
                         </Card>
                     </div>
@@ -362,18 +364,18 @@ export default function ClientDetailPage({ params }: { params: { id: string } })
             <TabsContent value="projects" className="pt-4">
                 <Card>
                     <CardHeader>
-                        <CardTitle>Linked Projects</CardTitle>
-                        <CardDescription>All projects associated with this client.</CardDescription>
+                        <CardTitle>{t('clients.linked_projects_title')}</CardTitle>
+                        <CardDescription>{t('clients.linked_projects_desc')}</CardDescription>
                     </CardHeader>
                     <CardContent>
                         {projects.length > 0 ? (
                             <Table>
                                 <TableHeader>
                                     <TableRow>
-                                        <TableHead>Project Name</TableHead>
-                                        <TableHead>Status</TableHead>
-                                        <TableHead className="text-right">Budget</TableHead>
-                                        <TableHead className="text-right">Action</TableHead>
+                                        <TableHead>{t('clients.project_name_header')}</TableHead>
+                                        <TableHead>{t('clients.project_status_header')}</TableHead>
+                                        <TableHead className="text-right">{t('clients.project_budget_header')}</TableHead>
+                                        <TableHead className="text-right">{t('actions')}</TableHead>
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>
@@ -389,7 +391,7 @@ export default function ClientDetailPage({ params }: { params: { id: string } })
                                             <TableCell className="text-right">
                                                 <Button asChild variant="outline" size="sm">
                                                     <Link href={`/projects/${project.id}`}>
-                                                        View Project
+                                                        {t('view_project')}
                                                     </Link>
                                                 </Button>
                                             </TableCell>
@@ -400,7 +402,7 @@ export default function ClientDetailPage({ params }: { params: { id: string } })
                         ) : (
                             <div className="flex flex-col items-center justify-center gap-2 py-8 text-center text-muted-foreground">
                                 <Briefcase className="size-12" />
-                                <p>No projects are linked to this client yet.</p>
+                                <p>{t('clients.no_linked_projects')}</p>
                             </div>
                         )}
                     </CardContent>
@@ -409,13 +411,13 @@ export default function ClientDetailPage({ params }: { params: { id: string } })
             <TabsContent value="invoices" className="pt-4">
                 <Card>
                     <CardHeader>
-                        <CardTitle>Invoices</CardTitle>
-                        <CardDescription>All invoices issued to this client.</CardDescription>
+                        <CardTitle>{t('clients.invoices_title')}</CardTitle>
+                        <CardDescription>{t('clients.invoices_desc')}</CardDescription>
                     </CardHeader>
                     <CardContent>
                         {invoices.length > 0 ? (
                             <Table>
-                                <TableHeader><TableRow><TableHead>Invoice #</TableHead><TableHead>Issue Date</TableHead><TableHead>Due Date</TableHead><TableHead>Status</TableHead><TableHead className="text-right">Amount</TableHead></TableRow></TableHeader>
+                                <TableHeader><TableRow><TableHead>{t('clients.invoice_number_header')}</TableHead><TableHead>{t('clients.invoice_issue_date_header')}</TableHead><TableHead>{t('clients.invoice_due_date_header')}</TableHead><TableHead>{t('status')}</TableHead><TableHead className="text-right">{t('clients.invoice_amount_header')}</TableHead></TableRow></TableHeader>
                                 <TableBody>
                                     {invoices.map(invoice => (
                                         <TableRow key={invoice.id}>
@@ -435,7 +437,7 @@ export default function ClientDetailPage({ params }: { params: { id: string } })
                         ) : (
                             <div className="flex flex-col items-center justify-center gap-2 py-8 text-center text-muted-foreground">
                                 <Receipt className="size-12" />
-                                <p>No invoices found for this client.</p>
+                                <p>{t('clients.no_invoices_found')}</p>
                             </div>
                         )}
                     </CardContent>
@@ -445,22 +447,22 @@ export default function ClientDetailPage({ params }: { params: { id: string } })
                  <Card>
                     <CardHeader className="flex-row items-center justify-between">
                         <div>
-                            <CardTitle>Interaction History</CardTitle>
-                            <CardDescription>A log of all communications with this client.</CardDescription>
+                            <CardTitle>{t('clients.interaction_history_title')}</CardTitle>
+                            <CardDescription>{t('clients.interaction_history_desc')}</CardDescription>
                         </div>
                         <Dialog open={isInteractionFormOpen} onOpenChange={setIsInteractionFormOpen}>
-                            <DialogTrigger asChild><Button size="sm"><PlusCircle className="mr-2" /> Log Interaction</Button></DialogTrigger>
+                            <DialogTrigger asChild><Button size="sm"><PlusCircle className="mr-2" /> {t('clients.log_interaction_button')}</Button></DialogTrigger>
                             <DialogContent>
                                 <DialogHeader>
-                                    <DialogTitle>Log New Interaction</DialogTitle>
-                                    <DialogDescription>Record a new call, email, or meeting.</DialogDescription>
+                                    <DialogTitle>{t('clients.log_new_interaction_title')}</DialogTitle>
+                                    <DialogDescription>{t('clients.log_new_interaction_desc')}</DialogDescription>
                                 </DialogHeader>
                                 <Form {...interactionForm}>
                                     <form onSubmit={interactionForm.handleSubmit(onInteractionSubmit)} className="space-y-4 py-4">
-                                        <FormField control={interactionForm.control} name="date" render={({ field }) => (<FormItem><FormLabel>Date</FormLabel><FormControl><Input type="date" {...field} /></FormControl><FormMessage /></FormItem>)} />
-                                        <FormField control={interactionForm.control} name="type" render={({ field }) => (<FormItem><FormLabel>Type</FormLabel><Select onValueChange={field.onChange} defaultValue={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Select interaction type" /></SelectTrigger></FormControl><SelectContent><SelectItem value="Call">Call</SelectItem><SelectItem value="Email">Email</SelectItem><SelectItem value="Meeting">Meeting</SelectItem><SelectItem value="Note">Note</SelectItem></SelectContent></Select><FormMessage /></FormItem>)} />
-                                        <FormField control={interactionForm.control} name="notes" render={({ field }) => (<FormItem><FormLabel>Notes</FormLabel><FormControl><Textarea placeholder="Enter details about the interaction..." {...field} /></FormControl><FormMessage /></FormItem>)} />
-                                        <DialogFooter><Button type="submit" disabled={interactionForm.formState.isSubmitting}>{interactionForm.formState.isSubmitting ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Saving...</> : 'Log Interaction'}</Button></DialogFooter>
+                                        <FormField control={interactionForm.control} name="date" render={({ field }) => (<FormItem><FormLabel>{t('date')}</FormLabel><FormControl><Input type="date" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                                        <FormField control={interactionForm.control} name="type" render={({ field }) => (<FormItem><FormLabel>{t('type')}</FormLabel><Select onValueChange={field.onChange} defaultValue={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Select interaction type" /></SelectTrigger></FormControl><SelectContent><SelectItem value="Call">Call</SelectItem><SelectItem value="Email">Email</SelectItem><SelectItem value="Meeting">Meeting</SelectItem><SelectItem value="Note">Note</SelectItem></SelectContent></Select><FormMessage /></FormItem>)} />
+                                        <FormField control={interactionForm.control} name="notes" render={({ field }) => (<FormItem><FormLabel>{t('notes')}</FormLabel><FormControl><Textarea placeholder={t('clients.interaction_notes_placeholder')} {...field} /></FormControl><FormMessage /></FormItem>)} />
+                                        <DialogFooter><Button type="submit" disabled={interactionForm.formState.isSubmitting}>{interactionForm.formState.isSubmitting ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> {t('saving')}</> : t('clients.log_interaction_button')}</Button></DialogFooter>
                                     </form>
                                 </Form>
                             </DialogContent>
@@ -468,9 +470,9 @@ export default function ClientDetailPage({ params }: { params: { id: string } })
                     </CardHeader>
                     <CardContent>
                         {interactions.length > 0 ? (
-                            <Table><TableHeader><TableRow><TableHead className="w-[50px]">Type</TableHead><TableHead className="w-[150px]">Date</TableHead><TableHead>Notes</TableHead></TableRow></TableHeader><TableBody>{interactions.map(interaction => (<TableRow key={interaction.id}><TableCell>{interactionIcons[interaction.type]}</TableCell><TableCell>{interaction.date ? format(interaction.date.toDate(), 'PPP p') : 'N/A'}</TableCell><TableCell className="whitespace-pre-wrap">{interaction.notes}</TableCell></TableRow>))}</TableBody></Table>
+                            <Table><TableHeader><TableRow><TableHead className="w-[50px]">{t('type')}</TableHead><TableHead className="w-[150px]">{t('date')}</TableHead><TableHead>{t('notes')}</TableHead></TableRow></TableHeader><TableBody>{interactions.map(interaction => (<TableRow key={interaction.id}><TableCell>{interactionIcons[interaction.type]}</TableCell><TableCell>{interaction.date ? format(interaction.date.toDate(), 'PPP p') : 'N/A'}</TableCell><TableCell className="whitespace-pre-wrap">{interaction.notes}</TableCell></TableRow>))}</TableBody></Table>
                         ) : (
-                            <div className="flex flex-col items-center justify-center gap-2 py-8 text-center text-muted-foreground"><MessageSquare className="size-12" /><p>No interactions logged yet.</p><p className="text-xs">Use the "Log Interaction" button to add the first one.</p></div>
+                            <div className="flex flex-col items-center justify-center gap-2 py-8 text-center text-muted-foreground"><MessageSquare className="size-12" /><p>{t('clients.no_interactions_logged')}</p><p className="text-xs">{t('clients.use_log_button')}</p></div>
                         )}
                     </CardContent>
                 </Card>
@@ -479,23 +481,23 @@ export default function ClientDetailPage({ params }: { params: { id: string } })
                  <Card>
                     <CardHeader className="flex-row items-center justify-between">
                         <div>
-                            <CardTitle>Contract Management</CardTitle>
-                            <CardDescription>A list of all contracts and agreements with this client.</CardDescription>
+                            <CardTitle>{t('clients.contract_management_title')}</CardTitle>
+                            <CardDescription>{t('clients.contract_management_desc')}</CardDescription>
                         </div>
                         {['admin', 'manager'].includes(profile?.role || '') && (
                             <Dialog open={isContractFormOpen} onOpenChange={setIsContractFormOpen}>
-                                <DialogTrigger asChild><Button size="sm"><PlusCircle className="mr-2" /> Add Contract</Button></DialogTrigger>
+                                <DialogTrigger asChild><Button size="sm"><PlusCircle className="mr-2" /> {t('clients.add_contract_button')}</Button></DialogTrigger>
                                 <DialogContent>
-                                    <DialogHeader><DialogTitle>Add New Contract</DialogTitle><DialogDescription>Record a new contract for {client.name}.</DialogDescription></DialogHeader>
+                                    <DialogHeader><DialogTitle>{t('clients.add_new_contract_title')}</DialogTitle><DialogDescription>{t('clients.add_new_contract_desc', { name: client.name })}</DialogDescription></DialogHeader>
                                     <Form {...contractForm}>
                                         <form onSubmit={contractForm.handleSubmit(onContractSubmit)} className="space-y-4 py-4">
-                                            <FormField control={contractForm.control} name="title" render={({ field }) => (<FormItem><FormLabel>Contract Title</FormLabel><FormControl><Input placeholder="e.g., Phase 1 Construction Agreement" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                                            <FormField control={contractForm.control} name="title" render={({ field }) => (<FormItem><FormLabel>{t('clients.contract_title_label')}</FormLabel><FormControl><Input placeholder={t('clients.contract_title_placeholder')} {...field} /></FormControl><FormMessage /></FormItem>)} />
                                             <div className="grid grid-cols-2 gap-4">
-                                                <FormField control={contractForm.control} name="effectiveDate" render={({ field }) => (<FormItem><FormLabel>Effective Date</FormLabel><FormControl><Input type="date" {...field} /></FormControl><FormMessage /></FormItem>)} />
-                                                <FormField control={contractForm.control} name="value" render={({ field }) => (<FormItem><FormLabel>Value (LE) (Optional)</FormLabel><FormControl><Input type="number" placeholder="e.g., 500000" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                                                <FormField control={contractForm.control} name="effectiveDate" render={({ field }) => (<FormItem><FormLabel>{t('clients.effective_date_label')}</FormLabel><FormControl><Input type="date" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                                                <FormField control={contractForm.control} name="value" render={({ field }) => (<FormItem><FormLabel>{t('clients.contract_value_label')}</FormLabel><FormControl><Input type="number" placeholder={t('clients.contract_value_placeholder')} {...field} /></FormControl><FormMessage /></FormItem>)} />
                                             </div>
-                                            <FormField control={contractForm.control} name="file" render={({ field }) => (<FormItem><FormLabel>Document</FormLabel><FormControl><Input type="file" {...contractForm.register('file')} /></FormControl><FormMessage /></FormItem>)} />
-                                            <DialogFooter><Button type="submit" disabled={contractForm.formState.isSubmitting}>{contractForm.formState.isSubmitting ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Saving...</> : 'Save Contract'}</Button></DialogFooter>
+                                            <FormField control={contractForm.control} name="file" render={({ field }) => (<FormItem><FormLabel>{t('document')}</FormLabel><FormControl><Input type="file" {...contractForm.register('file')} /></FormControl><FormMessage /></FormItem>)} />
+                                            <DialogFooter><Button type="submit" disabled={contractForm.formState.isSubmitting}>{contractForm.formState.isSubmitting ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> {t('saving')}</> : t('clients.save_contract_button')}</Button></DialogFooter>
                                         </form>
                                     </Form>
                                 </DialogContent>
@@ -504,9 +506,9 @@ export default function ClientDetailPage({ params }: { params: { id: string } })
                     </CardHeader>
                     <CardContent>
                         {contracts.length > 0 ? (
-                            <Table><TableHeader><TableRow><TableHead>Title</TableHead><TableHead>Value</TableHead><TableHead>Effective Date</TableHead><TableHead className="text-right">Actions</TableHead></TableRow></TableHeader><TableBody>{contracts.map(contract => (<TableRow key={contract.id}><TableCell className="font-medium">{contract.title}</TableCell><TableCell>{contract.value ? formatCurrency(contract.value) : 'N/A'}</TableCell><TableCell>{contract.effectiveDate ? format(contract.effectiveDate.toDate(), 'PPP') : 'N/A'}</TableCell><TableCell className="text-right"><div className="flex items-center justify-end gap-2">{contract.fileUrl && (<Button asChild variant="outline" size="icon" className="h-8 w-8"><Link href={contract.fileUrl} target="_blank" rel="noopener noreferrer"><ExternalLink className="size-4" /><span className="sr-only">View Contract</span></Link></Button>)}{['admin', 'manager'].includes(profile?.role || '') && (<Button variant="ghost" size="icon" className="text-destructive hover:text-destructive h-8 w-8" onClick={() => setContractToDelete(contract)}><Trash2 className="size-4" /></Button>)}</div></TableCell></TableRow>))}</TableBody></Table>
+                            <Table><TableHeader><TableRow><TableHead>{t('clients.contract_title_header')}</TableHead><TableHead>{t('clients.contract_value_header')}</TableHead><TableHead>{t('clients.effective_date_header')}</TableHead><TableHead className="text-right">{t('actions')}</TableHead></TableRow></TableHeader><TableBody>{contracts.map(contract => (<TableRow key={contract.id}><TableCell className="font-medium">{contract.title}</TableCell><TableCell>{contract.value ? formatCurrency(contract.value) : 'N/A'}</TableCell><TableCell>{contract.effectiveDate ? format(contract.effectiveDate.toDate(), 'PPP') : 'N/A'}</TableCell><TableCell className="text-right"><div className="flex items-center justify-end gap-2">{contract.fileUrl && (<Button asChild variant="outline" size="icon" className="h-8 w-8"><Link href={contract.fileUrl} target="_blank" rel="noopener noreferrer"><ExternalLink className="size-4" /><span className="sr-only">View Contract</span></Link></Button>)}{['admin', 'manager'].includes(profile?.role || '') && (<Button variant="ghost" size="icon" className="text-destructive hover:text-destructive h-8 w-8" onClick={() => setContractToDelete(contract)}><Trash2 className="size-4" /></Button>)}</div></TableCell></TableRow>))}</TableBody></Table>
                         ) : (
-                            <div className="flex flex-col items-center justify-center gap-2 py-8 text-center text-muted-foreground"><FileText className="size-12" /><p>No contracts found for this client.</p></div>
+                            <div className="flex flex-col items-center justify-center gap-2 py-8 text-center text-muted-foreground"><FileText className="size-12" /><p>{t('clients.no_contracts_found')}</p></div>
                         )}
                     </CardContent>
                 </Card>
@@ -514,18 +516,18 @@ export default function ClientDetailPage({ params }: { params: { id: string } })
             <TabsContent value="financials" className="pt-4">
                  <Card>
                     <CardHeader>
-                        <CardTitle>Financial History</CardTitle>
-                        <CardDescription>A list of all income and expense records for this client.</CardDescription>
+                        <CardTitle>{t('clients.financial_history_title')}</CardTitle>
+                        <CardDescription>{t('clients.financial_history_desc')}</CardDescription>
                     </CardHeader>
                     <CardContent>
                         {transactions.length > 0 ? (
                            <Table>
                                <TableHeader>
                                    <TableRow>
-                                       <TableHead>Date</TableHead>
-                                       <TableHead>Description</TableHead>
-                                       <TableHead>Type</TableHead>
-                                       <TableHead className="text-right">Amount</TableHead>
+                                       <TableHead>{t('date')}</TableHead>
+                                       <TableHead>{t('description')}</TableHead>
+                                       <TableHead>{t('type')}</TableHead>
+                                       <TableHead className="text-right">{t('amount')}</TableHead>
                                    </TableRow>
                                </TableHeader>
                                <TableBody>
@@ -548,7 +550,7 @@ export default function ClientDetailPage({ params }: { params: { id: string } })
                         ) : (
                              <div className="flex flex-col items-center justify-center gap-2 py-8 text-center text-muted-foreground">
                                 <DollarSign className="size-12" />
-                                <p>No financial records found for this client.</p>
+                                <p>{t('clients.no_financial_records')}</p>
                             </div>
                         )}
                     </CardContent>
@@ -559,10 +561,10 @@ export default function ClientDetailPage({ params }: { params: { id: string } })
 
     <AlertDialog open={!!contractToDelete} onOpenChange={(open) => !open && setContractToDelete(null)}>
         <AlertDialogContent>
-            <AlertDialogHeader><AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle><AlertDialogDescription>This action cannot be undone. This will permanently delete the contract "{contractToDelete?.title}".</AlertDialogDescription></AlertDialogHeader>
+            <AlertDialogHeader><AlertDialogTitle>{t('are_you_sure')}</AlertDialogTitle><AlertDialogDescription>{t('clients.delete_contract_confirm_desc', { title: contractToDelete?.title })}</AlertDialogDescription></AlertDialogHeader>
             <AlertDialogFooter>
-                <AlertDialogCancel onClick={() => setContractToDelete(null)}>Cancel</AlertDialogCancel>
-                <AlertDialogAction onClick={handleDeleteContract} disabled={isDeletingContract} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">{isDeletingContract ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Deleting...</> : <><Trash2 className="mr-2 h-4 w-4" /> Delete</>}</AlertDialogAction>
+                <AlertDialogCancel onClick={() => setContractToDelete(null)}>{t('cancel')}</AlertDialogCancel>
+                <AlertDialogAction onClick={handleDeleteContract} disabled={isDeletingContract} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">{isDeletingContract ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> {t('deleting')}</> : <><Trash2 className="mr-2 h-4 w-4" /> {t('delete')}</>}</AlertDialogAction>
             </AlertDialogFooter>
         </AlertDialogContent>
     </AlertDialog>

@@ -32,6 +32,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useToast } from '@/hooks/use-toast';
 import { addContract, deleteContract } from './actions';
 import { SupplierAiSummary } from './supplier-ai-summary';
+import { useLanguage } from '@/hooks/use-language';
 
 
 type SupplierStatus = 'Active' | 'Inactive';
@@ -118,6 +119,7 @@ export default function SupplierDetailPage({ params }: { params: { id: string } 
   const { profile } = useAuth();
   const { toast } = useToast();
   const supplierId = params.id;
+  const { t } = useLanguage();
 
   const [isContractDialogOpen, setIsContractDialogOpen] = useState(false);
   const [isDeletingContract, setIsDeletingContract] = useState(false);
@@ -242,7 +244,7 @@ export default function SupplierDetailPage({ params }: { params: { id: string } 
          <Button asChild variant="outline" className="mt-4">
           <Link href="/suppliers">
             <ArrowLeft className="mr-2" />
-            Back to Suppliers
+            {t('suppliers.back_to_suppliers')}
           </Link>
         </Button>
       </div>
@@ -258,7 +260,7 @@ export default function SupplierDetailPage({ params }: { params: { id: string } 
             <Button asChild variant="outline" size="icon">
                 <Link href="/suppliers">
                     <ArrowLeft />
-                    <span className="sr-only">Back to Suppliers</span>
+                    <span className="sr-only">{t('suppliers.back_to_suppliers')}</span>
                 </Link>
             </Button>
             <div>
@@ -266,23 +268,23 @@ export default function SupplierDetailPage({ params }: { params: { id: string } 
                     {supplier.name}
                 </h1>
                 <p className="text-muted-foreground">
-                    Detailed supplier profile and procurement history.
+                    {t('suppliers.detail_page_desc')}
                 </p>
             </div>
         </div>
 
        <Tabs defaultValue="overview">
             <TabsList>
-                <TabsTrigger value="overview">Overview</TabsTrigger>
-                <TabsTrigger value="contracts">Contracts</TabsTrigger>
-                <TabsTrigger value="procurement">Procurement History</TabsTrigger>
-                <TabsTrigger value="financials">Financials</TabsTrigger>
+                <TabsTrigger value="overview">{t('clients.overview_tab')}</TabsTrigger>
+                <TabsTrigger value="contracts">{t('clients.contracts_tab')}</TabsTrigger>
+                <TabsTrigger value="procurement">{t('suppliers.procurement_history_tab')}</TabsTrigger>
+                <TabsTrigger value="financials">{t('clients.financials_tab')}</TabsTrigger>
             </TabsList>
             <TabsContent value="overview" className="pt-4">
                  <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
                     <Card className="lg:col-span-1">
                         <CardHeader>
-                            <CardTitle>Supplier Information</CardTitle>
+                            <CardTitle>{t('suppliers.info_card_title')}</CardTitle>
                         </CardHeader>
                         <CardContent className="space-y-4">
                             <div className="flex items-center gap-4">
@@ -299,7 +301,7 @@ export default function SupplierDetailPage({ params }: { params: { id: string } 
                             </div>
                             <div className="flex items-center gap-4">
                                 <Building className="size-4 text-muted-foreground" />
-                                <Badge variant={statusVariant[supplier.status]}>{supplier.status}</Badge>
+                                <Badge variant={statusVariant[supplier.status]}>{t(`suppliers.status.${supplier.status}`)}</Badge>
                             </div>
                         </CardContent>
                     </Card>
@@ -318,18 +320,18 @@ export default function SupplierDetailPage({ params }: { params: { id: string } 
                 <Card>
                     <CardHeader className="flex flex-row items-center justify-between">
                         <div>
-                            <CardTitle>Contract Management</CardTitle>
-                            <CardDescription>A list of all contracts with this supplier.</CardDescription>
+                            <CardTitle>{t('clients.contract_management_title')}</CardTitle>
+                            <CardDescription>{t('suppliers.contract_management_desc')}</CardDescription>
                         </div>
                         {profile?.role === 'admin' && (
                             <Dialog open={isContractDialogOpen} onOpenChange={setIsContractDialogOpen}>
                                 <DialogTrigger asChild>
-                                    <Button size="sm"><PlusCircle className="mr-2" /> Add Contract</Button>
+                                    <Button size="sm"><PlusCircle className="mr-2" /> {t('clients.add_contract_button')}</Button>
                                 </DialogTrigger>
                                 <DialogContent>
                                     <DialogHeader>
-                                        <DialogTitle>Add New Contract</DialogTitle>
-                                        <DialogDescription>Record a new contract for {supplier.name}.</DialogDescription>
+                                        <DialogTitle>{t('clients.add_new_contract_title')}</DialogTitle>
+                                        <DialogDescription>{t('suppliers.add_new_contract_desc', { name: supplier.name })}</DialogDescription>
                                     </DialogHeader>
                                     <Form {...contractForm}>
                                         <form onSubmit={contractForm.handleSubmit(onContractSubmit)} className="space-y-4 py-4">
@@ -338,9 +340,9 @@ export default function SupplierDetailPage({ params }: { params: { id: string } 
                                                 name="title"
                                                 render={({ field }) => (
                                                     <FormItem>
-                                                    <FormLabel>Contract Title</FormLabel>
+                                                    <FormLabel>{t('clients.contract_title_label')}</FormLabel>
                                                     <FormControl>
-                                                        <Input placeholder="e.g., Annual Supply Agreement" {...field} />
+                                                        <Input placeholder={t('suppliers.contract_title_placeholder')} {...field} />
                                                     </FormControl>
                                                     <FormMessage />
                                                     </FormItem>
@@ -351,7 +353,7 @@ export default function SupplierDetailPage({ params }: { params: { id: string } 
                                                 name="effectiveDate"
                                                 render={({ field }) => (
                                                     <FormItem>
-                                                    <FormLabel>Effective Date</FormLabel>
+                                                    <FormLabel>{t('clients.effective_date_label')}</FormLabel>
                                                     <FormControl>
                                                         <Input type="date" {...field} />
                                                     </FormControl>
@@ -364,7 +366,7 @@ export default function SupplierDetailPage({ params }: { params: { id: string } 
                                                 name="file"
                                                 render={({ field }) => (
                                                     <FormItem>
-                                                        <FormLabel>Document</FormLabel>
+                                                        <FormLabel>{t('document')}</FormLabel>
                                                         <FormControl>
                                                             <Input type="file" {...contractForm.register('file')} />
                                                         </FormControl>
@@ -374,7 +376,7 @@ export default function SupplierDetailPage({ params }: { params: { id: string } 
                                             />
                                             <DialogFooter>
                                                 <Button type="submit" disabled={contractForm.formState.isSubmitting}>
-                                                    {contractForm.formState.isSubmitting ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Saving...</> : 'Save Contract'}
+                                                    {contractForm.formState.isSubmitting ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> {t('saving')}</> : t('clients.save_contract_button')}
                                                 </Button>
                                             </DialogFooter>
                                         </form>
@@ -388,9 +390,9 @@ export default function SupplierDetailPage({ params }: { params: { id: string } 
                             <Table>
                                 <TableHeader>
                                     <TableRow>
-                                        <TableHead>Title</TableHead>
-                                        <TableHead>Effective Date</TableHead>
-                                        <TableHead className="text-right">Actions</TableHead>
+                                        <TableHead>{t('clients.contract_title_header')}</TableHead>
+                                        <TableHead>{t('clients.effective_date_header')}</TableHead>
+                                        <TableHead className="text-right">{t('actions')}</TableHead>
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>
@@ -422,7 +424,7 @@ export default function SupplierDetailPage({ params }: { params: { id: string } 
                         ) : (
                             <div className="flex flex-col items-center justify-center gap-2 py-8 text-center text-muted-foreground">
                                 <FileText className="size-12" />
-                                <p>No contracts found for this supplier.</p>
+                                <p>{t('clients.no_contracts_found')}</p>
                             </div>
                         )}
                     </CardContent>
@@ -431,18 +433,18 @@ export default function SupplierDetailPage({ params }: { params: { id: string } 
             <TabsContent value="procurement" className="pt-4">
                 <Card>
                     <CardHeader>
-                        <CardTitle>Procurement History</CardTitle>
-                        <CardDescription>A list of all purchase requests made to this supplier.</CardDescription>
+                        <CardTitle>{t('suppliers.procurement_history_title')}</CardTitle>
+                        <CardDescription>{t('suppliers.procurement_history_desc')}</CardDescription>
                     </CardHeader>
                     <CardContent>
                         {requests.length > 0 ? (
                             <Table>
                                 <TableHeader>
                                     <TableRow>
-                                        <TableHead>Item</TableHead>
-                                        <TableHead>Project</TableHead>
-                                        <TableHead>Date</TableHead>
-                                        <TableHead>Status</TableHead>
+                                        <TableHead>{t('item')}</TableHead>
+                                        <TableHead>{t('project')}</TableHead>
+                                        <TableHead>{t('date')}</TableHead>
+                                        <TableHead>{t('status')}</TableHead>
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>
@@ -467,7 +469,7 @@ export default function SupplierDetailPage({ params }: { params: { id: string } 
                         ) : (
                             <div className="flex flex-col items-center justify-center gap-2 py-8 text-center text-muted-foreground">
                                 <ShoppingCart className="size-12" />
-                                <p>No purchase requests found for this supplier.</p>
+                                <p>{t('suppliers.no_procurement_requests')}</p>
                             </div>
                         )}
                     </CardContent>
@@ -476,18 +478,18 @@ export default function SupplierDetailPage({ params }: { params: { id: string } 
             <TabsContent value="financials" className="pt-4">
                 <Card>
                     <CardHeader>
-                        <CardTitle>Financial History</CardTitle>
-                        <CardDescription>A list of all payments made to this supplier.</CardDescription>
+                        <CardTitle>{t('clients.financial_history_title')}</CardTitle>
+                        <CardDescription>{t('suppliers.financial_history_desc')}</CardDescription>
                     </CardHeader>
                     <CardContent>
                        {transactions.length > 0 ? (
                            <Table>
                                <TableHeader>
                                    <TableRow>
-                                       <TableHead>Date</TableHead>
-                                       <TableHead>Description</TableHead>
-                                       <TableHead>Type</TableHead>
-                                       <TableHead className="text-right">Amount</TableHead>
+                                       <TableHead>{t('date')}</TableHead>
+                                       <TableHead>{t('description')}</TableHead>
+                                       <TableHead>{t('type')}</TableHead>
+                                       <TableHead className="text-right">{t('amount')}</TableHead>
                                    </TableRow>
                                </TableHeader>
                                <TableBody>
@@ -510,7 +512,7 @@ export default function SupplierDetailPage({ params }: { params: { id: string } 
                         ) : (
                              <div className="flex flex-col items-center justify-center gap-2 py-8 text-center text-muted-foreground">
                                 <DollarSign className="size-12" />
-                                <p>No financial records found for this supplier.</p>
+                                <p>{t('clients.no_financial_records')}</p>
                             </div>
                         )}
                     </CardContent>
@@ -522,18 +524,18 @@ export default function SupplierDetailPage({ params }: { params: { id: string } 
     <AlertDialog open={!!contractToDelete} onOpenChange={(open) => !open && setContractToDelete(null)}>
       <AlertDialogContent>
         <AlertDialogHeader>
-          <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+          <AlertDialogTitle>{t('are_you_sure')}</AlertDialogTitle>
           <AlertDialogDescription>
-            This action cannot be undone. This will permanently delete the contract "{contractToDelete?.title}".
+            {t('clients.delete_contract_confirm_desc', { title: contractToDelete?.title })}
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
-          <AlertDialogCancel onClick={() => setContractToDelete(null)}>Cancel</AlertDialogCancel>
+          <AlertDialogCancel onClick={() => setContractToDelete(null)}>{t('cancel')}</AlertDialogCancel>
           <AlertDialogAction onClick={handleDeleteContract} disabled={isDeletingContract} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
             {isDeletingContract ? (
-              <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Deleting...</>
+              <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> {t('deleting')}</>
             ) : (
-              <><Trash2 className="mr-2 h-4 w-4" /> Delete</>
+              <><Trash2 className="mr-2 h-4 w-4" /> {t('delete')}</>
             )}
           </AlertDialogAction>
         </AlertDialogFooter>
