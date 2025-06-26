@@ -29,8 +29,6 @@ import {
   ClipboardCheck,
   Receipt,
   User as UserIcon,
-  ListChecks,
-  Loader2,
   ListOrdered,
 } from 'lucide-react';
 import Link from 'next/link';
@@ -94,8 +92,8 @@ export function AppSidebar() {
     {
       items: [
         { href: '/clients', label: t('clients_sales'), icon: Contact },
-        { href: '/suppliers', label: t('suppliers'), icon: Truck },
-        { href: '/employees', label: t('employees'), icon: Users },
+        { href: '/suppliers', label: t('suppliers.page_title'), icon: Truck },
+        { href: '/employees', label: t('employees.page_title'), icon: Users },
       ],
     },
     {
