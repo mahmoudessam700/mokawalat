@@ -76,17 +76,17 @@ export function AppSidebar() {
     {
       items: [
         { href: '/dashboard', label: t('dashboard'), icon: LayoutDashboard },
-        { href: '/approvals', label: t('approvals'), icon: ClipboardCheck },
+        { href: '/approvals', label: t('approvals.page_title'), icon: ClipboardCheck },
         { href: '/activity-log', label: t('activity_log'), icon: History },
       ],
     },
     {
       items: [
         { href: '/projects', label: t('projects.page_title'), icon: Briefcase },
-        { href: '/assets', label: t('asset_management'), icon: Wrench },
-        { href: '/inventory', label: t('inventory'), icon: Warehouse },
-        { href: '/procurement', label: t('purchase_orders'), icon: ShoppingCart },
-        { href: '/material-requests', label: t('material_requests'), icon: ClipboardList },
+        { href: '/assets', label: t('assets.page_title'), icon: Wrench },
+        { href: '/inventory', label: t('inventory.page_title'), icon: Warehouse },
+        { href: '/procurement', label: t('procurement.page_title'), icon: ShoppingCart },
+        { href: '/material-requests', label: t('material_requests.page_title'), icon: ClipboardList },
       ],
     },
     {
@@ -98,15 +98,15 @@ export function AppSidebar() {
     },
     {
       items: [
-        { href: '/financials', label: t('financials'), icon: DollarSign },
-        { href: '/invoices', label: t('invoicing'), icon: Receipt },
+        { href: '/financials', label: t('financials.page_title'), icon: DollarSign },
+        { href: '/invoices', label: t('invoices.page_title'), icon: Receipt },
         { href: '/reports', label: t('reports'), icon: BarChart3 },
       ],
     },
      {
       items: [
-        { href: '/iso-compliance', label: t('iso_compliance'), icon: CheckSquare },
-        { href: '/roadmap', label: t('project_roadmap'), icon: ListOrdered },
+        { href: '/iso-compliance', label: t('iso_compliance_title'), icon: CheckSquare },
+        { href: '/roadmap', label: t('roadmap_title'), icon: ListOrdered },
       ],
     },
   ];
@@ -191,7 +191,7 @@ export function AppSidebar() {
          <Separator className="my-2" />
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-                <Button variant="ghost" className="w-full h-auto p-2">
+                <Button variant="ghost" className="w-full h-auto p-2 justify-start text-left">
                     <div className="flex items-center gap-3 w-full">
                         {isAuthLoading ? (
                         <>
@@ -209,7 +209,7 @@ export function AppSidebar() {
                             </Avatar>
                             <div className="flex flex-col overflow-hidden text-start">
                                 <span className="text-sm font-semibold truncate">{profile?.email || user.email}</span>
-                                <span className="text-xs text-muted-foreground capitalize">{profile?.role || 'User'}</span>
+                                <span className="text-xs text-muted-foreground capitalize">{t(`roles.${profile?.role || 'user'}`)}</span>
                             </div>
                         </>
                         ) : (
