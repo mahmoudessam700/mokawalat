@@ -6,8 +6,11 @@ import { ThemeToggle } from '@/components/theme-toggle';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, Palette } from 'lucide-react';
 import Link from 'next/link';
+import { useLanguage } from '@/hooks/use-language';
 
 export default function AppearanceSettingsPage() {
+  const { t } = useLanguage();
+
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-4">
@@ -19,26 +22,26 @@ export default function AppearanceSettingsPage() {
         </Button>
         <div>
           <h1 className="font-headline text-3xl font-bold tracking-tight">
-            Theme & Appearance
+            {t('theme_appearance_title')}
           </h1>
           <p className="text-muted-foreground">
-            Customize the look and feel of the application.
+            {t('theme_appearance_desc')}
           </p>
         </div>
       </div>
       
       <Card>
         <CardHeader>
-          <CardTitle>Appearance</CardTitle>
+          <CardTitle>{t('appearance')}</CardTitle>
           <CardDescription>
-            Configure the visual style of the application.
+            {t('appearance_desc')}
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="flex items-center justify-between rounded-lg border p-4">
             <div className="space-y-0.5">
-              <h3 className="font-medium">Theme Mode</h3>
-              <p className="text-sm text-muted-foreground">Select a light or dark theme for the interface.</p>
+              <h3 className="font-medium">{t('theme_mode')}</h3>
+              <p className="text-sm text-muted-foreground">{t('theme_mode_desc')}</p>
             </div>
             <ThemeToggle />
           </div>
@@ -48,9 +51,9 @@ export default function AppearanceSettingsPage() {
                   <Palette className="size-6" />
                 </div>
               <div>
-                <CardTitle className="text-lg">Color Customization</CardTitle>
+                <CardTitle className="text-lg">{t('color_customization')}</CardTitle>
                 <CardDescription>
-                  You can change the primary color of the application. Just ask me to use a different color like "ocean blue" or "ruby red".
+                  {t('color_customization_desc')}
                 </CardDescription>
               </div>
             </CardHeader>

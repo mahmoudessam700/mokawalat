@@ -16,6 +16,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
 import { getCompanyProfile, updateCompanyProfile, type CompanyProfileFormValues } from './actions';
 import { z } from 'zod';
+import { useLanguage } from '@/hooks/use-language';
 
 const companyProfileSchema = z.object({
   name: z.string().min(2, "Company name is required."),
@@ -31,6 +32,7 @@ export default function CompanyProfilePage() {
   const [profile, setProfile] = useState<CompanyProfileFormValues | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
+  const { t } = useLanguage();
 
   const form = useForm<CompanyProfileFormValues>({
     resolver: zodResolver(companyProfileSchema),
@@ -71,9 +73,9 @@ export default function CompanyProfilePage() {
     
     const result = await updateCompanyProfile(formData);
     if (result.errors) {
-      toast({ variant: 'destructive', title: 'Error', description: result.message });
+      toast({ variant: 'destructive', title: t('error'), description: result.message });
     } else {
-      toast({ title: 'Success', description: result.message });
+      toast({ title: t('success'), description: result.message });
       const data = await getCompanyProfile();
       if (data) {
           setProfile(data);
@@ -105,43 +107,43 @@ export default function CompanyProfilePage() {
             <Button asChild variant="outline" size="icon">
               <Link href="/settings">
                 <ArrowLeft />
-                <span className="sr-only">Back to Settings</span>
+                <span className="sr-only">{t('back_to_settings')}</span>
               </Link>
             </Button>
             <div>
-              <h1 className="font-headline text-3xl font-bold tracking-tight">Company Profile</h1>
-              <p className="text-muted-foreground">Manage your company's information.</p>
+              <h1 className="font-headline text-3xl font-bold tracking-tight">{t('company_profile_title')}</h1>
+              <p className="text-muted-foreground">{t('company_profile_desc')}</p>
             </div>
           </div>
           <Button type="submit" disabled={form.formState.isSubmitting}>
-            {form.formState.isSubmitting ? <><Loader2 className="mr-2" />Saving...</> : 'Save Changes'}
+            {form.formState.isSubmitting ? <><Loader2 className="mr-2" />{t('saving')}</> : t('save_changes')}
           </Button>
         </div>
         
         <Card>
           <CardHeader>
-            <CardTitle>Company Details</CardTitle>
-            <CardDescription>This information may be used on reports and invoices.</CardDescription>
+            <CardTitle>{t('company_details_title')}</CardTitle>
+            <CardDescription>{t('company_details_desc')}</CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
              <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
                 <div className="md:col-span-2 space-y-4">
-                  <FormField control={form.control} name="name" render={({ field }) => (<FormItem><FormLabel>Company Name</FormLabel><FormControl><Input placeholder="Your Company Name" {...field} /></FormControl><FormMessage /></FormItem>)} />
-                  <FormField control={form.control} name="address" render={({ field }) => (<FormItem><FormLabel>Address</FormLabel><FormControl><Textarea placeholder="Company Address" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                  <FormField control={form.control} name="name" render={({ field }) => (<FormItem><FormLabel>{t('company_name')}</FormLabel><FormControl><Input placeholder={t('company_name_placeholder')} {...field} /></FormControl><FormMessage /></FormItem>)} />
+                  <FormField control={form.control} name="address" render={({ field }) => (<FormItem><FormLabel>{t('address')}</FormLabel><FormControl><Textarea placeholder={t('address_placeholder')} {...field} /></FormControl><FormMessage /></FormItem>)} />
                   <div className="grid grid-cols-2 gap-4">
-                    <FormField control={form.control} name="phone" render={({ field }) => (<FormItem><FormLabel>Phone</FormLabel><FormControl><Input placeholder="Company Phone" {...field} /></FormControl><FormMessage /></FormItem>)} />
-                    <FormField control={form.control} name="email" render={({ field }) => (<FormItem><FormLabel>Email</FormLabel><FormControl><Input type="email" placeholder="Company Email" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                    <FormField control={form.control} name="phone" render={({ field }) => (<FormItem><FormLabel>{t('phone')}</FormLabel><FormControl><Input placeholder={t('phone_placeholder')} {...field} /></FormControl><FormMessage /></FormItem>)} />
+                    <FormField control={form.control} name="email" render={({ field }) => (<FormItem><FormLabel>{t('email')}</FormLabel><FormControl><Input type="email" placeholder={t('email_placeholder')} {...field} /></FormControl><FormMessage /></FormItem>)} />
                   </div>
                 </div>
                 <div className="space-y-2">
-                    <FormLabel>Company Logo</FormLabel>
+                    <FormLabel>{t('company_logo')}</FormLabel>
                     <Card className="flex items-center justify-center p-4 aspect-square">
                         {profile?.logoUrl ? (
                             <Image src={profile.logoUrl} alt="Company Logo" width={150} height={150} className="object-contain" />
                         ) : (
                             <div className="text-center text-muted-foreground flex flex-col items-center gap-2">
                                 <Building className="size-12"/>
-                                <span>No logo uploaded</span>
+                                <span>{t('no_logo_uploaded')}</span>
                             </div>
                         )}
                     </Card>

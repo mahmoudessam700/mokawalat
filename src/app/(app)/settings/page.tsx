@@ -8,48 +8,51 @@ import { useAuth } from '@/hooks/use-auth';
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useLanguage } from '@/hooks/use-language';
 
-const settingsLinks = [
+export default function SettingsPage() {
+  const { profile, isLoading } = useAuth();
+  const router = useRouter();
+  const { t } = useLanguage();
+  
+  const settingsLinks = [
    {
     href: '/settings/company',
-    title: 'Company Profile',
-    description: 'Manage your company name, logo, and details.',
+    title: t('settings_links.company_profile'),
+    description: t('settings_links.company_profile_desc'),
     icon: <Building className="size-8" />,
     disabled: false,
   },
   {
     href: '/settings/users',
-    title: 'User Management',
-    description: 'Manage user accounts and roles.',
+    title: t('settings_links.user_management'),
+    description: t('settings_links.user_management_desc'),
     icon: <Users className="size-8" />,
     disabled: false,
   },
   {
     href: '/settings/appearance',
-    title: 'Theme & Appearance',
-    description: 'Customize the look and feel of the application.',
+    title: t('settings_links.theme_appearance'),
+    description: t('settings_links.theme_appearance_desc'),
     icon: <Palette className="size-8" />,
     disabled: false,
   },
   {
     href: '/settings/categories',
-    title: 'Inventory Categories',
-    description: 'Manage categories for inventory items.',
+    title: t('settings_links.inventory_categories'),
+    description: t('settings_links.inventory_categories_desc'),
     icon: <Shapes className="size-8" />,
     disabled: false,
   },
   {
     href: '/settings/warehouses',
-    title: 'Warehouse Management',
-    description: 'Manage all company warehouses and locations.',
+    title: t('settings_links.warehouse_management'),
+    description: t('settings_links.warehouse_management_desc'),
     icon: <Warehouse className="size-8" />,
     disabled: false,
   },
 ];
 
-export default function SettingsPage() {
-  const { profile, isLoading } = useAuth();
-  const router = useRouter();
 
   useEffect(() => {
     if (!isLoading && profile?.role !== 'admin') {
@@ -78,10 +81,10 @@ export default function SettingsPage() {
     <div className="space-y-6">
       <div>
         <h1 className="font-headline text-3xl font-bold tracking-tight">
-          Settings
+          {t('settings')}
         </h1>
         <p className="text-muted-foreground">
-          Manage your account and application settings.
+          {t('settings_desc_page')}
         </p>
       </div>
 

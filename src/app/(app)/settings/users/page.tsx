@@ -48,6 +48,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import Link from 'next/link';
 import { useAuth, type UserRole } from '@/hooks/use-auth';
 import { useRouter } from 'next/navigation';
+import { useLanguage } from '@/hooks/use-language';
 
 type User = {
   uid: string;
@@ -75,6 +76,7 @@ export default function UserManagementPage() {
   const { toast } = useToast();
   const { profile, isLoading: isAuthLoading } = useAuth();
   const router = useRouter();
+  const { t } = useLanguage();
   
   useEffect(() => {
     if (!isAuthLoading && profile?.role !== 'admin') {
@@ -121,12 +123,12 @@ export default function UserManagementPage() {
     if (result.errors) {
       toast({
         variant: 'destructive',
-        title: 'Error',
+        title: t('error'),
         description: result.message,
       });
     } else {
       toast({
-        title: 'Success',
+        title: t('success'),
         description: result.message,
       });
       setIsFormDialogOpen(false);
@@ -171,32 +173,32 @@ export default function UserManagementPage() {
         <Button asChild variant="outline" size="icon">
           <Link href="/settings">
             <ArrowLeft />
-            <span className="sr-only">Back to Settings</span>
+            <span className="sr-only">{t('back_to_settings')}</span>
           </Link>
         </Button>
         <div>
           <h1 className="font-headline text-3xl font-bold tracking-tight">
-            User Management
+            {t('user_management_title')}
           </h1>
           <p className="text-muted-foreground">
-            Manage user accounts and assign roles.
+            {t('user_management_desc')}
           </p>
         </div>
       </div>
 
       <Card>
         <CardHeader>
-          <CardTitle>User List</CardTitle>
-          <CardDescription>A list of all registered users in the system.</CardDescription>
+          <CardTitle>{t('user_list')}</CardTitle>
+          <CardDescription>{t('user_list_desc')}</CardDescription>
         </CardHeader>
         <CardContent>
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Email</TableHead>
-                <TableHead>Role</TableHead>
+                <TableHead>{t('email')}</TableHead>
+                <TableHead>{t('role')}</TableHead>
                 <TableHead>
-                  <span className="sr-only">Actions</span>
+                  <span className="sr-only">{t('actions')}</span>
                 </TableHead>
               </TableRow>
             </TableHeader>
@@ -218,8 +220,8 @@ export default function UserManagementPage() {
                   <TableRow key={user.uid}>
                     <TableCell className="font-medium">{user.email}</TableCell>
                     <TableCell>
-                      <Badge variant={roleVariant[user.role]}>
-                        {user.role}
+                      <Badge variant={roleVariant[user.role]} className="capitalize">
+                        {t(`roles.${user.role}`)}
                       </Badge>
                     </TableCell>
                     <TableCell>
@@ -227,16 +229,16 @@ export default function UserManagementPage() {
                         <DropdownMenuTrigger asChild>
                           <Button aria-haspopup="true" size="icon" variant="ghost" disabled={user.uid === profile.uid}>
                             <MoreHorizontal className="h-4 w-4" />
-                            <span className="sr-only">Toggle menu</span>
+                            <span className="sr-only">{t('toggle_menu')}</span>
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
-                          <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                          <DropdownMenuLabel>{t('actions')}</DropdownMenuLabel>
                           <DropdownMenuItem onSelect={() => {
                             setUserToEdit(user);
                             setIsFormDialogOpen(true);
                           }}>
-                            Change Role
+                            {t('change_role')}
                           </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
@@ -246,7 +248,7 @@ export default function UserManagementPage() {
               ) : (
                 <TableRow>
                   <TableCell colSpan={3} className="h-24 text-center">
-                    No users found.
+                    {t('no_users_found')}
                   </TableCell>
                 </TableRow>
               )}
@@ -258,9 +260,9 @@ export default function UserManagementPage() {
       <Dialog open={isFormDialogOpen} onOpenChange={handleFormDialogOpenChange}>
           <DialogContent className="sm:max-w-[425px]">
             <DialogHeader>
-              <DialogTitle>Change User Role</DialogTitle>
+              <DialogTitle>{t('change_user_role_title')}</DialogTitle>
               <DialogDescription>
-                Change the role for <span className="font-semibold">{userToEdit?.email}</span>.
+                {t('change_user_role_desc', { email: userToEdit?.email })}
               </DialogDescription>
             </DialogHeader>
             <Form {...form}>
@@ -270,17 +272,17 @@ export default function UserManagementPage() {
                   name="role"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Role</FormLabel>
+                      <FormLabel>{t('role')}</FormLabel>
                       <Select onValueChange={field.onChange} defaultValue={field.value}>
                         <FormControl>
                           <SelectTrigger>
-                            <SelectValue placeholder="Select role" />
+                            <SelectValue placeholder={t('select_role')} />
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          <SelectItem value="admin">Admin</SelectItem>
-                          <SelectItem value="manager">Manager</SelectItem>
-                          <SelectItem value="user">User</SelectItem>
+                          <SelectItem value="admin">{t('roles.admin')}</SelectItem>
+                          <SelectItem value="manager">{t('roles.manager')}</SelectItem>
+                          <SelectItem value="user">{t('roles.user')}</SelectItem>
                         </SelectContent>
                       </Select>
                       <FormMessage />
@@ -292,9 +294,9 @@ export default function UserManagementPage() {
                     {form.formState.isSubmitting ? (
                       <>
                         <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        Saving...
+                        {t('saving')}
                       </>
-                    ) : 'Save Changes'}
+                    ) : t('save_changes')}
                   </Button>
                 </DialogFooter>
               </form>

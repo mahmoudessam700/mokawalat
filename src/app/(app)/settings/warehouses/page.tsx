@@ -51,6 +51,7 @@ import { firestore } from '@/lib/firebase';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useAuth } from '@/hooks/use-auth';
 import Link from 'next/link';
+import { useLanguage } from '@/hooks/use-language';
 
 const warehouseFormSchema = z.object({
   name: z.string().min(2, "Warehouse name must be at least 2 characters long."),
@@ -73,6 +74,7 @@ export default function WarehousesPage() {
   const [isDeleting, setIsDeleting] = useState(false);
   const { toast } = useToast();
   const { profile } = useAuth();
+  const { t } = useLanguage();
 
   useEffect(() => {
     const q = query(collection(firestore, 'warehouses'), orderBy('name', 'asc'));
@@ -107,9 +109,9 @@ export default function WarehousesPage() {
       : await addWarehouse(values);
 
     if (result.errors) {
-      toast({ variant: 'destructive', title: 'Error', description: result.message });
+      toast({ variant: 'destructive', title: t('error'), description: result.message });
     } else {
-      toast({ title: 'Success', description: result.message });
+      toast({ title: t('success'), description: result.message });
       setIsFormDialogOpen(false);
       setWarehouseToEdit(null);
     }
@@ -122,9 +124,9 @@ export default function WarehousesPage() {
     setIsDeleting(false);
 
     if (result.success) {
-      toast({ title: 'Success', description: result.message });
+      toast({ title: t('success'), description: result.message });
     } else {
-      toast({ variant: 'destructive', title: 'Error', description: result.message });
+      toast({ variant: 'destructive', title: t('error'), description: result.message });
     }
     setIsDeleteDialogOpen(false);
     setWarehouseToDelete(null);
@@ -142,40 +144,40 @@ export default function WarehousesPage() {
             <Button asChild variant="outline" size="icon">
                 <Link href="/settings">
                     <ArrowLeft />
-                    <span className="sr-only">Back to Settings</span>
+                    <span className="sr-only">{t('back_to_settings')}</span>
                 </Link>
             </Button>
             <div>
-                <h1 className="font-headline text-3xl font-bold tracking-tight">Warehouse Management</h1>
-                <p className="text-muted-foreground">Manage all company warehouses and storage locations.</p>
+                <h1 className="font-headline text-3xl font-bold tracking-tight">{t('warehouse_management_title')}</h1>
+                <p className="text-muted-foreground">{t('warehouse_management_desc')}</p>
             </div>
         </div>
 
       <Card>
         <CardHeader className="flex-row items-center justify-between">
           <div>
-            <CardTitle>Warehouse List</CardTitle>
-            <CardDescription>A list of all warehouses in the system.</CardDescription>
+            <CardTitle>{t('warehouse_list')}</CardTitle>
+            <CardDescription>{t('warehouse_list_desc')}</CardDescription>
           </div>
           {profile?.role === 'admin' && (
             <Dialog open={isFormDialogOpen} onOpenChange={handleFormDialogOpenChange}>
             <DialogTrigger asChild>
                 <Button onClick={() => setWarehouseToEdit(null)}>
                 <PlusCircle className="mr-2" />
-                Add Warehouse
+                {t('add_warehouse')}
                 </Button>
             </DialogTrigger>
             <DialogContent className="sm:max-w-[480px]">
                 <DialogHeader>
-                    <DialogTitle>{warehouseToEdit ? 'Edit Warehouse' : 'Add New Warehouse'}</DialogTitle>
-                    <DialogDescription>{warehouseToEdit ? "Update warehouse details." : "Fill in the details to add a new warehouse."}</DialogDescription>
+                    <DialogTitle>{warehouseToEdit ? t('edit_warehouse') : t('add_new_warehouse')}</DialogTitle>
+                    <DialogDescription>{warehouseToEdit ? t('edit_warehouse_desc') : t('add_new_warehouse_desc')}</DialogDescription>
                 </DialogHeader>
                 <Form {...form}>
                     <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 py-4">
-                        <FormField control={form.control} name="name" render={({ field }) => (<FormItem><FormLabel>Warehouse Name</FormLabel><FormControl><Input placeholder="e.g., Main Warehouse" {...field} /></FormControl><FormMessage /></FormItem>)} />
-                        <FormField control={form.control} name="location" render={({ field }) => (<FormItem><FormLabel>Location (Optional)</FormLabel><FormControl><Input placeholder="e.g., 10th of Ramadan City" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                        <FormField control={form.control} name="name" render={({ field }) => (<FormItem><FormLabel>{t('warehouse_name')}</FormLabel><FormControl><Input placeholder={t('warehouse_name_placeholder')} {...field} /></FormControl><FormMessage /></FormItem>)} />
+                        <FormField control={form.control} name="location" render={({ field }) => (<FormItem><FormLabel>{t('location_optional')}</FormLabel><FormControl><Input placeholder={t('location_placeholder')} {...field} /></FormControl><FormMessage /></FormItem>)} />
                         <DialogFooter>
-                            <Button type="submit" disabled={form.formState.isSubmitting}>{form.formState.isSubmitting ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Saving...</> : (warehouseToEdit ? 'Save Changes' : 'Save Warehouse')}</Button>
+                            <Button type="submit" disabled={form.formState.isSubmitting}>{form.formState.isSubmitting ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />{t('saving')}</> : (warehouseToEdit ? t('save_changes') : t('save_warehouse'))}</Button>
                         </DialogFooter>
                     </form>
                 </Form>
@@ -187,9 +189,9 @@ export default function WarehousesPage() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Warehouse Name</TableHead>
-                <TableHead>Location</TableHead>
-                <TableHead className="text-right"><span className="sr-only">Actions</span></TableHead>
+                <TableHead>{t('warehouse_name')}</TableHead>
+                <TableHead>{t('location')}</TableHead>
+                <TableHead className="text-right"><span className="sr-only">{t('actions')}</span></TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -209,11 +211,11 @@ export default function WarehousesPage() {
                         <TableCell className="text-right">
                         {profile?.role === 'admin' && (
                             <DropdownMenu>
-                            <DropdownMenuTrigger asChild><Button aria-haspopup="true" size="icon" variant="ghost"><MoreHorizontal className="h-4 w-4" /><span className="sr-only">Toggle menu</span></Button></DropdownMenuTrigger>
+                            <DropdownMenuTrigger asChild><Button aria-haspopup="true" size="icon" variant="ghost"><MoreHorizontal className="h-4 w-4" /><span className="sr-only">{t('toggle_menu')}</span></Button></DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
-                                <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                                <DropdownMenuItem onSelect={() => { setWarehouseToEdit(warehouse); setIsFormDialogOpen(true); }}>Edit</DropdownMenuItem>
-                                <DropdownMenuItem className="text-destructive" onSelect={() => { setWarehouseToDelete(warehouse); setIsDeleteDialogOpen(true); }}><Trash2 className="mr-2 h-4 w-4" />Delete</DropdownMenuItem>
+                                <DropdownMenuLabel>{t('actions')}</DropdownMenuLabel>
+                                <DropdownMenuItem onSelect={() => { setWarehouseToEdit(warehouse); setIsFormDialogOpen(true); }}>{t('edit')}</DropdownMenuItem>
+                                <DropdownMenuItem className="text-destructive" onSelect={() => { setWarehouseToDelete(warehouse); setIsDeleteDialogOpen(true); }}><Trash2 className="mr-2 h-4 w-4" />{t('delete')}</DropdownMenuItem>
                             </DropdownMenuContent>
                             </DropdownMenu>
                         )}
@@ -225,7 +227,7 @@ export default function WarehousesPage() {
                   <TableCell colSpan={3} className="h-24 text-center">
                     <div className="flex flex-col items-center justify-center gap-2 text-muted-foreground">
                         <WarehouseIcon className="size-12" />
-                        No warehouses found. Add one to get started.
+                        {t('no_warehouses_found')}
                     </div>
                   </TableCell>
                 </TableRow>
@@ -238,16 +240,16 @@ export default function WarehousesPage() {
     <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
         <AlertDialogContent>
             <AlertDialogHeader>
-                <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-                <AlertDialogDescription>This will permanently delete the warehouse: "{warehouseToDelete?.name}". This action cannot be undone.</AlertDialogDescription>
+                <AlertDialogTitle>{t('are_you_sure')}</AlertDialogTitle>
+                <AlertDialogDescription>{t('delete_warehouse_confirm_desc', { name: warehouseToDelete?.name })}</AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
-                <AlertDialogCancel onClick={() => setWarehouseToDelete(null)}>Cancel</AlertDialogCancel>
+                <AlertDialogCancel onClick={() => setWarehouseToDelete(null)}>{t('cancel')}</AlertDialogCancel>
                 <AlertDialogAction onClick={handleDeleteWarehouse} disabled={isDeleting} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
                   {isDeleting ? (
-                    <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Deleting...</>
+                    <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> {t('deleting')}</>
                   ) : (
-                    <><Trash2 className="mr-2 h-4 w-4" /> Delete</>
+                    <><Trash2 className="mr-2 h-4 w-4" /> {t('delete')}</>
                   )}
                 </AlertDialogAction>
             </AlertDialogFooter>
