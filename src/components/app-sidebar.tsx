@@ -157,8 +157,8 @@ export function AppSidebar() {
           <span className="font-headline text-xl font-semibold">Mokawalat</span>
         </div>
       </SidebarHeader>
-      <SidebarContent className="flex flex-col p-2">
-        <SidebarMenu className="flex-1">
+      <SidebarContent className="flex flex-col">
+        <SidebarMenu className="flex-1 p-2">
            {menuGroups.map((group, index) => (
             <React.Fragment key={index}>
               {group.items.map((item) => (
