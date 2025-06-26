@@ -63,45 +63,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Button } from './ui/button';
-
-const menuGroups = [
-  {
-    items: [
-      { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
-      { href: '/approvals', label: 'Approvals', icon: ClipboardCheck },
-      { href: '/activity-log', label: 'Activity Log', icon: History },
-    ],
-  },
-  {
-    items: [
-      { href: '/projects', label: 'Projects', icon: Briefcase },
-      { href: '/assets', label: 'Asset Management', icon: Wrench },
-      { href: '/inventory', label: 'Inventory', icon: Warehouse },
-      { href: '/procurement', label: 'Purchase Orders', icon: ShoppingCart },
-      { href: '/material-requests', label: 'Material Requests', icon: ClipboardList },
-    ],
-  },
-  {
-    items: [
-      { href: '/clients', label: 'Clients & Sales', icon: Contact },
-      { href: '/suppliers', label: 'Suppliers', icon: Truck },
-      { href: '/employees', label: 'Employees', icon: Users },
-    ],
-  },
-  {
-    items: [
-      { href: '/financials', label: 'Financials', icon: DollarSign },
-      { href: '/invoices', label: 'Invoicing', icon: Receipt },
-      { href: '/reports', label: 'Reports', icon: BarChart3 },
-    ],
-  },
-   {
-    items: [
-      { href: '/iso-compliance', label: 'ISO Compliance', icon: CheckSquare },
-      { href: '/roadmap', label: 'Project Roadmap', icon: ListOrdered },
-    ],
-  },
-];
+import { useLanguage } from '@/hooks/use-language';
 
 
 export function AppSidebar() {
@@ -110,6 +72,46 @@ export function AppSidebar() {
   const { toast } = useToast();
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const { user, profile, isLoading: isAuthLoading } = useAuth();
+  const { t } = useLanguage();
+
+  const menuGroups = [
+    {
+      items: [
+        { href: '/dashboard', label: t('dashboard'), icon: LayoutDashboard },
+        { href: '/approvals', label: t('approvals'), icon: ClipboardCheck },
+        { href: '/activity-log', label: t('activity_log'), icon: History },
+      ],
+    },
+    {
+      items: [
+        { href: '/projects', label: t('projects'), icon: Briefcase },
+        { href: '/assets', label: t('asset_management'), icon: Wrench },
+        { href: '/inventory', label: t('inventory'), icon: Warehouse },
+        { href: '/procurement', label: t('purchase_orders'), icon: ShoppingCart },
+        { href: '/material-requests', label: t('material_requests'), icon: ClipboardList },
+      ],
+    },
+    {
+      items: [
+        { href: '/clients', label: t('clients_sales'), icon: Contact },
+        { href: '/suppliers', label: t('suppliers'), icon: Truck },
+        { href: '/employees', label: t('employees'), icon: Users },
+      ],
+    },
+    {
+      items: [
+        { href: '/financials', label: t('financials'), icon: DollarSign },
+        { href: '/invoices', label: t('invoicing'), icon: Receipt },
+        { href: '/reports', label: t('reports'), icon: BarChart3 },
+      ],
+    },
+     {
+      items: [
+        { href: '/iso-compliance', label: t('iso_compliance'), icon: CheckSquare },
+        { href: '/roadmap', label: t('project_roadmap'), icon: ListOrdered },
+      ],
+    },
+  ];
 
   const isActive = (href: string) => {
     if (href === '/dashboard' || href === '/approvals' || href === '/reports' || href === '/activity-log' || href === '/iso-compliance' || href === '/roadmap') {
@@ -176,10 +178,10 @@ export function AppSidebar() {
               <>
                 <Separator className="my-1" />
                 <SidebarMenuItem>
-                    <SidebarMenuButton asChild isActive={isActive('/settings')} tooltip="Settings">
+                    <SidebarMenuButton asChild isActive={isActive('/settings')} tooltip={t('settings')}>
                         <Link href="/settings">
                             <Settings />
-                            <span>Settings</span>
+                            <span>{t('settings')}</span>
                         </Link>
                     </SidebarMenuButton>
                 </SidebarMenuItem>
@@ -226,14 +228,14 @@ export function AppSidebar() {
                 <DropdownMenuItem asChild>
                     <Link href="/profile">
                         <UserIcon className="mr-2" />
-                        <span>Profile</span>
+                        <span>{t('profile')}</span>
                     </Link>
                 </DropdownMenuItem>
                 {profile?.role === 'admin' && (
                     <DropdownMenuItem asChild>
                         <Link href="/settings">
                             <Settings className="mr-2" />
-                            <span>Settings</span>
+                            <span>{t('settings')}</span>
                         </Link>
                     </DropdownMenuItem>
                 )}
@@ -241,7 +243,7 @@ export function AppSidebar() {
                 <AlertDialogTrigger asChild>
                     <DropdownMenuItem className="text-destructive focus:bg-destructive/10 focus:text-destructive" onSelect={(e) => e.preventDefault()}>
                         <LogOut className="mr-2" />
-                        <span>Logout</span>
+                        <span>{t('logout')}</span>
                     </DropdownMenuItem>
                 </AlertDialogTrigger>
             </DropdownMenuContent>

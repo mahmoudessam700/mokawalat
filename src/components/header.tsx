@@ -3,6 +3,7 @@ import { SidebarTrigger } from '@/components/ui/sidebar';
 import { GlobalSearch } from './global-search';
 import { ThemeToggle } from './theme-toggle';
 import { NotificationsPopover } from './notifications-popover';
+import { LanguageSwitcher } from './language-switcher';
 
 export function Header() {
   return (
@@ -15,6 +16,7 @@ export function Header() {
       </div>
       <div className="ml-auto flex items-center gap-2">
         <NotificationsPopover />
+        <LanguageSwitcher />
         <ThemeToggle />
       </div>
     </header>

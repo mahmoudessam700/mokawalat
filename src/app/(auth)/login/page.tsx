@@ -19,6 +19,7 @@ import { auth } from '@/lib/firebase';
 import { useRouter } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2 } from 'lucide-react';
+import { useLanguage } from '@/hooks/use-language';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -26,6 +27,7 @@ export default function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const { t } = useLanguage();
 
   const handleLogin = async (e: FormEvent) => {
     e.preventDefault();
@@ -60,16 +62,16 @@ export default function LoginPage() {
         <div className="mb-4 flex justify-center">
           <Logo className="size-12 text-primary" />
         </div>
-        <CardTitle className="font-headline text-2xl font-bold">Welcome Back</CardTitle>
+        <CardTitle className="font-headline text-2xl font-bold">{t('login_welcome')}</CardTitle>
         <CardDescription>
-          Enter your email below to login to your ERP
+          {t('login_desc')}
         </CardDescription>
       </CardHeader>
       <CardContent>
         <form onSubmit={handleLogin}>
           <div className="grid gap-4">
             <div className="grid gap-2">
-              <Label htmlFor="email">Email</Label>
+              <Label htmlFor="email">{t('email')}</Label>
               <Input
                 id="email"
                 type="email"
@@ -82,12 +84,12 @@ export default function LoginPage() {
             </div>
             <div className="grid gap-2">
               <div className="flex items-center">
-                <Label htmlFor="password">Password</Label>
+                <Label htmlFor="password">{t('password')}</Label>
                 <Link
                   href="/forgot-password"
                   className="ml-auto inline-block text-sm underline"
                 >
-                  Forgot your password?
+                  {t('forgot_password')}
                 </Link>
               </div>
               <Input
@@ -101,14 +103,14 @@ export default function LoginPage() {
             </div>
             <Button type="submit" className="w-full" disabled={isLoading}>
               {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              Login
+              {t('login_button')}
             </Button>
           </div>
         </form>
         <div className="mt-4 text-center text-sm">
-          Don&apos;t have an account?{' '}
+          {t('no_account')}{' '}
           <Link href="/signup" className="underline">
-            Sign up
+            {t('signup_link')}
           </Link>
         </div>
       </CardContent>
