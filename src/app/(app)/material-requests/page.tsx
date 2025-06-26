@@ -29,6 +29,7 @@ import Link from 'next/link';
 import { useAuth } from '@/hooks/use-auth';
 import { PackageCheck, PackageX } from 'lucide-react';
 import { updateMaterialRequestStatus } from './actions';
+import { useLanguage } from '@/hooks/use-language';
 
 type RequestStatus = 'Pending' | 'Approved' | 'Rejected';
 
@@ -60,6 +61,7 @@ export default function MaterialRequestsPage() {
   const [statusFilter, setStatusFilter] = useState('All');
   const { toast } = useToast();
   const { profile } = useAuth();
+  const { t } = useLanguage();
 
   useEffect(() => {
     const unsubscribes: (() => void)[] = [];
@@ -95,9 +97,9 @@ export default function MaterialRequestsPage() {
   async function handleRequestStatusUpdate(requestId: string, status: 'Approved' | 'Rejected') {
     const result = await updateMaterialRequestStatus(requestId, status);
     if (result.success) {
-      toast({ title: 'Success', description: result.message });
+      toast({ title: t('success'), description: result.message });
     } else {
-      toast({ variant: 'destructive', title: 'Error', description: result.message });
+      toast({ variant: 'destructive', title: t('error'), description: result.message });
     }
   }
 
@@ -105,27 +107,27 @@ export default function MaterialRequestsPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="font-headline text-3xl font-bold tracking-tight">Material Requests</h1>
-        <p className="text-muted-foreground">Approve or reject material requests from projects.</p>
+        <h1 className="font-headline text-3xl font-bold tracking-tight">{t('material_requests.page_title')}</h1>
+        <p className="text-muted-foreground">{t('material_requests.page_desc')}</p>
       </div>
 
       <Card>
         <CardHeader>
           <div className="flex justify-between items-center">
             <div>
-              <CardTitle>All Requests</CardTitle>
-              <CardDescription>A list of all material requests from inventory.</CardDescription>
+              <CardTitle>{t('material_requests.list_title')}</CardTitle>
+              <CardDescription>{t('material_requests.list_desc')}</CardDescription>
             </div>
             <div className="w-[180px]">
               <Select value={statusFilter} onValueChange={setStatusFilter}>
                 <SelectTrigger>
-                  <SelectValue placeholder="Filter by status" />
+                  <SelectValue placeholder={t('clients.filter_by_status')} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="All">All Statuses</SelectItem>
-                  <SelectItem value="Pending">Pending</SelectItem>
-                  <SelectItem value="Approved">Approved</SelectItem>
-                  <SelectItem value="Rejected">Rejected</SelectItem>
+                  <SelectItem value="All">{t('clients.all_statuses')}</SelectItem>
+                  <SelectItem value="Pending">{t('material_requests.status.Pending')}</SelectItem>
+                  <SelectItem value="Approved">{t('material_requests.status.Approved')}</SelectItem>
+                  <SelectItem value="Rejected">{t('material_requests.status.Rejected')}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -135,12 +137,12 @@ export default function MaterialRequestsPage() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Item</TableHead>
-                <TableHead>Quantity</TableHead>
-                <TableHead>Project</TableHead>
-                <TableHead>Requested On</TableHead>
-                <TableHead>Status</TableHead>
-                {['admin', 'manager'].includes(profile?.role || '') && <TableHead className="text-right">Actions</TableHead>}
+                <TableHead>{t('item')}</TableHead>
+                <TableHead>{t('inventory.quantity_label')}</TableHead>
+                <TableHead>{t('project')}</TableHead>
+                <TableHead>{t('procurement.requested_on')}</TableHead>
+                <TableHead>{t('status')}</TableHead>
+                {['admin', 'manager'].includes(profile?.role || '') && <TableHead className="text-right">{t('actions')}</TableHead>}
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -166,7 +168,7 @@ export default function MaterialRequestsPage() {
                         </Link>
                     </TableCell>
                     <TableCell>{req.requestedAt ? format(req.requestedAt.toDate(), 'PPP') : 'N/A'}</TableCell>
-                    <TableCell><Badge variant={statusVariant[req.status]}>{req.status}</Badge></TableCell>
+                    <TableCell><Badge variant={statusVariant[req.status]}>{t(`material_requests.status.${req.status}`)}</Badge></TableCell>
                     {['admin', 'manager'].includes(profile?.role || '') && (
                       <TableCell className="text-right">
                         {req.status === 'Pending' ? (
@@ -186,7 +188,7 @@ export default function MaterialRequestsPage() {
               ) : (
                 <TableRow>
                   <TableCell colSpan={['admin', 'manager'].includes(profile?.role || '') ? 6 : 5} className="h-24 text-center">
-                    No material requests match the current filter.
+                    {t('material_requests.no_requests_found')}
                   </TableCell>
                 </TableRow>
               )}
@@ -197,3 +199,5 @@ export default function MaterialRequestsPage() {
     </div>
   );
 }
+
+    

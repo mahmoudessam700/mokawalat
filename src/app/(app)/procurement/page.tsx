@@ -74,6 +74,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { format } from 'date-fns';
 import Link from 'next/link';
 import { useAuth } from '@/hooks/use-auth';
+import { useLanguage } from '@/hooks/use-language';
 
 type RequestStatus = 'Pending' | 'Approved' | 'Rejected' | 'Ordered' | 'Received';
 
@@ -140,6 +141,7 @@ export default function ProcurementPage() {
   const [isDeleting, setIsDeleting] = useState(false);
   const { toast } = useToast();
   const { profile } = useAuth();
+  const { t } = useLanguage();
   
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('All');
@@ -219,9 +221,9 @@ export default function ProcurementPage() {
         : await addPurchaseRequest(values);
 
     if (result.errors) {
-      toast({ variant: 'destructive', title: 'Error', description: result.message });
+      toast({ variant: 'destructive', title: t('error'), description: result.message });
     } else {
-      toast({ title: 'Success', description: result.message });
+      toast({ title: t('success'), description: result.message });
       setIsDialogOpen(false);
       setRequestToEdit(null);
     }
@@ -235,9 +237,9 @@ export default function ProcurementPage() {
     setIsDeleting(false);
 
     if (result.success) {
-      toast({ title: 'Success', description: result.message });
+      toast({ title: t('success'), description: result.message });
     } else {
-      toast({ variant: 'destructive', title: 'Error', description: result.message });
+      toast({ variant: 'destructive', title: t('error'), description: result.message });
     }
     setIsDeleteDialogOpen(false);
     setRequestToDelete(null);
@@ -246,18 +248,18 @@ export default function ProcurementPage() {
   async function handleStatusUpdate(id: string, status: 'Approved' | 'Rejected' | 'Ordered') {
     const result = await updatePurchaseRequestStatus(id, status);
     if (result.success) {
-        toast({ title: 'Success', description: result.message });
+        toast({ title: t('success'), description: result.message });
     } else {
-        toast({ variant: 'destructive', title: 'Error', description: result.message });
+        toast({ variant: 'destructive', title: t('error'), description: result.message });
     }
   }
 
   async function handleMarkAsReceived(id: string) {
     const result = await markPOAsReceived(id);
     if (result.success) {
-        toast({ title: 'Success', description: result.message });
+        toast({ title: t('success'), description: result.message });
     } else {
-        toast({ variant: 'destructive', title: 'Error', description: result.message });
+        toast({ variant: 'destructive', title: t('error'), description: result.message });
     }
   }
 
@@ -273,22 +275,22 @@ export default function ProcurementPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="font-headline text-3xl font-bold tracking-tight">Purchase Order Management</h1>
-          <p className="text-muted-foreground">Create and track all purchase orders for materials.</p>
+          <h1 className="font-headline text-3xl font-bold tracking-tight">{t('procurement.page_title')}</h1>
+          <p className="text-muted-foreground">{t('procurement.page_desc')}</p>
         </div>
         {profile?.role === 'admin' && (
             <Dialog open={isDialogOpen} onOpenChange={handleFormDialogOpenChange}>
             <DialogTrigger asChild>
                 <Button onClick={() => setRequestToEdit(null)}>
                 <PlusCircle className="mr-2" />
-                Create Purchase Order
+                {t('procurement.create_button')}
                 </Button>
             </DialogTrigger>
             <DialogContent className="sm:max-w-[480px]">
                 <DialogHeader>
-                <DialogTitle>{requestToEdit ? 'Edit Purchase Order' : 'New Purchase Order'}</DialogTitle>
+                <DialogTitle>{requestToEdit ? t('procurement.edit_title') : t('procurement.add_title')}</DialogTitle>
                 <DialogDescription>
-                    {requestToEdit ? "Update the details of the purchase order." : "Fill in the details to create a new purchase order."}
+                    {requestToEdit ? t('procurement.edit_desc') : t('procurement.add_desc')}
                 </DialogDescription>
                 </DialogHeader>
                 <Form {...form}>
@@ -298,11 +300,11 @@ export default function ProcurementPage() {
                       name="itemId"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Item</FormLabel>
+                          <FormLabel>{t('item')}</FormLabel>
                           <Select onValueChange={field.onChange} value={field.value}>
                             <FormControl>
                               <SelectTrigger>
-                                <SelectValue placeholder="Select an inventory item" />
+                                <SelectValue placeholder={t('procurement.item_placeholder')} />
                               </SelectTrigger>
                             </FormControl>
                             <SelectContent>
@@ -320,9 +322,9 @@ export default function ProcurementPage() {
                     name="quantity"
                     render={({ field }) => (
                         <FormItem>
-                        <FormLabel>Quantity</FormLabel>
+                        <FormLabel>{t('inventory.quantity_label')}</FormLabel>
                         <FormControl>
-                            <Input type="number" placeholder="e.g., 10" {...field} />
+                            <Input type="number" placeholder={t('inventory.quantity_placeholder')} {...field} />
                         </FormControl>
                         <FormMessage />
                         </FormItem>
@@ -334,16 +336,16 @@ export default function ProcurementPage() {
                         name="unitCost"
                         render={({ field }) => (
                             <FormItem>
-                            <FormLabel>Unit Cost (LE)</FormLabel>
+                            <FormLabel>{t('procurement.unit_cost_label')}</FormLabel>
                             <FormControl>
-                                <Input type="number" placeholder="e.g., 150.50" {...field} />
+                                <Input type="number" placeholder={t('procurement.unit_cost_placeholder')} {...field} />
                             </FormControl>
                             <FormMessage />
                             </FormItem>
                         )}
                         />
                          <FormItem>
-                            <FormLabel>Total Cost (LE)</FormLabel>
+                            <FormLabel>{t('procurement.total_cost_label')}</FormLabel>
                             <FormControl>
                                 <Input type="text" readOnly value={formatCurrency(totalCost)} className="font-semibold bg-muted" />
                             </FormControl>
@@ -354,11 +356,11 @@ export default function ProcurementPage() {
                     name="supplierId"
                     render={({ field }) => (
                         <FormItem>
-                        <FormLabel>Supplier</FormLabel>
+                        <FormLabel>{t('supplier')}</FormLabel>
                         <Select onValueChange={field.onChange} value={field.value}>
                             <FormControl>
                             <SelectTrigger>
-                                <SelectValue placeholder="Select a supplier" />
+                                <SelectValue placeholder={t('procurement.supplier_placeholder')} />
                             </SelectTrigger>
                             </FormControl>
                             <SelectContent>
@@ -378,11 +380,11 @@ export default function ProcurementPage() {
                     name="projectId"
                     render={({ field }) => (
                         <FormItem>
-                        <FormLabel>Project</FormLabel>
+                        <FormLabel>{t('project')}</FormLabel>
                         <Select onValueChange={field.onChange} value={field.value}>
                             <FormControl>
                             <SelectTrigger>
-                                <SelectValue placeholder="Select a project" />
+                                <SelectValue placeholder={t('procurement.project_placeholder')} />
                             </SelectTrigger>
                             </FormControl>
                             <SelectContent>
@@ -398,9 +400,9 @@ export default function ProcurementPage() {
                     <DialogFooter>
                     <Button type="submit" disabled={form.formState.isSubmitting}>
                         {form.formState.isSubmitting ? (
-                        <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Saving...</>
+                        <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> {t('saving')}</>
                         ) : (
-                        requestToEdit ? 'Save Changes' : 'Submit Order'
+                        requestToEdit ? t('save_changes') : t('procurement.submit_button')
                         )}
                     </Button>
                     </DialogFooter>
@@ -415,15 +417,15 @@ export default function ProcurementPage() {
         <CardHeader>
           <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
             <div>
-              <CardTitle>Purchase Orders</CardTitle>
-              <CardDescription>A list of all purchase orders in the system.</CardDescription>
+              <CardTitle>{t('purchase_orders')}</CardTitle>
+              <CardDescription>{t('procurement.list_desc')}</CardDescription>
             </div>
             <div className="flex flex-col items-stretch gap-2 md:flex-row md:items-center">
               <div className="relative w-full md:w-auto">
                 <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
                 <Input
                   type="search"
-                  placeholder="Search by item name..."
+                  placeholder={t('procurement.search_placeholder')}
                   className="w-full pl-8 md:w-[200px]"
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
@@ -431,21 +433,21 @@ export default function ProcurementPage() {
               </div>
               <Select value={statusFilter} onValueChange={setStatusFilter}>
                 <SelectTrigger className="w-full md:w-[150px]">
-                  <SelectValue placeholder="Filter by status" />
+                  <SelectValue placeholder={t('clients.filter_by_status')} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="All">All Statuses</SelectItem>
+                  <SelectItem value="All">{t('clients.all_statuses')}</SelectItem>
                   {requestStatuses.map(status => (
-                    <SelectItem key={status} value={status}>{status}</SelectItem>
+                    <SelectItem key={status} value={status}>{t(`procurement.status.${status}`)}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
               <Select value={projectFilter} onValueChange={setProjectFilter}>
                 <SelectTrigger className="w-full md:w-[180px]">
-                  <SelectValue placeholder="Filter by project" />
+                  <SelectValue placeholder={t('procurement.filter_by_project')} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="All">All Projects</SelectItem>
+                  <SelectItem value="All">{t('procurement.all_projects')}</SelectItem>
                   {projects.map(project => (
                     <SelectItem key={project.id} value={project.id}>{project.name}</SelectItem>
                   ))}
@@ -453,10 +455,10 @@ export default function ProcurementPage() {
               </Select>
                <Select value={supplierFilter} onValueChange={setSupplierFilter}>
                 <SelectTrigger className="w-full md:w-[180px]">
-                  <SelectValue placeholder="Filter by supplier" />
+                  <SelectValue placeholder={t('procurement.filter_by_supplier')} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="All">All Suppliers</SelectItem>
+                  <SelectItem value="All">{t('procurement.all_suppliers')}</SelectItem>
                   {suppliers.map(supplier => (
                     <SelectItem key={supplier.id} value={supplier.id}>{supplier.name}</SelectItem>
                   ))}
@@ -469,14 +471,14 @@ export default function ProcurementPage() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Item</TableHead>
-                <TableHead>Quantity</TableHead>
-                <TableHead className="hidden md:table-cell">Total Cost</TableHead>
-                <TableHead className="hidden md:table-cell">Supplier</TableHead>
-                <TableHead className="hidden lg:table-cell">Project</TableHead>
-                <TableHead className="hidden md:table-cell">Requested On</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead><span className="sr-only">Actions</span></TableHead>
+                <TableHead>{t('item')}</TableHead>
+                <TableHead>{t('inventory.quantity_label')}</TableHead>
+                <TableHead className="hidden md:table-cell">{t('procurement.total_cost_header')}</TableHead>
+                <TableHead className="hidden md:table-cell">{t('supplier')}</TableHead>
+                <TableHead className="hidden lg:table-cell">{t('project')}</TableHead>
+                <TableHead className="hidden md:table-cell">{t('procurement.requested_on')}</TableHead>
+                <TableHead>{t('status')}</TableHead>
+                <TableHead><span className="sr-only">{t('actions')}</span></TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -502,19 +504,19 @@ export default function ProcurementPage() {
                     <TableCell className="hidden md:table-cell">{supplierNames.get(request.supplierId) || 'N/A'}</TableCell>
                     <TableCell className="hidden lg:table-cell">{projectNames.get(request.projectId) || 'N/A'}</TableCell>
                     <TableCell className="hidden md:table-cell">{request.requestedAt ? format(request.requestedAt.toDate(), 'PPP') : 'N/A'}</TableCell>
-                    <TableCell><Badge variant={statusVariant[request.status]}>{request.status}</Badge></TableCell>
+                    <TableCell><Badge variant={statusVariant[request.status]}>{t(`procurement.status.${request.status}`)}</Badge></TableCell>
                     <TableCell>
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                           <Button aria-haspopup="true" size="icon" variant="ghost">
                             <MoreHorizontal className="h-4 w-4" />
-                            <span className="sr-only">Toggle menu</span>
+                            <span className="sr-only">{t('toggle_menu')}</span>
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
-                          <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                          <DropdownMenuLabel>{t('actions')}</DropdownMenuLabel>
                            <DropdownMenuItem asChild>
-                              <Link href={`/procurement/${request.id}`}>View Details</Link>
+                              <Link href={`/procurement/${request.id}`}>{t('view_details')}</Link>
                             </DropdownMenuItem>
                           {profile?.role === 'admin' && (
                             <>
@@ -523,24 +525,24 @@ export default function ProcurementPage() {
                                 <>
                                   <DropdownMenuItem onSelect={() => handleStatusUpdate(request.id, 'Approved')}>
                                     <CheckCircle2 className="mr-2 h-4 w-4" />
-                                    Approve
+                                    {t('procurement.approve_button')}
                                   </DropdownMenuItem>
                                   <DropdownMenuItem className="text-destructive" onSelect={() => handleStatusUpdate(request.id, 'Rejected')}>
                                     <XCircle className="mr-2 h-4 w-4" />
-                                    Reject
+                                    {t('procurement.reject_button')}
                                   </DropdownMenuItem>
                                 </>
                               )}
                               {request.status === 'Approved' && (
                                 <DropdownMenuItem onSelect={() => handleStatusUpdate(request.id, 'Ordered')}>
                                   <Send className="mr-2 h-4 w-4" />
-                                  Mark as Ordered
+                                  {t('procurement.mark_ordered_button')}
                                 </DropdownMenuItem>
                               )}
                               {request.status === 'Ordered' && (
                                 <DropdownMenuItem onSelect={() => handleMarkAsReceived(request.id)}>
                                     <ClipboardCheck className="mr-2 h-4 w-4" />
-                                    Mark as Received
+                                    {t('procurement.mark_received_button')}
                                 </DropdownMenuItem>
                               )}
                               
@@ -550,7 +552,7 @@ export default function ProcurementPage() {
                                   <DropdownMenuItem onSelect={() => {
                                     setRequestToEdit(request);
                                     setIsDialogOpen(true);
-                                  }}>Edit</DropdownMenuItem>
+                                  }}>{t('edit')}</DropdownMenuItem>
                                   <DropdownMenuItem
                                     className="text-destructive"
                                     onSelect={() => {
@@ -559,7 +561,7 @@ export default function ProcurementPage() {
                                     }}
                                   >
                                     <Trash2 className="mr-2 h-4 w-4" />
-                                    Delete
+                                    {t('delete')}
                                   </DropdownMenuItem>
                                 </>
                               )}
@@ -573,7 +575,7 @@ export default function ProcurementPage() {
               ) : (
                 <TableRow>
                   <TableCell colSpan={8} className="h-24 text-center">
-                    {requests.length > 0 ? "No purchase orders match the current filters." : "No purchase orders found. Create one to get started."}
+                    {requests.length > 0 ? t('procurement.no_po_match_filters') : t('procurement.no_po_found')}
                   </TableCell>
                 </TableRow>
               )}
@@ -585,22 +587,22 @@ export default function ProcurementPage() {
      <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
         <AlertDialogContent>
             <AlertDialogHeader>
-                <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                <AlertDialogTitle>{t('are_you_sure')}</AlertDialogTitle>
                 <AlertDialogDescription>
-                    This action cannot be undone. This will permanently delete the purchase order for "{requestToDelete?.itemName}".
+                    {t('procurement.delete_confirm_desc', { name: requestToDelete?.itemName })}
                 </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
-                <AlertDialogCancel onClick={() => setRequestToDelete(null)}>Cancel</AlertDialogCancel>
+                <AlertDialogCancel onClick={() => setRequestToDelete(null)}>{t('cancel')}</AlertDialogCancel>
                 <AlertDialogAction
                     onClick={handleDeleteRequest}
                     disabled={isDeleting}
                     className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                 >
                   {isDeleting ? (
-                    <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Deleting...</>
+                    <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> {t('deleting')}</>
                   ) : (
-                    <><Trash2 className="mr-2 h-4 w-4" /> Delete</>
+                    <><Trash2 className="mr-2 h-4 w-4" /> {t('delete')}</>
                   )}
                 </AlertDialogAction>
             </AlertDialogFooter>
@@ -609,3 +611,5 @@ export default function ProcurementPage() {
     </>
   );
 }
+
+    

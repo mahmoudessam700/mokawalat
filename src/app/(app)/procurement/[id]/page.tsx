@@ -13,6 +13,7 @@ import Link from 'next/link';
 import { format } from 'date-fns';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { useLanguage } from '@/hooks/use-language';
 
 type RequestStatus = 'Pending' | 'Approved' | 'Rejected' | 'Ordered' | 'Received';
 type ProjectStatus = 'In Progress' | 'Planning' | 'Completed' | 'On Hold';
@@ -74,6 +75,7 @@ export default function ProcurementDetailPage({ params }: { params: { id: string
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const requestId = params.id;
+  const { t } = useLanguage();
 
   useEffect(() => {
     if (!requestId) return;
@@ -109,12 +111,12 @@ export default function ProcurementDetailPage({ params }: { params: { id: string
             }
 
         } else {
-            setError('Purchase Order not found.');
+            setError(t('procurement.detail.not_found'));
         }
         setIsLoading(false);
     }, (err) => {
         console.error('Error fetching purchase order:', err);
-        setError('Failed to fetch purchase order details.');
+        setError(t('procurement.detail.fetch_error'));
         setIsLoading(false);
     });
 
@@ -126,7 +128,7 @@ export default function ProcurementDetailPage({ params }: { params: { id: string
     }));
     
     return () => unsubscribes.forEach(unsub => unsub());
-  }, [requestId]);
+  }, [requestId, t]);
 
   if (isLoading) {
     return (
@@ -148,12 +150,12 @@ export default function ProcurementDetailPage({ params }: { params: { id: string
     return (
       <div className="flex flex-col items-center justify-center text-center h-[50vh]">
         <Truck className="w-16 h-16 mb-4 text-destructive" />
-        <h2 className="text-2xl font-bold">Error</h2>
+        <h2 className="text-2xl font-bold">{t('error')}</h2>
         <p className="text-muted-foreground">{error}</p>
          <Button asChild variant="outline" className="mt-4">
           <Link href="/procurement">
             <ArrowLeft className="mr-2" />
-            Back to Purchase Orders
+            {t('procurement.detail.back_button')}
           </Link>
         </Button>
       </div>
@@ -168,49 +170,48 @@ export default function ProcurementDetailPage({ params }: { params: { id: string
             <Button asChild variant="outline" size="icon">
                 <Link href="/procurement">
                     <ArrowLeft />
-                    <span className="sr-only">Back to Purchase Orders</span>
+                    <span className="sr-only">{t('procurement.detail.back_button')}</span>
                 </Link>
             </Button>
             <div>
                 <h1 className="font-headline text-3xl font-bold tracking-tight">
-                    PO for: {request.itemName}
+                    {t('procurement.detail.title', { name: request.itemName })}
                 </h1>
                 <p className="text-muted-foreground">
-                    Detailed view of the purchase order.
+                    {t('procurement.detail.page_desc')}
                 </p>
             </div>
         </div>
         
         <Tabs defaultValue="overview">
             <TabsList>
-                <TabsTrigger value="overview">Details</TabsTrigger>
-                <TabsTrigger value="financials">Financials</TabsTrigger>
+                <TabsTrigger value="overview">{t('procurement.detail.details_tab')}</TabsTrigger>
+                <TabsTrigger value="financials">{t('clients.financials_tab')}</TabsTrigger>
             </TabsList>
             <TabsContent value="overview" className="pt-4">
                 <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
                     <Card>
                         <CardHeader>
-                            <CardTitle>Order Details</CardTitle>
+                            <CardTitle>{t('procurement.detail.order_details_title')}</CardTitle>
                         </CardHeader>
                         <CardContent className="space-y-4">
                             <div className="flex items-center gap-4">
                                 <Activity className="size-4 text-muted-foreground" />
-                                <Badge variant={requestStatusVariant[request.status]}>{request.status}</Badge>
+                                <Badge variant={requestStatusVariant[request.status]}>{t(`procurement.status.${request.status}`)}</Badge>
                             </div>
                             <div className="flex items-center gap-4">
                                 <Hash className="size-4 text-muted-foreground" />
-                                <span className="text-sm">Quantity: <strong>{request.quantity}</strong></span>
+                                <span className="text-sm">{t('inventory.quantity_label')}: <strong>{request.quantity}</strong></span>
                             </div>
                             <div className="flex items-center gap-4">
                                 <Calendar className="size-4 text-muted-foreground" />
-                                <span className="text-sm">Requested on {request.requestedAt ? format(request.requestedAt.toDate(), 'PPP') : 'N/A'}</span>
+                                <span className="text-sm">{t('procurement.detail.requested_on', { date: request.requestedAt ? format(request.requestedAt.toDate(), 'PPP') : 'N/A' })}</span>
                             </div>
                             <div className="flex items-center gap-4 border-t pt-4 mt-4">
                                 <DollarSign className="size-4 text-muted-foreground" />
                                 <div className="text-sm">
                                     <span>
-                                        {formatCurrency(request.unitCost)} per unit &middot;{' '}
-                                        <strong>Total: {formatCurrency(request.totalCost)}</strong>
+                                        {t('procurement.detail.cost_breakdown', { unitCost: formatCurrency(request.unitCost), totalCost: formatCurrency(request.totalCost) })}
                                     </span>
                                     
                                 </div>
@@ -220,7 +221,7 @@ export default function ProcurementDetailPage({ params }: { params: { id: string
                     
                     <Card>
                         <CardHeader>
-                            <CardTitle>Project</CardTitle>
+                            <CardTitle>{t('project')}</CardTitle>
                         </CardHeader>
                         <CardContent>
                             {project ? (
@@ -231,18 +232,18 @@ export default function ProcurementDetailPage({ params }: { params: { id: string
                                     </div>
                                     <div className="flex items-center gap-4">
                                         <Activity className="size-4 text-muted-foreground" />
-                                        <span className="text-sm">Status: {project.status}</span>
+                                        <span className="text-sm">{t('status')}: {t(`project_status_${project.status.toLowerCase().replace(' ', '_')}`)}</span>
                                     </div>
                                 </div>
                             ) : (
-                                <p className="text-sm text-muted-foreground">No project linked.</p>
+                                <p className="text-sm text-muted-foreground">{t('procurement.detail.no_project_linked')}</p>
                             )}
                         </CardContent>
                     </Card>
 
                     <Card>
                         <CardHeader>
-                            <CardTitle>Supplier</CardTitle>
+                            <CardTitle>{t('supplier')}</CardTitle>
                         </CardHeader>
                         <CardContent>
                             {supplier ? (
@@ -253,11 +254,11 @@ export default function ProcurementDetailPage({ params }: { params: { id: string
                                     </div>
                                     <div className="flex items-center gap-4">
                                         <Activity className="size-4 text-muted-foreground" />
-                                        <span className="text-sm">Status: {supplier.status}</span>
+                                        <span className="text-sm">{t('status')}: {t(`suppliers.status.${supplier.status}`)}</span>
                                     </div>
                                 </div>
                             ) : (
-                                <p className="text-sm text-muted-foreground">No supplier linked.</p>
+                                <p className="text-sm text-muted-foreground">{t('procurement.detail.no_supplier_linked')}</p>
                             )}
                         </CardContent>
                     </Card>
@@ -266,8 +267,8 @@ export default function ProcurementDetailPage({ params }: { params: { id: string
             <TabsContent value="financials" className="pt-4">
                 <Card>
                     <CardHeader>
-                        <CardTitle>Linked Financials</CardTitle>
-                        <CardDescription>Payments and other transactions linked to this purchase order.</CardDescription>
+                        <CardTitle>{t('procurement.detail.linked_financials_title')}</CardTitle>
+                        <CardDescription>{t('procurement.detail.linked_financials_desc')}</CardDescription>
                     </CardHeader>
                     <CardContent>
                         {isLoading ? (
@@ -276,10 +277,10 @@ export default function ProcurementDetailPage({ params }: { params: { id: string
                             <Table>
                                 <TableHeader>
                                     <TableRow>
-                                        <TableHead>Date</TableHead>
-                                        <TableHead>Description</TableHead>
-                                        <TableHead>Type</TableHead>
-                                        <TableHead className="text-right">Amount</TableHead>
+                                        <TableHead>{t('date')}</TableHead>
+                                        <TableHead>{t('description')}</TableHead>
+                                        <TableHead>{t('type')}</TableHead>
+                                        <TableHead className="text-right">{t('amount')}</TableHead>
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>
@@ -287,7 +288,7 @@ export default function ProcurementDetailPage({ params }: { params: { id: string
                                         <TableRow key={transaction.id}>
                                             <TableCell>{transaction.date ? format(transaction.date.toDate(), 'PPP') : 'N/A'}</TableCell>
                                             <TableCell className="font-medium">{transaction.description}</TableCell>
-                                            <TableCell><Badge variant={transaction.type === 'Income' ? 'secondary' : 'destructive'}>{transaction.type}</Badge></TableCell>
+                                            <TableCell><Badge variant={transaction.type === 'Income' ? 'secondary' : 'destructive'}>{t(`financials.${transaction.type.toLowerCase()}`)}</Badge></TableCell>
                                             <TableCell className={`text-right font-semibold ${transaction.type === 'Income' ? 'text-success' : ''}`}>{formatCurrency(transaction.amount)}</TableCell>
                                         </TableRow>
                                     ))}
@@ -296,7 +297,7 @@ export default function ProcurementDetailPage({ params }: { params: { id: string
                         ) : (
                             <div className="flex flex-col items-center justify-center gap-2 py-8 text-center text-muted-foreground">
                                 <DollarSign className="size-12" />
-                                <p>No financial records found for this purchase order.</p>
+                                <p>{t('procurement.detail.no_financial_records')}</p>
                             </div>
                         )}
                     </CardContent>
@@ -306,3 +307,5 @@ export default function ProcurementDetailPage({ params }: { params: { id: string
     </div>
   );
 }
+
+    

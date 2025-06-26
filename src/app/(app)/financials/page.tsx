@@ -60,6 +60,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { format } from 'date-fns';
 import { useAuth } from '@/hooks/use-auth';
 import Link from 'next/link';
+import { useLanguage } from '@/hooks/use-language';
 
 type TransactionType = 'Income' | 'Expense';
 
@@ -128,6 +129,7 @@ export default function FinancialsPage() {
   const [isDeleting, setIsDeleting] = useState(false);
   const { toast } = useToast();
   const { profile } = useAuth();
+  const { t } = useLanguage();
 
   useEffect(() => {
     const unsubscribes: (() => void)[] = [];
@@ -280,9 +282,9 @@ export default function FinancialsPage() {
       : await addTransaction(values);
 
     if (result.errors) {
-      toast({ variant: 'destructive', title: 'Error', description: result.message });
+      toast({ variant: 'destructive', title: t('error'), description: result.message });
     } else {
-      toast({ title: 'Success', description: result.message });
+      toast({ title: t('success'), description: result.message });
       setIsFormDialogOpen(false);
       setTransactionToEdit(null);
     }
@@ -297,13 +299,13 @@ export default function FinancialsPage() {
 
     if (result.success) {
       toast({
-        title: 'Success',
+        title: t('success'),
         description: result.message,
       });
     } else {
       toast({
         variant: 'destructive',
-        title: 'Error',
+        title: t('error'),
         description: result.message,
       });
     }
@@ -325,20 +327,20 @@ export default function FinancialsPage() {
             const parentName = contract.parentType === 'client' 
                 ? nameMaps.clients.get(contract.parentId) 
                 : nameMaps.suppliers.get(contract.parentId);
-            return { name: contract.title, url: `/${contract.parentType}s/${contract.parentId}`, type: 'Contract', context: `For: ${parentName}` };
+            return { name: contract.title, url: `/${contract.parentType}s/${contract.parentId}`, type: t('financials.linked_to.contract'), context: `${t('financials.linked_to.for')}: ${parentName}` };
         }
     }
     if (transaction.purchaseOrderId && nameMaps.purchaseOrders.has(transaction.purchaseOrderId)) {
-        return { name: `PO: ${nameMaps.purchaseOrders.get(transaction.purchaseOrderId)}`, url: `/procurement/${transaction.purchaseOrderId}`, type: 'PO' };
+        return { name: `${t('financials.linked_to.po')}: ${nameMaps.purchaseOrders.get(transaction.purchaseOrderId)}`, url: `/procurement/${transaction.purchaseOrderId}`, type: t('financials.linked_to.po') };
     }
     if (transaction.clientId) {
-      return { name: nameMaps.clients.get(transaction.clientId) || 'N/A', url: `/clients/${transaction.clientId}`, type: 'Client' };
+      return { name: nameMaps.clients.get(transaction.clientId) || 'N/A', url: `/clients/${transaction.clientId}`, type: t('financials.linked_to.client') };
     }
     if (transaction.supplierId) {
-      return { name: nameMaps.suppliers.get(transaction.supplierId) || 'N/A', url: `/suppliers/${transaction.supplierId}`, type: 'Supplier' };
+      return { name: nameMaps.suppliers.get(transaction.supplierId) || 'N/A', url: `/suppliers/${transaction.supplierId}`, type: t('financials.linked_to.supplier') };
     }
     if (transaction.projectId) {
-      return { name: nameMaps.projects.get(transaction.projectId) || 'N/A', url: `/projects/${transaction.projectId}`, type: 'Project' };
+      return { name: nameMaps.projects.get(transaction.projectId) || 'N/A', url: `/projects/${transaction.projectId}`, type: t('financials.linked_to.project') };
     }
     return null;
   };
@@ -348,19 +350,19 @@ export default function FinancialsPage() {
     <div className="space-y-6">
       <div>
         <h1 className="font-headline text-3xl font-bold tracking-tight">
-          Financial & Accounting Management
+          {t('financials.page_title')}
         </h1>
         <p className="text-muted-foreground">
-          Track income, expenses, and manage financial records.
+          {t('financials.page_desc')}
         </p>
       </div>
 
       <div className="space-y-4">
-        <CardTitle className="text-xl">Overall Financial Summary</CardTitle>
+        <CardTitle className="text-xl">{t('financials.summary_title')}</CardTitle>
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
             <Card>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">Total Income</CardTitle>
+                    <CardTitle className="text-sm font-medium">{t('financials.total_income')}</CardTitle>
                     <TrendingUp className="size-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
@@ -369,7 +371,7 @@ export default function FinancialsPage() {
             </Card>
             <Card>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">Total Expenses</CardTitle>
+                    <CardTitle className="text-sm font-medium">{t('financials.total_expenses')}</CardTitle>
                     <TrendingDown className="size-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
@@ -378,7 +380,7 @@ export default function FinancialsPage() {
             </Card>
             <Card>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">Net Balance</CardTitle>
+                    <CardTitle className="text-sm font-medium">{t('financials.net_balance')}</CardTitle>
                     <Minus className="size-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
@@ -391,14 +393,14 @@ export default function FinancialsPage() {
       <Card>
         <CardHeader className="flex-row items-center justify-between">
           <div>
-            <CardTitle>Transaction History</CardTitle>
-            <CardDescription>A list of all income and expense records.</CardDescription>
+            <CardTitle>{t('financials.history_title')}</CardTitle>
+            <CardDescription>{t('financials.history_desc')}</CardDescription>
           </div>
           <div className="flex items-center gap-2">
             {['admin', 'manager'].includes(profile?.role || '') && (
                 <Button asChild variant="outline">
                     <Link href="/financials/accounts">
-                        <Landmark className="mr-2"/> Manage Accounts
+                        <Landmark className="mr-2"/> {t('financials.manage_accounts')}
                     </Link>
                 </Button>
             )}
@@ -407,39 +409,39 @@ export default function FinancialsPage() {
               <DialogTrigger asChild>
                   <Button onClick={() => setTransactionToEdit(null)} disabled={accounts.length === 0}>
                   <PlusCircle className="mr-2" />
-                  Add Transaction
+                  {t('financials.add_transaction_button')}
                   </Button>
               </DialogTrigger>
               <DialogContent className="sm:max-w-2xl">
                   <DialogHeader>
-                  <DialogTitle>{transactionToEdit ? 'Edit Transaction' : 'Add New Transaction'}</DialogTitle>
+                  <DialogTitle>{transactionToEdit ? t('financials.edit_transaction_title') : t('financials.add_transaction_title')}</DialogTitle>
                   <DialogDescription>
-                      {transactionToEdit ? "Update the transaction's details below." : 'Fill in the details below to add a new financial record.'}
+                      {transactionToEdit ? t('financials.edit_transaction_desc') : t('financials.add_transaction_desc')}
                   </DialogDescription>
                   </DialogHeader>
                   <Form {...form}>
                   <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 py-4">
-                      <FormField control={form.control} name="description" render={({ field }) => (<FormItem><FormLabel>Description</FormLabel><FormControl><Input placeholder="e.g., Payment from Client X" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                      <FormField control={form.control} name="description" render={({ field }) => (<FormItem><FormLabel>{t('description')}</FormLabel><FormControl><Input placeholder={t('financials.description_placeholder')} {...field} /></FormControl><FormMessage /></FormItem>)} />
                       <div className="grid grid-cols-2 gap-4">
-                        <FormField control={form.control} name="amount" render={({ field }) => (<FormItem><FormLabel>Amount (LE)</FormLabel><FormControl><Input type="number" placeholder="e.g., 1500.00" {...field} /></FormControl><FormMessage /></FormItem>)} />
-                        <FormField control={form.control} name="type" render={({ field }) => (<FormItem><FormLabel>Type</FormLabel><Select onValueChange={field.onChange} defaultValue={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Select type" /></SelectTrigger></FormControl><SelectContent><SelectItem value="Income">Income</SelectItem><SelectItem value="Expense">Expense</SelectItem></SelectContent></Select><FormMessage /></FormItem>)} />
+                        <FormField control={form.control} name="amount" render={({ field }) => (<FormItem><FormLabel>{t('financials.amount_label')}</FormLabel><FormControl><Input type="number" placeholder={t('financials.amount_placeholder')} {...field} /></FormControl><FormMessage /></FormItem>)} />
+                        <FormField control={form.control} name="type" render={({ field }) => (<FormItem><FormLabel>{t('type')}</FormLabel><Select onValueChange={field.onChange} defaultValue={field.value}><FormControl><SelectTrigger><SelectValue placeholder={t('financials.type_placeholder')} /></SelectTrigger></FormControl><SelectContent><SelectItem value="Income">{t('financials.income')}</SelectItem><SelectItem value="Expense">{t('financials.expense')}</SelectItem></SelectContent></Select><FormMessage /></FormItem>)} />
                       </div>
                        <div className="grid grid-cols-2 gap-4">
-                          <FormField control={form.control} name="date" render={({ field }) => (<FormItem><FormLabel>Transaction Date</FormLabel><FormControl><Input type="date" {...field} /></FormControl><FormMessage /></FormItem>)} />
-                          <FormField control={form.control} name="accountId" render={({ field }) => (<FormItem><FormLabel>Account</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Select an account" /></SelectTrigger></FormControl><SelectContent>{accounts.map(acc => (<SelectItem key={acc.id} value={acc.id}>{acc.name}</SelectItem>))}</SelectContent></Select><FormMessage /></FormItem>)} />
+                          <FormField control={form.control} name="date" render={({ field }) => (<FormItem><FormLabel>{t('financials.date_label')}</FormLabel><FormControl><Input type="date" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                          <FormField control={form.control} name="accountId" render={({ field }) => (<FormItem><FormLabel>{t('financials.account_label')}</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue placeholder={t('financials.account_placeholder')} /></SelectTrigger></FormControl><SelectContent>{accounts.map(acc => (<SelectItem key={acc.id} value={acc.id}>{acc.name}</SelectItem>))}</SelectContent></Select><FormMessage /></FormItem>)} />
                       </div>
-                      <FormField control={form.control} name="projectId" render={({ field }) => (<FormItem><FormLabel>Project (Optional)</FormLabel><Select onValueChange={(value) => field.onChange(value === 'none' ? '' : value)} value={field.value || ''}><FormControl><SelectTrigger><SelectValue placeholder="Link to a project" /></SelectTrigger></FormControl><SelectContent><SelectItem value="none">None</SelectItem>{projects.map(project => (<SelectItem key={project.id} value={project.id}>{project.name}</SelectItem>))}</SelectContent></Select><FormMessage /></FormItem>)} />
+                      <FormField control={form.control} name="projectId" render={({ field }) => (<FormItem><FormLabel>{t('financials.project_label')}</FormLabel><Select onValueChange={(value) => field.onChange(value === 'none' ? '' : value)} value={field.value || ''}><FormControl><SelectTrigger><SelectValue placeholder={t('financials.project_placeholder')} /></SelectTrigger></FormControl><SelectContent><SelectItem value="none">{t('projects.none')}</SelectItem>{projects.map(project => (<SelectItem key={project.id} value={project.id}>{project.name}</SelectItem>))}</SelectContent></Select><FormMessage /></FormItem>)} />
                       
                       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                          <FormField control={form.control} name="clientId" render={({ field }) => (<FormItem className={transactionType === 'Expense' ? 'hidden' : ''}><FormLabel>Client (Optional)</FormLabel><Select onValueChange={(value) => field.onChange(value === 'none' ? '' : value)} value={field.value || ''}><FormControl><SelectTrigger><SelectValue placeholder="Link to a client" /></SelectTrigger></FormControl><SelectContent><SelectItem value="none">None</SelectItem>{clients.map(client => (<SelectItem key={client.id} value={client.id}>{client.name}</SelectItem>))}</SelectContent></Select><FormMessage /></FormItem>)} />
-                          <FormField control={form.control} name="supplierId" render={({ field }) => (<FormItem className={transactionType === 'Income' ? 'hidden' : ''}><FormLabel>Supplier (Optional)</FormLabel><Select onValueChange={(value) => field.onChange(value === 'none' ? '' : value)} value={field.value || ''}><FormControl><SelectTrigger><SelectValue placeholder="Link to a supplier" /></SelectTrigger></FormControl><SelectContent><SelectItem value="none">None</SelectItem>{suppliers.map(supplier => (<SelectItem key={supplier.id} value={supplier.id}>{supplier.name}</SelectItem>))}</SelectContent></Select><FormMessage /></FormItem>)} />
+                          <FormField control={form.control} name="clientId" render={({ field }) => (<FormItem className={transactionType === 'Expense' ? 'hidden' : ''}><FormLabel>{t('financials.client_label')}</FormLabel><Select onValueChange={(value) => field.onChange(value === 'none' ? '' : value)} value={field.value || ''}><FormControl><SelectTrigger><SelectValue placeholder={t('financials.client_placeholder')} /></SelectTrigger></FormControl><SelectContent><SelectItem value="none">{t('projects.none')}</SelectItem>{clients.map(client => (<SelectItem key={client.id} value={client.id}>{client.name}</SelectItem>))}</SelectContent></Select><FormMessage /></FormItem>)} />
+                          <FormField control={form.control} name="supplierId" render={({ field }) => (<FormItem className={transactionType === 'Income' ? 'hidden' : ''}><FormLabel>{t('financials.supplier_label')}</FormLabel><Select onValueChange={(value) => field.onChange(value === 'none' ? '' : value)} value={field.value || ''}><FormControl><SelectTrigger><SelectValue placeholder={t('financials.supplier_placeholder')} /></SelectTrigger></FormControl><SelectContent><SelectItem value="none">{t('projects.none')}</SelectItem>{suppliers.map(supplier => (<SelectItem key={supplier.id} value={supplier.id}>{supplier.name}</SelectItem>))}</SelectContent></Select><FormMessage /></FormItem>)} />
                       </div>
                       
-                      <FormField control={form.control} name="contractId" render={({ field }) => (<FormItem><FormLabel>Contract (Optional)</FormLabel><Select onValueChange={(value) => field.onChange(value === 'none' ? '' : value)} value={field.value || ''} disabled={selectableContracts.length === 0}><FormControl><SelectTrigger><SelectValue placeholder="Link to a contract" /></SelectTrigger></FormControl><SelectContent><SelectItem value="none">None</SelectItem>{selectableContracts.map(contract => (<SelectItem key={contract.id} value={contract.id}>{contract.title}</SelectItem>))}</SelectContent></Select><FormMessage /></FormItem>)} />
+                      <FormField control={form.control} name="contractId" render={({ field }) => (<FormItem><FormLabel>{t('financials.contract_label')}</FormLabel><Select onValueChange={(value) => field.onChange(value === 'none' ? '' : value)} value={field.value || ''} disabled={selectableContracts.length === 0}><FormControl><SelectTrigger><SelectValue placeholder={t('financials.contract_placeholder')} /></SelectTrigger></FormControl><SelectContent><SelectItem value="none">{t('projects.none')}</SelectItem>{selectableContracts.map(contract => (<SelectItem key={contract.id} value={contract.id}>{contract.title}</SelectItem>))}</SelectContent></Select><FormMessage /></FormItem>)} />
 
-                      <FormField control={form.control} name="purchaseOrderId" render={({ field }) => (<FormItem className={transactionType === 'Income' ? 'hidden' : ''}><FormLabel>Purchase Order (Optional)</FormLabel><Select onValueChange={(value) => field.onChange(value === 'none' ? '' : value)} value={field.value || ''} disabled={!selectedSupplierId}><FormControl><SelectTrigger><SelectValue placeholder="Link to a PO" /></SelectTrigger></FormControl><SelectContent><SelectItem value="none">None</SelectItem>{purchaseOrders.filter(po => po.supplierId === selectedSupplierId).map(po => (<SelectItem key={po.id} value={po.id}>{po.itemName} (...{po.id.slice(-5)})</SelectItem>))}</SelectContent></Select><FormMessage /></FormItem>)} />
+                      <FormField control={form.control} name="purchaseOrderId" render={({ field }) => (<FormItem className={transactionType === 'Income' ? 'hidden' : ''}><FormLabel>{t('financials.po_label')}</FormLabel><Select onValueChange={(value) => field.onChange(value === 'none' ? '' : value)} value={field.value || ''} disabled={!selectedSupplierId}><FormControl><SelectTrigger><SelectValue placeholder={t('financials.po_placeholder')} /></SelectTrigger></FormControl><SelectContent><SelectItem value="none">{t('projects.none')}</SelectItem>{purchaseOrders.filter(po => po.supplierId === selectedSupplierId).map(po => (<SelectItem key={po.id} value={po.id}>{po.itemName} (...{po.id.slice(-5)})</SelectItem>))}</SelectContent></Select><FormMessage /></FormItem>)} />
                       <DialogFooter>
-                          <Button type="submit" disabled={form.formState.isSubmitting}>{form.formState.isSubmitting ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Saving...</> : (transactionToEdit ? 'Save Changes' : 'Save Transaction')}</Button>
+                          <Button type="submit" disabled={form.formState.isSubmitting}>{form.formState.isSubmitting ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />{t('saving')}</> : (transactionToEdit ? t('save_changes') : t('financials.save_transaction_button'))}</Button>
                       </DialogFooter>
                   </form>
                   </Form>
@@ -452,13 +454,13 @@ export default function FinancialsPage() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Date</TableHead>
-                <TableHead>Description</TableHead>
-                <TableHead>Account</TableHead>
-                <TableHead className="hidden md:table-cell">Linked To</TableHead>
-                <TableHead>Type</TableHead>
-                <TableHead className="text-right">Amount</TableHead>
-                <TableHead><span className="sr-only">Actions</span></TableHead>
+                <TableHead>{t('date')}</TableHead>
+                <TableHead>{t('description')}</TableHead>
+                <TableHead>{t('financials.account_header')}</TableHead>
+                <TableHead className="hidden md:table-cell">{t('financials.linked_to_header')}</TableHead>
+                <TableHead>{t('type')}</TableHead>
+                <TableHead className="text-right">{t('amount')}</TableHead>
+                <TableHead><span className="sr-only">{t('actions')}</span></TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -492,16 +494,16 @@ export default function FinancialsPage() {
                                 </div>
                                 : 'N/A'}
                         </TableCell>
-                        <TableCell><Badge variant={transaction.type === 'Income' ? 'secondary' : 'destructive'}>{transaction.type}</Badge></TableCell>
+                        <TableCell><Badge variant={transaction.type === 'Income' ? 'secondary' : 'destructive'}>{t(`financials.${transaction.type.toLowerCase()}`)}</Badge></TableCell>
                         <TableCell className={`text-right font-semibold ${transaction.type === 'Income' ? 'text-success' : ''}`}>{formatCurrency(transaction.amount)}</TableCell>
                         <TableCell>
                         {['admin', 'manager'].includes(profile?.role || '') && (
                             <DropdownMenu>
-                            <DropdownMenuTrigger asChild><Button aria-haspopup="true" size="icon" variant="ghost"><MoreHorizontal className="h-4 w-4" /><span className="sr-only">Toggle menu</span></Button></DropdownMenuTrigger>
+                            <DropdownMenuTrigger asChild><Button aria-haspopup="true" size="icon" variant="ghost"><MoreHorizontal className="h-4 w-4" /><span className="sr-only">{t('toggle_menu')}</span></Button></DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
-                                <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                                <DropdownMenuItem onSelect={() => { setTransactionToEdit(transaction); setIsFormDialogOpen(true); }}>Edit</DropdownMenuItem>
-                                <DropdownMenuItem className="text-destructive" onSelect={() => { setTransactionToDelete(transaction); setIsDeleteDialogOpen(true); }}><Trash2 className="mr-2 h-4 w-4" />Delete</DropdownMenuItem>
+                                <DropdownMenuLabel>{t('actions')}</DropdownMenuLabel>
+                                <DropdownMenuItem onSelect={() => { setTransactionToEdit(transaction); setIsFormDialogOpen(true); }}>{t('edit')}</DropdownMenuItem>
+                                <DropdownMenuItem className="text-destructive" onSelect={() => { setTransactionToDelete(transaction); setIsDeleteDialogOpen(true); }}><Trash2 className="mr-2 h-4 w-4" />{t('delete')}</DropdownMenuItem>
                             </DropdownMenuContent>
                             </DropdownMenu>
                         )}
@@ -510,7 +512,7 @@ export default function FinancialsPage() {
                 )})
               ) : (
                 <TableRow>
-                  <TableCell colSpan={7} className="h-24 text-center">No transactions found. Add one to get started.</TableCell>
+                  <TableCell colSpan={7} className="h-24 text-center">{t('financials.no_transactions_found')}</TableCell>
                 </TableRow>
               )}
             </TableBody>
@@ -521,16 +523,16 @@ export default function FinancialsPage() {
     <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
         <AlertDialogContent>
             <AlertDialogHeader>
-                <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-                <AlertDialogDescription>This action cannot be undone. This will permanently delete the transaction: "{transactionToDelete?.description}".</AlertDialogDescription>
+                <AlertDialogTitle>{t('are_you_sure')}</AlertDialogTitle>
+                <AlertDialogDescription>{t('financials.delete_confirm_desc', { description: transactionToDelete?.description })}</AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
-                <AlertDialogCancel onClick={() => setTransactionToDelete(null)}>Cancel</AlertDialogCancel>
+                <AlertDialogCancel onClick={() => setTransactionToDelete(null)}>{t('cancel')}</AlertDialogCancel>
                 <AlertDialogAction onClick={handleDeleteTransaction} disabled={isDeleting} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
                   {isDeleting ? (
-                    <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Deleting...</>
+                    <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> {t('deleting')}</>
                   ) : (
-                    <><Trash2 className="mr-2 h-4 w-4" /> Delete</>
+                    <><Trash2 className="mr-2 h-4 w-4" /> {t('delete')}</>
                   )}
                 </AlertDialogAction>
             </AlertDialogFooter>
@@ -539,3 +541,5 @@ export default function FinancialsPage() {
     </>
   );
 }
+
+    

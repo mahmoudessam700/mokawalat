@@ -51,6 +51,7 @@ import { firestore } from '@/lib/firebase';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useAuth } from '@/hooks/use-auth';
 import Link from 'next/link';
+import { useLanguage } from '@/hooks/use-language';
 
 const accountFormSchema = z.object({
   name: z.string().min(2, "Account name must be at least 2 characters long."),
@@ -93,6 +94,7 @@ export default function AccountsPage() {
   const [isDeleting, setIsDeleting] = useState(false);
   const { toast } = useToast();
   const { profile } = useAuth();
+  const { t } = useLanguage();
 
   useEffect(() => {
     const unsubscribes: (() => void)[] = [];
@@ -152,9 +154,9 @@ export default function AccountsPage() {
       : await addAccount(values);
 
     if (result.errors) {
-      toast({ variant: 'destructive', title: 'Error', description: result.message });
+      toast({ variant: 'destructive', title: t('error'), description: result.message });
     } else {
-      toast({ title: 'Success', description: result.message });
+      toast({ title: t('success'), description: result.message });
       setIsFormDialogOpen(false);
       setAccountToEdit(null);
     }
@@ -167,9 +169,9 @@ export default function AccountsPage() {
     setIsDeleting(false);
 
     if (result.success) {
-      toast({ title: 'Success', description: result.message });
+      toast({ title: t('success'), description: result.message });
     } else {
-      toast({ variant: 'destructive', title: 'Error', description: result.message });
+      toast({ variant: 'destructive', title: t('error'), description: result.message });
     }
     setIsDeleteDialogOpen(false);
     setAccountToDelete(null);
@@ -187,44 +189,44 @@ export default function AccountsPage() {
             <Button asChild variant="outline" size="icon">
                 <Link href="/financials">
                     <ArrowLeft />
-                    <span className="sr-only">Back to Financials</span>
+                    <span className="sr-only">{t('financials.back_to_financials')}</span>
                 </Link>
             </Button>
             <div>
-                <h1 className="font-headline text-3xl font-bold tracking-tight">Bank Accounts</h1>
-                <p className="text-muted-foreground">Manage all company bank accounts.</p>
+                <h1 className="font-headline text-3xl font-bold tracking-tight">{t('financials.accounts.page_title')}</h1>
+                <p className="text-muted-foreground">{t('financials.accounts.page_desc')}</p>
             </div>
         </div>
 
       <Card>
         <CardHeader className="flex-row items-center justify-between">
           <div>
-            <CardTitle>Accounts List</CardTitle>
-            <CardDescription>A list of all bank accounts in the system.</CardDescription>
+            <CardTitle>{t('financials.accounts.list_title')}</CardTitle>
+            <CardDescription>{t('financials.accounts.list_desc')}</CardDescription>
           </div>
           {['admin', 'manager'].includes(profile?.role || '') && (
             <Dialog open={isFormDialogOpen} onOpenChange={handleFormDialogOpenChange}>
             <DialogTrigger asChild>
                 <Button onClick={() => setAccountToEdit(null)}>
                 <PlusCircle className="mr-2" />
-                Add Account
+                {t('financials.accounts.add_button')}
                 </Button>
             </DialogTrigger>
             <DialogContent className="sm:max-w-[480px]">
                 <DialogHeader>
-                    <DialogTitle>{accountToEdit ? 'Edit Account' : 'Add New Bank Account'}</DialogTitle>
-                    <DialogDescription>{accountToEdit ? "Update account details." : "Fill in the details to add a new account."}</DialogDescription>
+                    <DialogTitle>{accountToEdit ? t('financials.accounts.edit_title') : t('financials.accounts.add_title')}</DialogTitle>
+                    <DialogDescription>{accountToEdit ? t('financials.accounts.edit_desc') : t('financials.accounts.add_desc')}</DialogDescription>
                 </DialogHeader>
                 <Form {...form}>
                     <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 py-4">
-                        <FormField control={form.control} name="name" render={({ field }) => (<FormItem><FormLabel>Account Nickname</FormLabel><FormControl><Input placeholder="e.g., CIB Main Account" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                        <FormField control={form.control} name="name" render={({ field }) => (<FormItem><FormLabel>{t('financials.accounts.nickname_label')}</FormLabel><FormControl><Input placeholder={t('financials.accounts.nickname_placeholder')} {...field} /></FormControl><FormMessage /></FormItem>)} />
                         <div className="grid grid-cols-2 gap-4">
-                            <FormField control={form.control} name="bankName" render={({ field }) => (<FormItem><FormLabel>Bank Name</FormLabel><FormControl><Input placeholder="e.g., CIB" {...field} /></FormControl><FormMessage /></FormItem>)} />
-                             <FormField control={form.control} name="accountNumber" render={({ field }) => (<FormItem><FormLabel>Account Number (Optional)</FormLabel><FormControl><Input placeholder="e.g., 100012345678" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                            <FormField control={form.control} name="bankName" render={({ field }) => (<FormItem><FormLabel>{t('financials.accounts.bank_name_label')}</FormLabel><FormControl><Input placeholder={t('financials.accounts.bank_name_placeholder')} {...field} /></FormControl><FormMessage /></FormItem>)} />
+                             <FormField control={form.control} name="accountNumber" render={({ field }) => (<FormItem><FormLabel>{t('financials.accounts.number_label')}</FormLabel><FormControl><Input placeholder={t('financials.accounts.number_placeholder')} {...field} /></FormControl><FormMessage /></FormItem>)} />
                         </div>
-                        <FormField control={form.control} name="initialBalance" render={({ field }) => (<FormItem><FormLabel>Initial Balance (LE)</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                        <FormField control={form.control} name="initialBalance" render={({ field }) => (<FormItem><FormLabel>{t('financials.accounts.balance_label')}</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>)} />
                         <DialogFooter>
-                            <Button type="submit" disabled={form.formState.isSubmitting}>{form.formState.isSubmitting ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Saving...</> : (accountToEdit ? 'Save Changes' : 'Save Account')}</Button>
+                            <Button type="submit" disabled={form.formState.isSubmitting}>{form.formState.isSubmitting ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />{t('saving')}</> : (accountToEdit ? t('save_changes') : t('financials.accounts.save_button'))}</Button>
                         </DialogFooter>
                     </form>
                 </Form>
@@ -236,12 +238,12 @@ export default function AccountsPage() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Account Name</TableHead>
-                <TableHead>Bank</TableHead>
-                <TableHead>Account Number</TableHead>
-                <TableHead className="text-right">Initial Balance</TableHead>
-                <TableHead className="text-right">Current Balance</TableHead>
-                <TableHead><span className="sr-only">Actions</span></TableHead>
+                <TableHead>{t('financials.accounts.name_header')}</TableHead>
+                <TableHead>{t('financials.accounts.bank_header')}</TableHead>
+                <TableHead>{t('financials.accounts.number_header')}</TableHead>
+                <TableHead className="text-right">{t('financials.accounts.initial_balance_header')}</TableHead>
+                <TableHead className="text-right">{t('financials.accounts.current_balance_header')}</TableHead>
+                <TableHead><span className="sr-only">{t('actions')}</span></TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -267,11 +269,11 @@ export default function AccountsPage() {
                         <TableCell>
                         {['admin', 'manager'].includes(profile?.role || '') && (
                             <DropdownMenu>
-                            <DropdownMenuTrigger asChild><Button aria-haspopup="true" size="icon" variant="ghost"><MoreHorizontal className="h-4 w-4" /><span className="sr-only">Toggle menu</span></Button></DropdownMenuTrigger>
+                            <DropdownMenuTrigger asChild><Button aria-haspopup="true" size="icon" variant="ghost"><MoreHorizontal className="h-4 w-4" /><span className="sr-only">{t('toggle_menu')}</span></Button></DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
-                                <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                                <DropdownMenuItem onSelect={() => { setAccountToEdit(account); setIsFormDialogOpen(true); }}>Edit</DropdownMenuItem>
-                                <DropdownMenuItem className="text-destructive" onSelect={() => { setAccountToDelete(account); setIsDeleteDialogOpen(true); }}><Trash2 className="mr-2 h-4 w-4" />Delete</DropdownMenuItem>
+                                <DropdownMenuLabel>{t('actions')}</DropdownMenuLabel>
+                                <DropdownMenuItem onSelect={() => { setAccountToEdit(account); setIsFormDialogOpen(true); }}>{t('edit')}</DropdownMenuItem>
+                                <DropdownMenuItem className="text-destructive" onSelect={() => { setAccountToDelete(account); setIsDeleteDialogOpen(true); }}><Trash2 className="mr-2 h-4 w-4" />{t('delete')}</DropdownMenuItem>
                             </DropdownMenuContent>
                             </DropdownMenu>
                         )}
@@ -283,7 +285,7 @@ export default function AccountsPage() {
                   <TableCell colSpan={6} className="h-24 text-center">
                     <div className="flex flex-col items-center justify-center gap-2 text-muted-foreground">
                         <Banknote className="size-12" />
-                        No bank accounts found. Add one to get started.
+                        {t('financials.accounts.no_accounts_found')}
                     </div>
                   </TableCell>
                 </TableRow>
@@ -296,16 +298,16 @@ export default function AccountsPage() {
     <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
         <AlertDialogContent>
             <AlertDialogHeader>
-                <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-                <AlertDialogDescription>This will permanently delete the account: "{accountToDelete?.name}". This action cannot be undone and is only possible if no transactions are linked to it.</AlertDialogDescription>
+                <AlertDialogTitle>{t('are_you_sure')}</AlertDialogTitle>
+                <AlertDialogDescription>{t('financials.accounts.delete_confirm_desc', { name: accountToDelete?.name })}</AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
-                <AlertDialogCancel onClick={() => setAccountToDelete(null)}>Cancel</AlertDialogCancel>
+                <AlertDialogCancel onClick={() => setAccountToDelete(null)}>{t('cancel')}</AlertDialogCancel>
                 <AlertDialogAction onClick={handleDeleteAccount} disabled={isDeleting} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
                   {isDeleting ? (
-                    <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Deleting...</>
+                    <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> {t('deleting')}</>
                   ) : (
-                    <><Trash2 className="mr-2 h-4 w-4" /> Delete</>
+                    <><Trash2 className="mr-2 h-4 w-4" /> {t('delete')}</>
                   )}
                 </AlertDialogAction>
             </AlertDialogFooter>
@@ -314,3 +316,5 @@ export default function AccountsPage() {
     </>
   );
 }
+
+    

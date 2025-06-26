@@ -22,6 +22,7 @@ import { useRouter } from 'next/navigation';
 import { CheckCircle2, PackageCheck, PackageX, ShoppingCart, ClipboardList, XCircle } from 'lucide-react';
 import { updateMaterialRequestStatus } from '../material-requests/actions';
 import { updatePurchaseRequestStatus } from '../procurement/actions';
+import { useLanguage } from '@/hooks/use-language';
 
 // Types from other modules
 type MaterialRequest = {
@@ -71,6 +72,7 @@ export default function ApprovalsPage() {
   const { toast } = useToast();
   const { profile, isLoading: isAuthLoading } = useAuth();
   const router = useRouter();
+  const { t } = useLanguage();
 
   useEffect(() => {
     if (!isAuthLoading && !['admin', 'manager'].includes(profile?.role || '')) {
@@ -116,7 +118,7 @@ export default function ApprovalsPage() {
     unsubscribes.push(() => clearTimeout(timer));
 
     return () => unsubscribes.forEach(unsub => unsub());
-  }, [profile, toast]);
+  }, [profile]);
   
   const projectMap = useMemo(() => new Map(projects.map(p => [p.id, p.name])), [projects]);
   const supplierMap = useMemo(() => new Map(suppliers.map(s => [s.id, s.name])), [suppliers]);
@@ -124,18 +126,18 @@ export default function ApprovalsPage() {
   async function handleMaterialRequestStatusUpdate(requestId: string, status: 'Approved' | 'Rejected') {
     const result = await updateMaterialRequestStatus(requestId, status);
     if (result.success) {
-      toast({ title: 'Success', description: result.message });
+      toast({ title: t('success'), description: result.message });
     } else {
-      toast({ variant: 'destructive', title: 'Error', description: result.message });
+      toast({ variant: 'destructive', title: t('error'), description: result.message });
     }
   }
 
   async function handlePOStatusUpdate(requestId: string, status: 'Approved' | 'Rejected') {
     const result = await updatePurchaseRequestStatus(requestId, status);
     if (result.success) {
-        toast({ title: 'Success', description: result.message });
+        toast({ title: t('success'), description: result.message });
     } else {
-        toast({ variant: 'destructive', title: 'Error', description: result.message });
+        toast({ variant: 'destructive', title: t('error'), description: result.message });
     }
   }
 
@@ -159,8 +161,8 @@ export default function ApprovalsPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="font-headline text-3xl font-bold tracking-tight">Approvals Dashboard</h1>
-        <p className="text-muted-foreground">Review and action all pending requests across the system.</p>
+        <h1 className="font-headline text-3xl font-bold tracking-tight">{t('approvals.page_title')}</h1>
+        <p className="text-muted-foreground">{t('approvals.page_desc')}</p>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -168,13 +170,13 @@ export default function ApprovalsPage() {
             <CardHeader>
                 <div className="flex items-center gap-2">
                     <ShoppingCart className="size-5 text-primary"/>
-                    <CardTitle>Pending Purchase Orders</CardTitle>
+                    <CardTitle>{t('approvals.pending_po_title')}</CardTitle>
                 </div>
-                <CardDescription>POs that are waiting for approval before being ordered.</CardDescription>
+                <CardDescription>{t('approvals.pending_po_desc')}</CardDescription>
             </CardHeader>
             <CardContent>
                 <Table>
-                    <TableHeader><TableRow><TableHead>Item</TableHead><TableHead>Project</TableHead><TableHead className="text-right">Actions</TableHead></TableRow></TableHeader>
+                    <TableHeader><TableRow><TableHead>{t('item')}</TableHead><TableHead>{t('project')}</TableHead><TableHead className="text-right">{t('actions')}</TableHead></TableRow></TableHeader>
                     <TableBody>
                         {isLoading ? (Array.from({ length: 2 }).map((_, i) => <TableRow key={i}><TableCell colSpan={3}><Skeleton className="h-10 w-full"/></TableCell></TableRow>))
                         : purchaseOrders.length > 0 ? (
@@ -187,13 +189,13 @@ export default function ApprovalsPage() {
                                     <TableCell>{projectMap.get(po.projectId) || 'N/A'}</TableCell>
                                     <TableCell className="text-right">
                                         <div className="flex gap-2 justify-end">
-                                            <Button size="sm" variant="outline" className="text-success hover:text-success border-green-500 hover:bg-green-50" onClick={() => handlePOStatusUpdate(po.id, 'Approved')}><CheckCircle2 className="mr-2" /> Approve</Button>
-                                            <Button size="sm" variant="outline" className="text-destructive hover:text-destructive border-red-500 hover:bg-red-50" onClick={() => handlePOStatusUpdate(po.id, 'Rejected')}><XCircle className="mr-2" /> Reject</Button>
+                                            <Button size="sm" variant="outline" className="text-success hover:text-success border-green-500 hover:bg-green-50" onClick={() => handlePOStatusUpdate(po.id, 'Approved')}><CheckCircle2 className="mr-2" /> {t('approvals.approve')}</Button>
+                                            <Button size="sm" variant="outline" className="text-destructive hover:text-destructive border-red-500 hover:bg-red-50" onClick={() => handlePOStatusUpdate(po.id, 'Rejected')}><XCircle className="mr-2" /> {t('approvals.reject')}</Button>
                                         </div>
                                     </TableCell>
                                 </TableRow>
                             ))
-                        ) : (<TableRow><TableCell colSpan={3} className="text-center h-24 text-muted-foreground">No pending purchase orders.</TableCell></TableRow>)}
+                        ) : (<TableRow><TableCell colSpan={3} className="text-center h-24 text-muted-foreground">{t('approvals.no_pending_po')}</TableCell></TableRow>)}
                     </TableBody>
                 </Table>
             </CardContent>
@@ -203,13 +205,13 @@ export default function ApprovalsPage() {
             <CardHeader>
                 <div className="flex items-center gap-2">
                     <ClipboardList className="size-5 text-primary"/>
-                    <CardTitle>Pending Material Requests</CardTitle>
+                    <CardTitle>{t('approvals.pending_mr_title')}</CardTitle>
                 </div>
-                <CardDescription>Material requests from projects waiting to be fulfilled from inventory.</CardDescription>
+                <CardDescription>{t('approvals.pending_mr_desc')}</CardDescription>
             </CardHeader>
             <CardContent>
                  <Table>
-                    <TableHeader><TableRow><TableHead>Item</TableHead><TableHead>Project</TableHead><TableHead className="text-right">Actions</TableHead></TableRow></TableHeader>
+                    <TableHeader><TableRow><TableHead>{t('item')}</TableHead><TableHead>{t('project')}</TableHead><TableHead className="text-right">{t('actions')}</TableHead></TableRow></TableHeader>
                     <TableBody>
                         {isLoading ? (Array.from({ length: 2 }).map((_, i) => <TableRow key={i}><TableCell colSpan={3}><Skeleton className="h-10 w-full"/></TableCell></TableRow>))
                         : materialRequests.length > 0 ? (
@@ -217,18 +219,18 @@ export default function ApprovalsPage() {
                                 <TableRow key={req.id}>
                                     <TableCell>
                                         <div className="font-medium">{req.itemName}</div>
-                                        <div className="text-xs text-muted-foreground">Quantity: {req.quantity}</div>
+                                        <div className="text-xs text-muted-foreground">{t('inventory.quantity_label')}: {req.quantity}</div>
                                     </TableCell>
                                     <TableCell>{projectMap.get(req.projectId) || 'N/A'}</TableCell>
                                     <TableCell className="text-right">
                                         <div className="flex gap-2 justify-end">
-                                            <Button size="sm" variant="outline" className="text-success hover:text-success border-green-500 hover:bg-green-50" onClick={() => handleMaterialRequestStatusUpdate(req.id, 'Approved')}><PackageCheck className="mr-2"/>Approve</Button>
-                                            <Button size="sm" variant="outline" className="text-destructive hover:text-destructive border-red-500 hover:bg-red-50" onClick={() => handleMaterialRequestStatusUpdate(req.id, 'Rejected')}><PackageX className="mr-2"/>Reject</Button>
+                                            <Button size="sm" variant="outline" className="text-success hover:text-success border-green-500 hover:bg-green-50" onClick={() => handleMaterialRequestStatusUpdate(req.id, 'Approved')}><PackageCheck className="mr-2"/>{t('approvals.approve')}</Button>
+                                            <Button size="sm" variant="outline" className="text-destructive hover:text-destructive border-red-500 hover:bg-red-50" onClick={() => handleMaterialRequestStatusUpdate(req.id, 'Rejected')}><PackageX className="mr-2"/>{t('approvals.reject')}</Button>
                                         </div>
                                     </TableCell>
                                 </TableRow>
                             ))
-                        ) : (<TableRow><TableCell colSpan={3} className="text-center h-24 text-muted-foreground">No pending material requests.</TableCell></TableRow>)}
+                        ) : (<TableRow><TableCell colSpan={3} className="text-center h-24 text-muted-foreground">{t('approvals.no_pending_mr')}</TableCell></TableRow>)}
                     </TableBody>
                 </Table>
             </CardContent>
@@ -239,3 +241,5 @@ export default function ApprovalsPage() {
     </div>
   );
 }
+
+    
