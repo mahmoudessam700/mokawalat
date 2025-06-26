@@ -251,15 +251,15 @@ export function AppSidebar() {
       </SidebarFooter>
       <AlertDialogContent>
           <AlertDialogHeader>
-          <AlertDialogTitle>Are you sure you want to log out?</AlertDialogTitle>
+          <AlertDialogTitle>{t('logout_confirm_title')}</AlertDialogTitle>
           <AlertDialogDescription>
-              You will be returned to the login page.
+              {t('logout_confirm_desc')}
           </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-          <AlertDialogCancel>Cancel</AlertDialogCancel>
+          <AlertDialogCancel>{t('cancel')}</AlertDialogCancel>
           <AlertDialogAction onClick={handleLogout} disabled={isLoggingOut} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
-              {isLoggingOut ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Logging out...</> : 'Logout'}
+              {isLoggingOut ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> {t('logging_out')}</> : t('logout')}
           </AlertDialogAction>
           </AlertDialogFooter>
       </AlertDialogContent>

@@ -29,6 +29,7 @@ import { Input } from '@/components/ui/input';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
+import { useLanguage } from '@/hooks/use-language';
 
 const roleVariant: { [key: string]: 'default' | 'secondary' | 'destructive' } = {
   admin: 'default',
@@ -53,6 +54,7 @@ export default function ProfilePage() {
   const [employeeProfile, setEmployeeProfile] = useState<EmployeeProfileLink | null>(null);
   const [isEmployeeLoading, setIsEmployeeLoading] = useState(true);
   const [isPhotoDialogOpen, setIsPhotoDialogOpen] = useState(false);
+  const { t } = useLanguage();
 
   const photoForm = useForm<z.infer<typeof photoFormSchema>>({
     resolver: zodResolver(photoFormSchema),
@@ -147,9 +149,9 @@ export default function ProfilePage() {
   return (
     <div className="space-y-6">
        <div>
-        <h1 className="font-headline text-3xl font-bold tracking-tight">Your Profile</h1>
+        <h1 className="font-headline text-3xl font-bold tracking-tight">{t('profile_title')}</h1>
         <p className="text-muted-foreground">
-          Manage your personal account settings.
+          {t('profile_desc')}
         </p>
       </div>
 
@@ -173,7 +175,7 @@ export default function ProfilePage() {
                                 </DialogTrigger>
                                 <DialogContent>
                                     <DialogHeader>
-                                        <DialogTitle>Update Profile Photo</DialogTitle>
+                                        <DialogTitle>{t('update_profile_photo')}</DialogTitle>
                                     </DialogHeader>
                                     <Form {...photoForm}>
                                         <form onSubmit={photoForm.handleSubmit(onPhotoSubmit)} className="space-y-4 py-4">
@@ -182,7 +184,7 @@ export default function ProfilePage() {
                                                 name="photo"
                                                 render={({ field }) => (
                                                     <FormItem>
-                                                        <FormLabel>New Photo</FormLabel>
+                                                        <FormLabel>{t('new_photo')}</FormLabel>
                                                         <FormControl>
                                                             <Input
                                                                 type="file"
@@ -197,8 +199,8 @@ export default function ProfilePage() {
                                             <DialogFooter>
                                                 <Button type="submit" disabled={photoForm.formState.isSubmitting}>
                                                     {photoForm.formState.isSubmitting ? (
-                                                        <><Loader2 className="mr-2 animate-spin" /> Uploading...</>
-                                                    ) : 'Upload Photo'}
+                                                        <><Loader2 className="mr-2 animate-spin" /> {t('uploading')}</>
+                                                    ) : t('upload_photo')}
                                                 </Button>
                                             </DialogFooter>
                                         </form>
@@ -214,7 +216,7 @@ export default function ProfilePage() {
                     {employeeProfile && (
                         <Button asChild className="mt-6 w-full">
                             <Link href={`/employees/${employeeProfile.id}`}>
-                                <User className="mr-2" /> View Full Employee Profile
+                                <User className="mr-2" /> {t('view_full_profile')}
                             </Link>
                         </Button>
                     )}
@@ -226,32 +228,32 @@ export default function ProfilePage() {
         <div className="md:col-span-2 space-y-6">
             <Card>
                 <CardHeader>
-                    <CardTitle>Account Security</CardTitle>
-                    <CardDescription>Manage your password and other security settings.</CardDescription>
+                    <CardTitle>{t('account_security')}</CardTitle>
+                    <CardDescription>{t('account_security_desc')}</CardDescription>
                 </CardHeader>
                 <CardContent>
                     <div className="flex items-center justify-between rounded-lg border p-4">
                         <div>
-                            <h3 className="font-medium">Password</h3>
-                            <p className="text-sm text-muted-foreground">Click the button to send a password reset link to your email.</p>
+                            <h3 className="font-medium">{t('password')}</h3>
+                            <p className="text-sm text-muted-foreground">{t('password_reset_desc')}</p>
                         </div>
                         <Button onClick={handlePasswordReset} disabled={isResetting} variant="outline">
                             {isResetting ? <Loader2 className="mr-2 animate-spin" /> : <KeyRound className="mr-2" />}
-                            Reset Password
+                            {t('reset_password')}
                         </Button>
                     </div>
                 </CardContent>
             </Card>
              <Card>
                 <CardHeader>
-                    <CardTitle>Preferences</CardTitle>
-                    <CardDescription>Customize the application's appearance.</CardDescription>
+                    <CardTitle>{t('preferences')}</CardTitle>
+                    <CardDescription>{t('preferences_desc')}</CardDescription>
                 </CardHeader>
                 <CardContent>
                     <div className="flex items-center justify-between rounded-lg border p-4">
                         <div className="space-y-0.5">
-                        <h3 className="font-medium flex items-center gap-2"><Palette className="size-4"/> Theme Mode</h3>
-                        <p className="text-sm text-muted-foreground">Select a light or dark theme for the interface.</p>
+                        <h3 className="font-medium flex items-center gap-2"><Palette className="size-4"/> {t('theme_mode')}</h3>
+                        <p className="text-sm text-muted-foreground">{t('theme_mode_desc')}</p>
                         </div>
                         <ThemeToggle />
                     </div>

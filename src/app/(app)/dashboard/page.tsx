@@ -44,9 +44,11 @@ import {
 import { firestore } from '@/lib/firebase';
 import { Skeleton } from '@/components/ui/skeleton';
 import { startOfMonth, endOfMonth, formatDistanceToNow, addDays, isPast } from 'date-fns';
+import { ar, enUS } from 'date-fns/locale';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
+import { useLanguage } from '@/hooks/use-language';
 
 // Simplified types for dashboard calculations
 type Project = { status: 'Planning' | 'In Progress' | 'Completed' | 'On Hold' };
@@ -130,6 +132,9 @@ export default function DashboardPage() {
   const [recentActivities, setRecentActivities] = useState<Activity[]>([]);
   const [maintenanceTasks, setMaintenanceTasks] = useState<Asset[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const { t, locale } = useLanguage();
+
+  const fnsLocale = useMemo(() => (locale === 'ar' ? ar : enUS), [locale]);
 
   const pendingTasks = useMemo(
     () => [...procurementTasks, ...inventoryTasks, ...materialRequestTasks],
@@ -322,7 +327,7 @@ export default function DashboardPage() {
 
   const chartConfig = {
     projects: {
-      label: 'Projects',
+      label: t('projects_chart_label'),
       color: 'hsl(var(--chart-1))',
     },
   } satisfies ChartConfig;
@@ -330,12 +335,12 @@ export default function DashboardPage() {
   return (
     <div className="flex flex-col gap-6">
       <h1 className="font-headline text-3xl font-bold tracking-tight">
-        Dashboard
+        {t('dashboard_title')}
       </h1>
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Active Projects</CardTitle>
+            <CardTitle className="text-sm font-medium">{t('active_projects')}</CardTitle>
             <Briefcase className="size-5 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -348,7 +353,7 @@ export default function DashboardPage() {
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Employees</CardTitle>
+            <CardTitle className="text-sm font-medium">{t('total_employees')}</CardTitle>
             <Users className="size-5 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -361,7 +366,7 @@ export default function DashboardPage() {
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Clients</CardTitle>
+            <CardTitle className="text-sm font-medium">{t('total_clients')}</CardTitle>
             <Contact className="size-5 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -374,7 +379,7 @@ export default function DashboardPage() {
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Suppliers</CardTitle>
+            <CardTitle className="text-sm font-medium">{t('total_suppliers')}</CardTitle>
             <Truck className="size-5 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -388,7 +393,7 @@ export default function DashboardPage() {
         <Card className="bg-success/10 border-success">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">
-              Monthly Revenue
+              {t('monthly_revenue')}
             </CardTitle>
             <TrendingUp className="size-5 text-success" />
           </CardHeader>
@@ -405,7 +410,7 @@ export default function DashboardPage() {
         <Card className="bg-destructive/10 border-destructive">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">
-              Monthly Expenses
+              {t('monthly_expenses')}
             </CardTitle>
             <TrendingDown className="size-5 text-destructive" />
           </CardHeader>
@@ -421,7 +426,7 @@ export default function DashboardPage() {
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Net Balance</CardTitle>
+            <CardTitle className="text-sm font-medium">{t('net_balance')}</CardTitle>
             <DollarSign
               className={cn(
                 'size-5 text-muted-foreground',
@@ -446,7 +451,7 @@ export default function DashboardPage() {
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Assets</CardTitle>
+            <CardTitle className="text-sm font-medium">{t('total_assets')}</CardTitle>
             <Wrench className="size-5 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -461,7 +466,7 @@ export default function DashboardPage() {
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
         <Card className="lg:col-span-2">
           <CardHeader>
-            <CardTitle>Project Status Overview</CardTitle>
+            <CardTitle>{t('project_status_overview')}</CardTitle>
           </CardHeader>
           <CardContent className="pl-2">
             {isLoading ? (
@@ -497,11 +502,11 @@ export default function DashboardPage() {
         </Card>
         <Card>
           <CardHeader>
-            <CardTitle>Pending Tasks</CardTitle>
+            <CardTitle>{t('pending_tasks')}</CardTitle>
             <CardDescription>
               {pendingTasks.length > 0
-                ? `You have ${pendingTasks.length} pending task(s).`
-                : 'Items that require your attention.'}
+                ? t('pending_tasks_desc').replace('{count}', pendingTasks.length.toString())
+                : t('pending_tasks_desc_none')}
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -525,20 +530,20 @@ export default function DashboardPage() {
                       </p>
                     </div>
                     <Button asChild size="sm" variant="outline">
-                      <Link href={task.link}>View</Link>
+                      <Link href={task.link}>{t('view')}</Link>
                     </Button>
                   </div>
                 ))}
                 {pendingTasks.length > 5 && (
                   <p className="text-sm text-muted-foreground pt-2">
-                    And {pendingTasks.length - 5} more...
+                    {t('and_x_more').replace('{count}', (pendingTasks.length - 5).toString())}
                   </p>
                 )}
               </div>
             ) : (
               <div className="flex h-24 flex-col items-center justify-center text-center">
                 <p className="text-sm text-muted-foreground">
-                  You have no pending tasks.
+                  {t('no_pending_tasks')}
                 </p>
               </div>
             )}
@@ -546,9 +551,9 @@ export default function DashboardPage() {
         </Card>
         <Card>
           <CardHeader>
-            <CardTitle>Upcoming Maintenance</CardTitle>
+            <CardTitle>{t('upcoming_maintenance')}</CardTitle>
             <CardDescription>
-                Assets that require maintenance soon or are overdue.
+                {t('upcoming_maintenance_desc')}
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -567,7 +572,7 @@ export default function DashboardPage() {
                                 <div>
                                     <Link href={`/assets/${asset.id}`} className="font-semibold hover:underline">{asset.name}</Link>
                                     <p className={cn("text-sm", isOverdue ? 'text-destructive' : 'text-muted-foreground')}>
-                                        {formatDistanceToNow(asset.nextMaintenanceDate.toDate(), { addSuffix: true })}
+                                        {formatDistanceToNow(asset.nextMaintenanceDate.toDate(), { addSuffix: true, locale: fnsLocale })}
                                     </p>
                                 </div>
                                 <AlertCircle className={cn('size-5', isOverdue ? 'text-destructive' : 'text-yellow-500')} />
@@ -576,14 +581,14 @@ export default function DashboardPage() {
                     })}
                     {maintenanceTasks.length > 5 && (
                         <p className="text-sm text-muted-foreground pt-2">
-                            And {maintenanceTasks.length - 5} more...
+                            {t('and_x_more').replace('{count}', (maintenanceTasks.length - 5).toString())}
                         </p>
                     )}
                 </div>
             ) : (
                  <div className="flex h-24 flex-col items-center justify-center text-center">
                     <p className="text-sm text-muted-foreground">
-                        No upcoming maintenance.
+                        {t('no_upcoming_maintenance')}
                     </p>
                 </div>
             )}
@@ -591,9 +596,9 @@ export default function DashboardPage() {
         </Card>
         <Card className="lg:col-span-2">
           <CardHeader>
-            <CardTitle>Recent Activity</CardTitle>
+            <CardTitle>{t('recent_activity')}</CardTitle>
             <CardDescription>
-              A log of recent events across the system.
+              {t('recent_activity_desc')}
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -620,11 +625,12 @@ export default function DashboardPage() {
                       <p className="text-sm font-medium">{activity.message}</p>
                       <p className="text-xs text-muted-foreground">
                         <Link href={activity.link} className="hover:underline">
-                          View Details
+                          {t('view_details')}
                         </Link>{' '}
                         &middot;{' '}
                         {activity.timestamp ? formatDistanceToNow(activity.timestamp.toDate(), {
                           addSuffix: true,
+                          locale: fnsLocale,
                         }) : ''}
                       </p>
                     </div>
@@ -635,7 +641,7 @@ export default function DashboardPage() {
               <div className="flex h-24 flex-col items-center justify-center text-center">
                 <FileText className="size-8 text-muted-foreground" />
                 <p className="mt-2 text-sm text-muted-foreground">
-                  No recent activity.
+                  {t('no_recent_activity')}
                 </p>
               </div>
             )}
