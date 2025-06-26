@@ -38,6 +38,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useToast } from '@/hooks/use-toast';
 import { addMaintenanceLog, type MaintenanceLogFormValues } from './actions';
+import { useLanguage } from '@/hooks/use-language';
 
 type AssetStatus = 'Available' | 'In Use' | 'Under Maintenance' | 'Decommissioned';
 
@@ -102,6 +103,7 @@ export default function AssetDetailPage({ params }: { params: { id: string } }) 
   const { profile } = useAuth();
   const { toast } = useToast();
   const assetId = params.id;
+  const { t } = useLanguage();
 
   useEffect(() => {
     if (!assetId) return;
@@ -183,12 +185,12 @@ export default function AssetDetailPage({ params }: { params: { id: string } }) 
     return (
       <div className="flex flex-col items-center justify-center text-center h-[50vh]">
         <Wrench className="w-16 h-16 mb-4 text-destructive" />
-        <h2 className="text-2xl font-bold">Error</h2>
+        <h2 className="text-2xl font-bold">{t('error')}</h2>
         <p className="text-muted-foreground">{error}</p>
          <Button asChild variant="outline" className="mt-4">
           <Link href="/assets">
             <ArrowLeft className="mr-2" />
-            Back to Assets
+            {t('assets.back_to_assets')}
           </Link>
         </Button>
       </div>
@@ -203,7 +205,7 @@ export default function AssetDetailPage({ params }: { params: { id: string } }) 
             <Button asChild variant="outline" size="icon">
                 <Link href="/assets">
                     <ArrowLeft />
-                    <span className="sr-only">Back to Assets</span>
+                    <span className="sr-only">{t('assets.back_to_assets')}</span>
                 </Link>
             </Button>
             <div>
@@ -215,27 +217,27 @@ export default function AssetDetailPage({ params }: { params: { id: string } }) 
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
             <Card className="lg:col-span-1">
                 <CardHeader>
-                    <CardTitle>Asset Details</CardTitle>
+                    <CardTitle>{t('assets.details_card_title')}</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4 text-sm">
                     <div className="flex justify-between">
-                        <span className="text-muted-foreground">Status</span>
+                        <span className="text-muted-foreground">{t('status')}</span>
                         <Badge variant={statusVariant[asset.status]}>{asset.status}</Badge>
                     </div>
                     <div className="flex justify-between">
-                        <span className="text-muted-foreground">Purchase Date</span>
+                        <span className="text-muted-foreground">{t('assets.purchase_date')}</span>
                         <span>{format(asset.purchaseDate.toDate(), 'PPP')}</span>
                     </div>
                     <div className="flex justify-between">
-                        <span className="text-muted-foreground">Purchase Cost</span>
+                        <span className="text-muted-foreground">{t('assets.purchase_cost_label')}</span>
                         <span className="font-semibold">{formatCurrency(asset.purchaseCost)}</span>
                     </div>
                     <div className="flex justify-between">
-                        <span className="text-muted-foreground">Next Maintenance</span>
+                        <span className="text-muted-foreground">{t('assets.next_maintenance_label')}</span>
                         <span>{asset.nextMaintenanceDate ? format(asset.nextMaintenanceDate.toDate(), 'PPP') : 'N/A'}</span>
                     </div>
                     <div className="flex justify-between">
-                        <span className="text-muted-foreground">Assigned Project</span>
+                        <span className="text-muted-foreground">{t('assets.assigned_project_header')}</span>
                         <span>{project ? <Link href={`/projects/${project.id}`} className="font-medium text-primary hover:underline">{project.name}</Link> : 'N/A'}</span>
                     </div>
                 </CardContent>
@@ -244,29 +246,29 @@ export default function AssetDetailPage({ params }: { params: { id: string } }) 
             <Card className="lg:col-span-2">
                 <CardHeader className="flex flex-row items-center justify-between">
                     <div>
-                        <CardTitle>Maintenance History</CardTitle>
-                        <CardDescription>A log of all maintenance performed on this asset.</CardDescription>
+                        <CardTitle>{t('assets.maintenance_history_title')}</CardTitle>
+                        <CardDescription>{t('assets.maintenance_history_desc')}</CardDescription>
                     </div>
                     {['admin', 'manager'].includes(profile?.role || '') && (
                         <Dialog open={isLogDialogOpen} onOpenChange={setIsLogDialogOpen}>
-                            <DialogTrigger asChild><Button><PlusCircle className="mr-2" /> Log Maintenance</Button></DialogTrigger>
+                            <DialogTrigger asChild><Button><PlusCircle className="mr-2" />{t('assets.log_maintenance_button')}</Button></DialogTrigger>
                             <DialogContent>
                                 <DialogHeader>
-                                    <DialogTitle>Log New Maintenance</DialogTitle>
+                                    <DialogTitle>{t('assets.log_new_maintenance_title')}</DialogTitle>
                                 </DialogHeader>
                                 <Form {...logForm}>
                                     <form onSubmit={logForm.handleSubmit(onLogSubmit)} className="space-y-4 py-4">
                                         <div className="grid grid-cols-2 gap-4">
-                                            <FormField control={logForm.control} name="date" render={({ field }) => (<FormItem><FormLabel>Date</FormLabel><FormControl><Input type="date" {...field} /></FormControl><FormMessage /></FormItem>)} />
-                                            <FormField control={logForm.control} name="type" render={({ field }) => (<FormItem><FormLabel>Type</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Select type" /></SelectTrigger></FormControl><SelectContent>{maintenanceTypes.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>)} />
+                                            <FormField control={logForm.control} name="date" render={({ field }) => (<FormItem><FormLabel>{t('date')}</FormLabel><FormControl><Input type="date" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                                            <FormField control={logForm.control} name="type" render={({ field }) => (<FormItem><FormLabel>{t('type')}</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Select type" /></SelectTrigger></FormControl><SelectContent>{maintenanceTypes.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>)} />
                                         </div>
-                                        <FormField control={logForm.control} name="description" render={({ field }) => (<FormItem><FormLabel>Description of Work</FormLabel><FormControl><Textarea placeholder="Describe the maintenance performed..." {...field} /></FormControl><FormMessage /></FormItem>)} />
+                                        <FormField control={logForm.control} name="description" render={({ field }) => (<FormItem><FormLabel>{t('assets.description_of_work')}</FormLabel><FormControl><Textarea placeholder={t('assets.work_desc_placeholder')} {...field} /></FormControl><FormMessage /></FormItem>)} />
                                         <div className="grid grid-cols-2 gap-4">
-                                            <FormField control={logForm.control} name="cost" render={({ field }) => (<FormItem><FormLabel>Cost (LE) (Optional)</FormLabel><FormControl><Input type="number" placeholder="e.g., 500.00" {...field} /></FormControl><FormMessage /></FormItem>)} />
-                                            <FormField control={logForm.control} name="completedBy" render={({ field }) => (<FormItem><FormLabel>Completed By (Optional)</FormLabel><FormControl><Input placeholder="e.g., Internal Team / Vendor Name" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                                            <FormField control={logForm.control} name="cost" render={({ field }) => (<FormItem><FormLabel>{t('assets.cost_le_optional')}</FormLabel><FormControl><Input type="number" placeholder={t('assets.cost_placeholder')} {...field} /></FormControl><FormMessage /></FormItem>)} />
+                                            <FormField control={logForm.control} name="completedBy" render={({ field }) => (<FormItem><FormLabel>{t('assets.completed_by_optional')}</FormLabel><FormControl><Input placeholder={t('assets.completed_by_placeholder')} {...field} /></FormControl><FormMessage /></FormItem>)} />
                                         </div>
                                         <DialogFooter>
-                                            <Button type="submit" disabled={logForm.formState.isSubmitting}>{logForm.formState.isSubmitting ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Saving...</> : 'Save Log'}</Button>
+                                            <Button type="submit" disabled={logForm.formState.isSubmitting}>{logForm.formState.isSubmitting ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> {t('saving')}</> : t('assets.save_log_button')}</Button>
                                         </DialogFooter>
                                     </form>
                                 </Form>
@@ -277,7 +279,7 @@ export default function AssetDetailPage({ params }: { params: { id: string } }) 
                 <CardContent>
                     {maintenanceLogs.length > 0 ? (
                         <Table>
-                            <TableHeader><TableRow><TableHead>Date</TableHead><TableHead>Type</TableHead><TableHead>Description</TableHead><TableHead className="text-right">Cost</TableHead></TableRow></TableHeader>
+                            <TableHeader><TableRow><TableHead>{t('date')}</TableHead><TableHead>{t('type')}</TableHead><TableHead>{t('description')}</TableHead><TableHead className="text-right">{t('amount')}</TableHead></TableRow></TableHeader>
                             <TableBody>
                                 {maintenanceLogs.map(log => (
                                     <TableRow key={log.id}>
@@ -290,7 +292,7 @@ export default function AssetDetailPage({ params }: { params: { id: string } }) 
                             </TableBody>
                         </Table>
                     ) : (
-                        <div className="flex flex-col items-center justify-center gap-2 py-8 text-center text-muted-foreground"><ListTodo className="size-12" /><p>No maintenance logs recorded for this asset yet.</p></div>
+                        <div className="flex flex-col items-center justify-center gap-2 py-8 text-center text-muted-foreground"><ListTodo className="size-12" /><p>{t('assets.no_maintenance_logs')}</p></div>
                     )}
                 </CardContent>
             </Card>

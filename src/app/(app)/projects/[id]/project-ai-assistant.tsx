@@ -12,6 +12,7 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
 import { ProjectLogSummary } from './project-log-summary';
+import { useLanguage } from '@/hooks/use-language';
 
 interface ProjectAiAssistantProps {
   project: Project;
@@ -29,6 +30,7 @@ export function ProjectAiAssistant({ project, onSuggestTasks, isSuggestingTasks 
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [analysis, setAnalysis] = useState<ProjectRiskAnalysisOutput | null>(null);
+  const { t } = useLanguage();
 
   const fetchAnalysis = useCallback(async () => {
     setIsLoading(true);
@@ -56,13 +58,13 @@ export function ProjectAiAssistant({ project, onSuggestTasks, isSuggestingTasks 
     <div className="space-y-6">
       <Card>
         <CardHeader>
-            <CardTitle>AI Project Actions</CardTitle>
-            <CardDescription>Use AI to perform actions like suggesting a task list for this project.</CardDescription>
+            <CardTitle>{t('projects.ai_project_actions')}</CardTitle>
+            <CardDescription>{t('projects.ai_project_actions_desc')}</CardDescription>
         </CardHeader>
         <CardContent>
             <Button onClick={onSuggestTasks} disabled={isSuggestingTasks}>
                 {isSuggestingTasks ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Sparkles className="mr-2" />}
-                Suggest Full Task List
+                {t('projects.suggest_full_task_list')}
             </Button>
         </CardContent>
       </Card>
@@ -71,9 +73,9 @@ export function ProjectAiAssistant({ project, onSuggestTasks, isSuggestingTasks 
 
       <Card>
         <CardHeader>
-          <CardTitle>Project Risk Analysis</CardTitle>
+          <CardTitle>{t('projects.project_risk_analysis_title')}</CardTitle>
           <CardDescription>
-            Use AI to analyze the project's details and identify potential risks and mitigation strategies.
+            {t('projects.project_risk_analysis_desc')}
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
@@ -102,11 +104,11 @@ export function ProjectAiAssistant({ project, onSuggestTasks, isSuggestingTasks 
           {error && !isLoading && (
             <Alert variant="destructive">
               <AlertCircle className="h-4 w-4" />
-              <AlertTitle>Analysis Failed</AlertTitle>
+              <AlertTitle>{t('projects.analysis_failed')}</AlertTitle>
               <AlertDescription>{error}</AlertDescription>
               <div className="flex justify-end mt-4">
                   <Button onClick={fetchAnalysis} variant="outline" size="sm" disabled={isLoading}>
-                      Re-analyze
+                      {t('projects.re_analyze')}
                   </Button>
               </div>
             </Alert>
@@ -117,14 +119,14 @@ export function ProjectAiAssistant({ project, onSuggestTasks, isSuggestingTasks 
               <div className="flex justify-end">
                   <Button onClick={fetchAnalysis} variant="outline" disabled={isLoading}>
                       {isLoading ? (
-                          <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Re-analyzing...</>
-                      ) : ( 'Re-analyze' )}
+                          <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> {t('projects.re_analyzing')}</>
+                      ) : ( t('projects.re_analyze') )}
                   </Button>
               </div>
                {analysis.risks.length === 0 ? (
                   <div className="flex flex-col items-center justify-center gap-4 rounded-lg border-2 border-dashed border-muted p-8 text-center">
                       <ShieldCheck className="size-12 text-muted-foreground" />
-                      <p className="text-muted-foreground">AI analysis completed. No specific risks were identified for "{project.name}".</p>
+                      <p className="text-muted-foreground">{t('projects.no_risks_identified', { name: project.name })}</p>
                   </div>
               ) : (
                 analysis.risks.map((risk, index) => (

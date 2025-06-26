@@ -63,6 +63,7 @@ import Link from 'next/link';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { cn } from '@/lib/utils';
 import React from 'react';
+import { useLanguage } from '@/hooks/use-language';
 
 
 type AssetStatus = 'Available' | 'In Use' | 'Under Maintenance' | 'Decommissioned';
@@ -172,6 +173,7 @@ export default function AssetsPage() {
   const [isDeleting, setIsDeleting] = useState(false);
   const { toast } = useToast();
   const { profile } = useAuth();
+  const { t } = useLanguage();
   
   const [searchTerm, setSearchTerm] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('All');
@@ -305,40 +307,40 @@ export default function AssetsPage() {
         <div className="space-y-6">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="font-headline text-3xl font-bold tracking-tight">Asset Management</h1>
-              <p className="text-muted-foreground">Track vehicles, heavy machinery, and tools.</p>
+              <h1 className="font-headline text-3xl font-bold tracking-tight">{t('assets.page_title')}</h1>
+              <p className="text-muted-foreground">{t('assets.page_desc')}</p>
             </div>
             {['admin', 'manager'].includes(profile?.role || '') && (
                 <Dialog open={isFormDialogOpen} onOpenChange={handleFormDialogOpenChange}>
                 <DialogTrigger asChild>
                     <Button onClick={() => setAssetToEdit(null)}>
                     <PlusCircle className="mr-2" />
-                    Add Asset
+                    {t('assets.add_button')}
                     </Button>
                 </DialogTrigger>
                 <DialogContent className="sm:max-w-xl">
                     <DialogHeader>
-                    <DialogTitle>{assetToEdit ? 'Edit Asset' : 'Add New Asset'}</DialogTitle>
-                    <DialogDescription>Fill in the details for the asset.</DialogDescription>
+                    <DialogTitle>{assetToEdit ? t('assets.edit_title') : t('assets.add_title')}</DialogTitle>
+                    <DialogDescription>{t('assets.edit_desc')}</DialogDescription>
                     </DialogHeader>
                     <Form {...form}>
                     <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 py-4">
-                        <FormField control={form.control} name="name" render={({ field }) => (<FormItem><FormLabel>Asset Name</FormLabel><FormControl><Input placeholder="e.g., Caterpillar 320 Excavator" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                        <FormField control={form.control} name="name" render={({ field }) => (<FormItem><FormLabel>{t('assets.name_label')}</FormLabel><FormControl><Input placeholder={t('assets.name_placeholder')} {...field} /></FormControl><FormMessage /></FormItem>)} />
                         <div className="grid grid-cols-2 gap-4">
-                            <FormField control={form.control} name="category" render={({ field }) => (<FormItem><FormLabel>Category</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Select a category" /></SelectTrigger></FormControl><SelectContent>{assetCategories.map(cat => (<SelectItem key={cat} value={cat}>{cat}</SelectItem>))}</SelectContent></Select><FormMessage /></FormItem>)} />
-                            <FormField control={form.control} name="status" render={({ field }) => (<FormItem><FormLabel>Status</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Select a status" /></SelectTrigger></FormControl><SelectContent>{Object.keys(statusVariant).map(s => (<SelectItem key={s} value={s}>{s}</SelectItem>))}</SelectContent></Select><FormMessage /></FormItem>)} />
+                            <FormField control={form.control} name="category" render={({ field }) => (<FormItem><FormLabel>{t('category')}</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue placeholder={t('assets.select_category')} /></SelectTrigger></FormControl><SelectContent>{assetCategories.map(cat => (<SelectItem key={cat} value={cat}>{cat}</SelectItem>))}</SelectContent></Select><FormMessage /></FormItem>)} />
+                            <FormField control={form.control} name="status" render={({ field }) => (<FormItem><FormLabel>{t('status')}</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue placeholder={t('assets.select_status')} /></SelectTrigger></FormControl><SelectContent>{Object.keys(statusVariant).map(s => (<SelectItem key={s} value={s}>{s}</SelectItem>))}</SelectContent></Select><FormMessage /></FormItem>)} />
                         </div>
                         <div className="grid grid-cols-2 gap-4">
-                            <FormField control={form.control} name="purchaseDate" render={({ field }) => (<FormItem><FormLabel>Purchase Date</FormLabel><FormControl><Input type="date" {...field} /></FormControl><FormMessage /></FormItem>)} />
-                            <FormField control={form.control} name="purchaseCost" render={({ field }) => (<FormItem><FormLabel>Purchase Cost (LE)</FormLabel><FormControl><Input type="number" placeholder="e.g., 1500000" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                            <FormField control={form.control} name="purchaseDate" render={({ field }) => (<FormItem><FormLabel>{t('assets.purchase_date')}</FormLabel><FormControl><Input type="date" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                            <FormField control={form.control} name="purchaseCost" render={({ field }) => (<FormItem><FormLabel>{t('assets.purchase_cost')}</FormLabel><FormControl><Input type="number" placeholder={t('assets.purchase_cost_placeholder')} {...field} /></FormControl><FormMessage /></FormItem>)} />
                         </div>
                          <div className="grid grid-cols-2 gap-4">
-                            <FormField control={form.control} name="currentProjectId" render={({ field }) => (<FormItem><FormLabel>Assigned Project (Optional)</FormLabel><Select onValueChange={(value) => field.onChange(value === 'none' ? '' : value)} value={field.value || 'none'}><FormControl><SelectTrigger><SelectValue placeholder="Select a project" /></SelectTrigger></FormControl><SelectContent><SelectItem value="none">None</SelectItem>{projects.map(p => (<SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>))}</SelectContent></Select><FormMessage /></FormItem>)} />
-                            <FormField control={form.control} name="nextMaintenanceDate" render={({ field }) => (<FormItem><FormLabel>Next Maintenance (Optional)</FormLabel><FormControl><Input type="date" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                            <FormField control={form.control} name="currentProjectId" render={({ field }) => (<FormItem><FormLabel>{t('assets.assigned_project_optional')}</FormLabel><Select onValueChange={(value) => field.onChange(value === 'none' ? '' : value)} value={field.value || 'none'}><FormControl><SelectTrigger><SelectValue placeholder={t('assets.select_project')} /></SelectTrigger></FormControl><SelectContent><SelectItem value="none">{t('projects.none')}</SelectItem>{projects.map(p => (<SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>))}</SelectContent></Select><FormMessage /></FormItem>)} />
+                            <FormField control={form.control} name="nextMaintenanceDate" render={({ field }) => (<FormItem><FormLabel>{t('assets.next_maintenance_optional')}</FormLabel><FormControl><Input type="date" {...field} /></FormControl><FormMessage /></FormItem>)} />
                         </div>
                         <DialogFooter>
                         <Button type="submit" disabled={form.formState.isSubmitting}>
-                            {form.formState.isSubmitting ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Saving...</> : (assetToEdit ? 'Save Changes' : 'Save Asset')}
+                            {form.formState.isSubmitting ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> {t('saving')}</> : (assetToEdit ? t('save_changes') : t('assets.save_asset_button'))}
                         </Button>
                         </DialogFooter>
                     </form>
@@ -352,17 +354,17 @@ export default function AssetsPage() {
             <CardHeader>
               <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
                 <div>
-                  <CardTitle>Asset List</CardTitle>
-                  <CardDescription>A list of all company assets.</CardDescription>
+                  <CardTitle>{t('assets.list_title')}</CardTitle>
+                  <CardDescription>{t('assets.list_desc')}</CardDescription>
                 </div>
                 <div className="flex flex-col items-stretch gap-2 md:flex-row md:items-center">
                   <div className="relative w-full md:w-auto">
                     <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                    <Input type="search" placeholder="Search by name..." className="w-full pl-8 md:w-[200px]" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
+                    <Input type="search" placeholder={t('assets.search_placeholder')} className="w-full pl-8 md:w-[200px]" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
                   </div>
-                  <Select value={categoryFilter} onValueChange={setCategoryFilter}><SelectTrigger className="w-full md:w-[180px]"><SelectValue placeholder="Filter by category" /></SelectTrigger><SelectContent><SelectItem value="All">All Categories</SelectItem>{assetCategories.map(cat => (<SelectItem key={cat} value={cat}>{cat}</SelectItem>))}</SelectContent></Select>
-                  <Select value={statusFilter} onValueChange={setStatusFilter}><SelectTrigger className="w-full md:w-[150px]"><SelectValue placeholder="Filter by status" /></SelectTrigger><SelectContent><SelectItem value="All">All Statuses</SelectItem>{Object.keys(statusVariant).map(s => (<SelectItem key={s} value={s}>{s}</SelectItem>))}</SelectContent></Select>
-                   <Select value={maintenanceFilter} onValueChange={setMaintenanceFilter}><SelectTrigger className="w-full md:w-[180px]"><SelectValue placeholder="Maintenance Status" /></SelectTrigger><SelectContent><SelectItem value="All">All Maintenance</SelectItem><SelectItem value="Upcoming">Upcoming</SelectItem><SelectItem value="Overdue">Overdue</SelectItem></SelectContent></Select>
+                  <Select value={categoryFilter} onValueChange={setCategoryFilter}><SelectTrigger className="w-full md:w-[180px]"><SelectValue placeholder={t('assets.filter_by_category')} /></SelectTrigger><SelectContent><SelectItem value="All">{t('assets.all_categories')}</SelectItem>{assetCategories.map(cat => (<SelectItem key={cat} value={cat}>{cat}</SelectItem>))}</SelectContent></Select>
+                  <Select value={statusFilter} onValueChange={setStatusFilter}><SelectTrigger className="w-full md:w-[150px]"><SelectValue placeholder={t('clients.filter_by_status')} /></SelectTrigger><SelectContent><SelectItem value="All">{t('assets.all_statuses')}</SelectItem>{Object.keys(statusVariant).map(s => (<SelectItem key={s} value={s}>{s}</SelectItem>))}</SelectContent></Select>
+                   <Select value={maintenanceFilter} onValueChange={setMaintenanceFilter}><SelectTrigger className="w-full md:w-[180px]"><SelectValue placeholder={t('assets.maintenance_status')} /></SelectTrigger><SelectContent><SelectItem value="All">{t('assets.all_maintenance')}</SelectItem><SelectItem value="Upcoming">{t('assets.upcoming')}</SelectItem><SelectItem value="Overdue">{t('assets.overdue')}</SelectItem></SelectContent></Select>
                 </div>
               </div>
             </CardHeader>
@@ -370,12 +372,12 @@ export default function AssetsPage() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Asset Name</TableHead>
-                    <TableHead>Category</TableHead>
-                    <TableHead>Assigned Project</TableHead>
-                    <TableHead className="hidden md:table-cell">Next Maintenance</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead><span className="sr-only">Actions</span></TableHead>
+                    <TableHead>{t('assets.asset_name_header')}</TableHead>
+                    <TableHead>{t('assets.category_header')}</TableHead>
+                    <TableHead>{t('assets.assigned_project_header')}</TableHead>
+                    <TableHead className="hidden md:table-cell">{t('assets.next_maintenance_header')}</TableHead>
+                    <TableHead>{t('status')}</TableHead>
+                    <TableHead><span className="sr-only">{t('actions')}</span></TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -410,11 +412,11 @@ export default function AssetsPage() {
                         <TableCell className="text-right">
                           {['admin', 'manager'].includes(profile?.role || '') && (
                             <DropdownMenu>
-                              <DropdownMenuTrigger asChild><Button aria-haspopup="true" size="icon" variant="ghost"><MoreHorizontal className="h-4 w-4" /><span className="sr-only">Toggle menu</span></Button></DropdownMenuTrigger>
+                              <DropdownMenuTrigger asChild><Button aria-haspopup="true" size="icon" variant="ghost"><MoreHorizontal className="h-4 w-4" /><span className="sr-only">{t('toggle_menu')}</span></Button></DropdownMenuTrigger>
                               <DropdownMenuContent align="end">
-                                <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                                <DropdownMenuItem onSelect={() => { setAssetToEdit(asset); setIsFormDialogOpen(true); }}>Edit</DropdownMenuItem>
-                                <DropdownMenuItem className="text-destructive" onSelect={() => { setAssetToDelete(asset); setIsDeleteDialogOpen(true); }}><Trash2 className="mr-2 h-4 w-4" />Delete</DropdownMenuItem>
+                                <DropdownMenuLabel>{t('actions')}</DropdownMenuLabel>
+                                <DropdownMenuItem onSelect={() => { setAssetToEdit(asset); setIsFormDialogOpen(true); }}>{t('edit')}</DropdownMenuItem>
+                                <DropdownMenuItem className="text-destructive" onSelect={() => { setAssetToDelete(asset); setIsDeleteDialogOpen(true); }}><Trash2 className="mr-2 h-4 w-4" />{t('delete')}</DropdownMenuItem>
                               </DropdownMenuContent>
                             </DropdownMenu>
                           )}
@@ -426,7 +428,7 @@ export default function AssetsPage() {
                       <TableCell colSpan={6} className="h-24 text-center">
                         <div className="flex flex-col items-center justify-center gap-2 text-muted-foreground">
                             <Wrench className="size-12" />
-                            No assets match the current filters.
+                            {t('assets.no_assets_match_filters')}
                         </div>
                       </TableCell>
                     </TableRow>
@@ -440,12 +442,12 @@ export default function AssetsPage() {
       <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
           <AlertDialogContent>
               <AlertDialogHeader>
-                  <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-                  <AlertDialogDescription>This action cannot be undone. This will permanently delete the asset "{assetToDelete?.name}".</AlertDialogDescription>
+                  <AlertDialogTitle>{t('are_you_sure')}</AlertDialogTitle>
+                  <AlertDialogDescription>{t('assets.delete_confirm_desc', { name: assetToDelete?.name })}</AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter>
-                  <AlertDialogCancel onClick={() => setAssetToDelete(null)}>Cancel</AlertDialogCancel>
-                  <AlertDialogAction onClick={handleDeleteAsset} disabled={isDeleting} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">{isDeleting ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Deleting...</> : <><Trash2 className="mr-2 h-4 w-4" />Delete</>}</AlertDialogAction>
+                  <AlertDialogCancel onClick={() => setAssetToDelete(null)}>{t('cancel')}</AlertDialogCancel>
+                  <AlertDialogAction onClick={handleDeleteAsset} disabled={isDeleting} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">{isDeleting ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> {t('deleting')}</> : <><Trash2 className="mr-2 h-4 w-4" />{t('delete')}</>}</AlertDialogAction>
               </AlertDialogFooter>
           </AlertDialogContent>
       </AlertDialog>

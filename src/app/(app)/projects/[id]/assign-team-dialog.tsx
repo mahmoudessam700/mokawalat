@@ -21,6 +21,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Loader2, Users } from 'lucide-react';
 import { assignTeamToProject } from '../actions';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { useLanguage } from '@/hooks/use-language';
 
 // Employee type mirroring what's in employees/page.tsx
 type Employee = {
@@ -44,6 +45,7 @@ interface AssignTeamDialogProps {
 export function AssignTeamDialog({ projectId, employees, assignedEmployeeIds }: AssignTeamDialogProps) {
   const [isOpen, setIsOpen] = useState(false);
   const { toast } = useToast();
+  const { t } = useLanguage();
 
   const form = useForm<AssignTeamFormValues>({
     resolver: zodResolver(assignTeamFormSchema),
@@ -75,14 +77,14 @@ export function AssignTeamDialog({ projectId, employees, assignedEmployeeIds }: 
       <DialogTrigger asChild>
         <Button variant="outline">
           <Users className="mr-2" />
-          Assign Team
+          {t('projects.assign_team_button')}
         </Button>
       </DialogTrigger>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
-          <DialogTitle>Assign Team Members</DialogTitle>
+          <DialogTitle>{t('projects.assign_team_dialog_title')}</DialogTitle>
           <DialogDescription>
-            Select the employees to assign to this project.
+            {t('projects.assign_team_dialog_desc')}
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>
@@ -94,7 +96,7 @@ export function AssignTeamDialog({ projectId, employees, assignedEmployeeIds }: 
                 <FormItem>
                   <ScrollArea className="h-72 w-full rounded-md border p-4">
                     <div className="mb-4">
-                        <FormLabel className="text-base">Employees</FormLabel>
+                        <FormLabel className="text-base">{t('projects.employees_label')}</FormLabel>
                     </div>
                     {employees.map((employee) => (
                       <FormField
@@ -141,10 +143,10 @@ export function AssignTeamDialog({ projectId, employees, assignedEmployeeIds }: 
                 {form.formState.isSubmitting ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Saving...
+                    {t('saving')}
                   </>
                 ) : (
-                  'Save Team'
+                  t('projects.save_team_button')
                 )}
               </Button>
             </DialogFooter>

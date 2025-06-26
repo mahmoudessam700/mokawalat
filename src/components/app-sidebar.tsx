@@ -82,7 +82,7 @@ export function AppSidebar() {
     },
     {
       items: [
-        { href: '/projects', label: t('projects'), icon: Briefcase },
+        { href: '/projects', label: t('projects.page_title'), icon: Briefcase },
         { href: '/assets', label: t('asset_management'), icon: Wrench },
         { href: '/inventory', label: t('inventory'), icon: Warehouse },
         { href: '/procurement', label: t('purchase_orders'), icon: ShoppingCart },
@@ -91,7 +91,7 @@ export function AppSidebar() {
     },
     {
       items: [
-        { href: '/clients', label: t('clients_sales'), icon: Contact },
+        { href: '/clients', label: t('clients.page_title'), icon: Contact },
         { href: '/suppliers', label: t('suppliers.page_title'), icon: Truck },
         { href: '/employees', label: t('employees.page_title'), icon: Users },
       ],
@@ -207,13 +207,13 @@ export function AppSidebar() {
                                 <AvatarImage src={`https://placehold.co/40x40.png`} alt={profile?.email || user.email || ''} data-ai-hint="profile picture" />
                                 <AvatarFallback>{(user.email || 'U').charAt(0).toUpperCase()}</AvatarFallback>
                             </Avatar>
-                            <div className="flex flex-col overflow-hidden">
+                            <div className="flex flex-col overflow-hidden text-start">
                                 <span className="text-sm font-semibold truncate">{profile?.email || user.email}</span>
                                 <span className="text-xs text-muted-foreground capitalize">{profile?.role || 'User'}</span>
                             </div>
                         </>
                         ) : (
-                        <div className="flex flex-col">
+                        <div className="flex flex-col text-start">
                             <span className="text-sm font-semibold">Not logged in</span>
                         </div>
                         )}

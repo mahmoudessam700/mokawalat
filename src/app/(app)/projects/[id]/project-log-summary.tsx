@@ -8,6 +8,7 @@ import { AlertCircle, Loader2, Sparkles, Lightbulb } from 'lucide-react';
 import { getDailyLogSummary } from '../actions';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useLanguage } from '@/hooks/use-language';
 
 interface SummarizeDailyLogsOutput {
   summary: string;
@@ -21,6 +22,7 @@ export function ProjectLogSummary({ projectId }: ProjectLogSummaryProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [summary, setSummary] = useState<SummarizeDailyLogsOutput | null>(null);
+  const { t } = useLanguage();
 
   const fetchSummary = useCallback(async () => {
     setIsLoading(true);
@@ -45,10 +47,10 @@ export function ProjectLogSummary({ projectId }: ProjectLogSummaryProps) {
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
             <Lightbulb className="size-5 text-primary"/>
-            AI Daily Log Summary
+            {t('projects.ai_log_summary_title')}
         </CardTitle>
         <CardDescription>
-            Click the button to generate an AI-powered summary of all daily logs for this project.
+            {t('projects.ai_log_summary_desc')}
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -64,7 +66,7 @@ export function ProjectLogSummary({ projectId }: ProjectLogSummaryProps) {
         {error && !isLoading && (
             <Alert variant="destructive">
                 <AlertCircle className="h-4 w-4" />
-                <AlertTitle>Summary Failed</AlertTitle>
+                <AlertTitle>{t('projects.summary_failed')}</AlertTitle>
                 <AlertDescription>{error}</AlertDescription>
             </Alert>
         )}
@@ -72,7 +74,7 @@ export function ProjectLogSummary({ projectId }: ProjectLogSummaryProps) {
         {summary && !isLoading && (
              <Alert>
                 <Sparkles className="h-4 w-4" />
-                <AlertTitle>Generated Summary</AlertTitle>
+                <AlertTitle>{t('projects.generated_summary')}</AlertTitle>
                 <AlertDescription className="whitespace-pre-wrap">{summary.summary}</AlertDescription>
             </Alert>
         )}
@@ -80,9 +82,9 @@ export function ProjectLogSummary({ projectId }: ProjectLogSummaryProps) {
         <div className="flex justify-end">
             <Button onClick={fetchSummary} variant="outline" disabled={isLoading}>
                 {isLoading ? (
-                    <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Generating...</>
+                    <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> {t('generating')}...</>
                 ) : (
-                    summary ? 'Regenerate Summary' : 'Generate Summary'
+                    summary ? t('projects.regenerate_summary') : t('projects.generate_summary')
                 )}
             </Button>
         </div>

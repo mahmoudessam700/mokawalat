@@ -9,6 +9,7 @@ import { updateTaskStatus } from '../actions';
 import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useLanguage } from '@/hooks/use-language';
 
 interface ProjectTasksKanbanProps {
   tasks: Task[];
@@ -22,6 +23,7 @@ const columns: TaskStatus[] = ['To Do', 'In Progress', 'Done'];
 export function ProjectTasksKanban({ tasks, projectId }: ProjectTasksKanbanProps) {
   const [isClient, setIsClient] = useState(false);
   const { toast } = useToast();
+  const { t } = useLanguage();
 
   useEffect(() => {
     setIsClient(true);
@@ -103,7 +105,7 @@ export function ProjectTasksKanban({ tasks, projectId }: ProjectTasksKanbanProps
                                   <p className="font-medium text-sm">{task.name}</p>
                                   {task.dueDate && (
                                     <p className="text-xs text-muted-foreground mt-2">
-                                      Due: {format(task.dueDate.toDate(), 'PPP')}
+                                      {t('due')}: {format(task.dueDate.toDate(), 'PPP')}
                                     </p>
                                   )}
                                 </CardContent>
@@ -113,7 +115,7 @@ export function ProjectTasksKanban({ tasks, projectId }: ProjectTasksKanbanProps
                         </Draggable>
                       ))) : (
                         <div className="flex items-center justify-center h-40 text-sm text-muted-foreground">
-                            No tasks in this column.
+                            {t('projects.no_tasks_in_column')}
                         </div>
                       )}
                       {provided.placeholder}
