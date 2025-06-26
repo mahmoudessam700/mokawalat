@@ -1,3 +1,4 @@
+
 "use client"
 
 import * as React from "react"
@@ -23,7 +24,7 @@ const SIDEBAR_COOKIE_NAME = "sidebar_state"
 const SIDEBAR_COOKIE_MAX_AGE = 60 * 60 * 24 * 7
 const SIDEBAR_WIDTH = "16rem"
 const SIDEBAR_WIDTH_MOBILE = "18rem"
-const SIDEBAR_WIDTH_ICON = "3rem"
+const SIDEBAR_WIDTH_ICON = "3.5rem"
 const SIDEBAR_KEYBOARD_SHORTCUT = "b"
 
 type SidebarContext = {
@@ -144,11 +145,7 @@ const SidebarProvider = React.forwardRef<
                 ...style,
               } as React.CSSProperties
             }
-            className={cn(
-              "group/sidebar-wrapper flex min-h-svh w-full",
-              side === 'right' && 'flex-row-reverse',
-              className
-            )}
+            className={cn("group/sidebar-wrapper", className)}
             ref={ref}
             {...props}
           >
@@ -220,33 +217,22 @@ const Sidebar = React.forwardRef<
     return (
       <div
         ref={ref}
-        className="group hidden md:block text-sidebar-foreground"
+        className={cn("group peer hidden md:block text-sidebar-foreground", className)}
         data-state={state}
         data-collapsible={state === "collapsed" ? collapsible : ""}
         data-variant={variant}
         data-side={side}
       >
-        {/* This is what handles the sidebar gap on desktop */}
-        <div
-          className={cn(
-            "duration-200 relative h-svh w-[--sidebar-width] bg-transparent transition-[width] ease-linear",
-            "group-data-[collapsible=offcanvas]:w-0",
-            variant === "floating" || variant === "inset"
-              ? "group-data-[collapsible=icon]:w-[calc(var(--sidebar-width-icon)_+_theme(spacing.4))]"
-              : "group-data-[collapsible=icon]:w-[--sidebar-width-icon]"
-          )}
-        />
         <div
           className={cn(
             "duration-200 fixed inset-y-0 z-10 hidden h-svh w-[--sidebar-width] transition-[left,right,width] ease-linear md:flex",
             side === "left"
               ? "left-0 group-data-[collapsible=offcanvas]:left-[calc(var(--sidebar-width)*-1)]"
               : "right-0 group-data-[collapsible=offcanvas]:right-[calc(var(--sidebar-width)*-1)]",
-            // Adjust the padding for floating and inset variants.
             variant === "floating" || variant === "inset"
               ? "p-2 group-data-[collapsible=icon]:w-[calc(var(--sidebar-width-icon)_+_theme(spacing.4)_+2px)]"
               : "group-data-[collapsible=icon]:w-[--sidebar-width-icon] group-data-[side=left]:border-r group-data-[side=right]:border-l",
-            className
+            
           )}
           {...props}
         >
@@ -326,7 +312,11 @@ const SidebarInset = React.forwardRef<
     <main
       ref={ref}
       className={cn(
-        "relative flex min-h-svh flex-1 flex-col bg-background",
+        "relative min-h-svh flex-1 flex flex-col bg-background transition-[margin] ease-linear",
+        "peer-data-[side=left]:peer-data-[state=expanded]:md:ml-[--sidebar-width]",
+        "peer-data-[side=right]:peer-data-[state=expanded]:md:mr-[--sidebar-width]",
+        "peer-data-[side=left]:peer-data-[state=collapsed]:peer-data-[collapsible=icon]:md:ml-[--sidebar-width-icon]",
+        "peer-data-[side=right]:peer-data-[state=collapsed]:peer-data-[collapsible=icon]:md:mr-[--sidebar-width-icon]",
         className
       )}
       {...props}
