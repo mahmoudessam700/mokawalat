@@ -193,7 +193,7 @@ export function AppSidebar() {
          <Separator className="my-2" />
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-                <Button variant="ghost" className="w-full justify-start h-auto p-2">
+                <Button variant="ghost" className="w-full h-auto p-2">
                     <div className="flex items-center gap-3 w-full">
                         {isAuthLoading ? (
                         <>
@@ -209,7 +209,7 @@ export function AppSidebar() {
                                 <AvatarImage src={`https://placehold.co/40x40.png`} alt={profile?.email || user.email || ''} data-ai-hint="profile picture" />
                                 <AvatarFallback>{(user.email || 'U').charAt(0).toUpperCase()}</AvatarFallback>
                             </Avatar>
-                            <div className="flex flex-col overflow-hidden text-left">
+                            <div className="flex flex-col overflow-hidden">
                                 <span className="text-sm font-semibold truncate">{profile?.email || user.email}</span>
                                 <span className="text-xs text-muted-foreground capitalize">{profile?.role || 'User'}</span>
                             </div>
@@ -223,7 +223,8 @@ export function AppSidebar() {
                 </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent className="w-56 mb-2" align="end">
-                <DropdownMenuLabel>{profile?.email || user?.email}</DropdownMenuLabel>
+                <DropdownMenuLabel>{t('account_menu_title')}</DropdownMenuLabel>
+                <DropdownMenuItem disabled>{profile?.email || user?.email}</DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem asChild>
                     <Link href="/profile">

@@ -1,3 +1,4 @@
+
 {
   "en": {
     "dashboard": "Dashboard",
@@ -69,7 +70,12 @@
     "logout_confirm_title": "Are you sure you want to log out?",
     "logout_confirm_desc": "You will be returned to the login page.",
     "cancel": "Cancel",
-    "logging_out": "Logging out..."
+    "logging_out": "Logging out...",
+    "account_menu_title": "Account Menu",
+    "project_status_planning": "Planning",
+    "project_status_in_progress": "In Progress",
+    "project_status_completed": "Completed",
+    "project_status_on_hold": "On Hold"
   },
   "ar": {
     "dashboard": "لوحة التحكم",
@@ -141,6 +147,11 @@
     "logout_confirm_title": "هل أنت متأكد أنك تريد تسجيل الخروج؟",
     "logout_confirm_desc": "ستتم إعادتك إلى صفحة تسجيل الدخول.",
     "cancel": "إلغاء",
-    "logging_out": "جاري تسجيل الخروج..."
+    "logging_out": "جاري تسجيل الخروج...",
+    "account_menu_title": "قائمة الحساب",
+    "project_status_planning": "تخطيط",
+    "project_status_in_progress": "قيد التنفيذ",
+    "project_status_completed": "مكتمل",
+    "project_status_on_hold": "معلق"
   }
 }

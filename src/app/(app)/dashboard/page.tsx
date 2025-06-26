@@ -167,13 +167,13 @@ export default function DashboardPage() {
           );
 
         const chartData = [
-          { status: 'Planning', projects: statusCounts['Planning'] || 0 },
+          { status: t('project_status_planning'), projects: statusCounts['Planning'] || 0 },
           {
-            status: 'In Progress',
+            status: t('project_status_in_progress'),
             projects: statusCounts['In Progress'] || 0,
           },
-          { status: 'Completed', projects: statusCounts['Completed'] || 0 },
-          { status: 'On Hold', projects: statusCounts['On Hold'] || 0 },
+          { status: t('project_status_completed'), projects: statusCounts['Completed'] || 0 },
+          { status: t('project_status_on_hold'), projects: statusCounts['On Hold'] || 0 },
         ];
         setProjectStatusData(chartData);
       })
@@ -323,7 +323,7 @@ export default function DashboardPage() {
     unsubscribes.push(() => clearTimeout(timer));
 
     return () => unsubscribes.forEach((unsub) => unsub());
-  }, []);
+  }, [t]);
 
   const chartConfig = {
     projects: {
