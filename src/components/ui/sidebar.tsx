@@ -1,4 +1,3 @@
-
 "use client"
 
 import * as React from "react"
@@ -146,7 +145,7 @@ const SidebarProvider = React.forwardRef<
               } as React.CSSProperties
             }
             className={cn(
-              "group/sidebar-wrapper flex min-h-svh w-full has-[[data-variant=inset]]:bg-sidebar",
+              "group/sidebar-wrapper flex min-h-svh w-full",
               side === 'right' && 'flex-row-reverse',
               className
             )}
@@ -221,7 +220,7 @@ const Sidebar = React.forwardRef<
     return (
       <div
         ref={ref}
-        className="group peer hidden md:block text-sidebar-foreground"
+        className="group hidden md:block text-sidebar-foreground"
         data-state={state}
         data-collapsible={state === "collapsed" ? collapsible : ""}
         data-variant={variant}
@@ -327,13 +326,7 @@ const SidebarInset = React.forwardRef<
     <main
       ref={ref}
       className={cn(
-        "relative flex min-h-svh flex-1 flex-col bg-background transition-[margin] duration-200 ease-linear",
-        // LTR Styles
-        "md:peer-data-[state=expanded]:peer-data-[side=left]:ml-[--sidebar-width]",
-        "md:peer-data-[state=collapsed]:peer-data-[collapsible=icon]:peer-data-[side=left]:ml-[--sidebar-width-icon]",
-        // RTL Styles
-        "md:peer-data-[state=expanded]:peer-data-[side=right]:mr-[--sidebar-width]",
-        "md:peer-data-[state=collapsed]:peer-data-[collapsible=icon]:peer-data-[side=right]:mr-[--sidebar-width-icon]",
+        "relative flex min-h-svh flex-1 flex-col bg-background",
         className
       )}
       {...props}
