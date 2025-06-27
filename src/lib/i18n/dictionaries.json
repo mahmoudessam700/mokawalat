@@ -1172,7 +1172,22 @@
     "email_placeholder": "e.g., contact@company.com",
     "company_logo": "Company Logo",
     "no_logo_uploaded": "No logo uploaded",
-    "purchase_orders": "أوامر الشراء"
+    "purchase_orders": "أوامر الشراء",
+    "departments": {
+      "Engineering": "Engineering",
+      "Human_Resources": "Human Resources",
+      "Finance": "Finance",
+      "Procurement": "Procurement",
+      "Operations": "Operations"
+    },
+    "job_roles": {
+      "Project_Manager": "Project Manager",
+      "HR_Specialist": "HR Specialist",
+      "Accountant": "Accountant",
+      "Civil_Engineer": "Civil Engineer",
+      "Procurement_Officer": "Procurement Officer",
+      "Worker": "Worker"
+    }
   },
   "ar": {
     "dashboard_title": "لوحة التحكم",
@@ -1835,19 +1850,19 @@
         "no_completed_projects": "لم يتم العثور على مشاريع مكتملة ببيانات مالية."
     },
     "activity_log_page": {
-      "title": "سجل النشاط",
-      "description": "سجل زمني لجميع الأحداث الرئيسية في النظام.",
-      "history_title": "سجل النظام",
-      "history_description": "تصفح جميع الأنشطة المسجلة.",
-      "search_placeholder": "ابحث بالرسالة...",
-      "filter_placeholder": "تصفية حسب نوع الحدث",
-      "all_event_types": "جميع أنواع الأحداث",
-      "event_header": "الحدث",
-      "description_header": "الوصف",
-      "type_header": "النوع",
-      "time_header": "الوقت",
-      "no_filtered_results": "لا توجد أنشطة تطابق الفلاتر الخاصة بك.",
-      "no_activity_yet": "لم يتم تسجيل أي نشاط بعد."
+        "title": "سجل النشاط",
+        "description": "سجل زمني لجميع الأحداث الرئيسية في النظام.",
+        "history_title": "سجل النظام",
+        "history_description": "تصفح جميع الأنشطة المسجلة.",
+        "search_placeholder": "ابحث بالرسالة...",
+        "filter_placeholder": "تصفية حسب نوع الحدث",
+        "all_event_types": "جميع أنواع الأحداث",
+        "event_header": "الحدث",
+        "description_header": "الوصف",
+        "type_header": "النوع",
+        "time_header": "الوقت",
+        "no_filtered_results": "لا توجد أنشطة تطابق الفلاتر الخاصة بك.",
+        "no_activity_yet": "لم يتم تسجيل أي نشاط بعد."
     },
     "activity_types": {
         "PROJECT_CREATED": "تم إنشاء مشروع",
@@ -2238,6 +2253,22 @@
     "email_placeholder": "مثال: contact@company.com",
     "company_logo": "شعار الشركة",
     "no_logo_uploaded": "لم يتم تحميل شعار",
-    "purchase_orders": "أوامر الشراء"
+    "purchase_orders": "أوامر الشراء",
+    "department": "القسم",
+    "departments": {
+      "Engineering": "الهندسة",
+      "Human_Resources": "الموارد البشرية",
+      "Finance": "المالية",
+      "Procurement": "المشتريات",
+      "Operations": "العمليات"
+    },
+    "job_roles": {
+      "Project_Manager": "مدير مشروع",
+      "HR_Specialist": "أخصائي موارد بشرية",
+      "Accountant": "محاسب",
+      "Civil_Engineer": "مهندس مدني",
+      "Procurement_Officer": "مسؤول مشتريات",
+      "Worker": "عامل"
+    }
   }
 }

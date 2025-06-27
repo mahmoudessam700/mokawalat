@@ -84,6 +84,10 @@ const employeeFormSchema = z.object({
 
 type EmployeeFormValues = z.infer<typeof employeeFormSchema>;
 
+const departmentKeys = ["Engineering", "Human Resources", "Finance", "Procurement", "Operations"];
+const roleKeys = ["Project Manager", "HR Specialist", "Accountant", "Civil Engineer", "Procurement Officer", "Worker"];
+
+
 export default function EmployeesPage() {
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
@@ -292,12 +296,9 @@ export default function EmployeesPage() {
                                 </SelectTrigger>
                                 </FormControl>
                                 <SelectContent>
-                                <SelectItem value="Project Manager">Project Manager</SelectItem>
-                                <SelectItem value="HR Specialist">HR Specialist</SelectItem>
-                                <SelectItem value="Accountant">Accountant</SelectItem>
-                                <SelectItem value="Civil Engineer">Civil Engineer</SelectItem>
-                                <SelectItem value="Procurement Officer">Procurement Officer</SelectItem>
-                                <SelectItem value="Worker">Worker</SelectItem>
+                                {roleKeys.map(role => (
+                                    <SelectItem key={role} value={role}>{t(`job_roles.${role.replace(/ /g, '_')}`)}</SelectItem>
+                                ))}
                                 </SelectContent>
                             </Select>
                             <FormMessage />
@@ -317,11 +318,9 @@ export default function EmployeesPage() {
                                 </SelectTrigger>
                                 </FormControl>
                                 <SelectContent>
-                                <SelectItem value="Engineering">Engineering</SelectItem>
-                                <SelectItem value="Human Resources">Human Resources</SelectItem>
-                                <SelectItem value="Finance">Finance</SelectItem>
-                                <SelectItem value="Procurement">Procurement</SelectItem>
-                                <SelectItem value="Operations">Operations</SelectItem>
+                                {departmentKeys.map(dep => (
+                                    <SelectItem key={dep} value={dep}>{t(`departments.${dep.replace(/ /g, '_')}`)}</SelectItem>
+                                ))}
                                 </SelectContent>
                             </Select>
                             <FormMessage />
@@ -416,11 +415,9 @@ export default function EmployeesPage() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="All">{t('employees.all_departments')}</SelectItem>
-                  <SelectItem value="Engineering">Engineering</SelectItem>
-                  <SelectItem value="Human Resources">Human Resources</SelectItem>
-                  <SelectItem value="Finance">Finance</SelectItem>
-                  <SelectItem value="Procurement">Procurement</SelectItem>
-                  <SelectItem value="Operations">Operations</SelectItem>
+                  {departmentKeys.map(dep => (
+                    <SelectItem key={dep} value={dep}>{t(`departments.${dep.replace(/ /g, '_')}`)}</SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
               <Select value={statusFilter} onValueChange={setStatusFilter}>
