@@ -112,9 +112,11 @@ export function AppSidebar() {
   ], [t]);
 
   const isActive = (href: string) => {
+    // Exact match for top-level pages
     if (href === '/dashboard' || href === '/approvals' || href === '/reports' || href === '/activity-log' || href === '/iso-compliance' || href === '/roadmap') {
       return pathname === href;
     }
+    // Prefix match for nested pages
     return pathname.startsWith(href);
   };
   
@@ -265,3 +267,5 @@ export function AppSidebar() {
     </AlertDialog>
   );
 }
+
+    
