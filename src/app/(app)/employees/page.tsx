@@ -481,7 +481,11 @@ export default function EmployeesPage() {
               ) : filteredEmployees.length > 0 ? (
                 filteredEmployees.map((employee) => (
                   <TableRow key={employee.id}>
-                    <TableCell className="font-medium">{employee.name}</TableCell>
+                    <TableCell className="font-medium">
+                      <Link href={`/employees/${employee.id}`} className="hover:underline">
+                        {employee.name}
+                      </Link>
+                    </TableCell>
                     <TableCell className="hidden md:table-cell">{employee.email}</TableCell>
                     <TableCell>{employee.role}</TableCell>
                     <TableCell className="hidden md:table-cell">{employee.department}</TableCell>
