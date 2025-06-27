@@ -126,7 +126,7 @@ export default function ReportsPage() {
       setTransactions(data);
     }, (error) => {
       console.error("Error fetching transactions: ", error);
-      toast({ variant: 'destructive', title: 'Error', description: 'Failed to fetch financial data.' });
+      toast({ variant: 'destructive', title: t('error'), description: 'Failed to fetch financial data.' });
     }));
 
     const qInventory = query(collection(firestore, 'inventory'));
@@ -135,7 +135,7 @@ export default function ReportsPage() {
       setInventory(data);
     }, (error) => {
       console.error("Error fetching inventory: ", error);
-      toast({ variant: 'destructive', title: 'Error', description: 'Failed to fetch inventory data.' });
+      toast({ variant: 'destructive', title: t('error'), description: 'Failed to fetch inventory data.' });
     }));
 
     const qEmployees = query(collection(firestore, 'employees'));
@@ -144,7 +144,7 @@ export default function ReportsPage() {
         setEmployees(data);
     }, (error) => {
         console.error("Error fetching employees: ", error);
-        toast({ variant: 'destructive', title: 'Error', description: 'Failed to fetch employee data.' });
+        toast({ variant: 'destructive', title: t('error'), description: 'Failed to fetch employee data.' });
     }));
 
     const qClients = query(collection(firestore, 'clients'));
@@ -153,7 +153,7 @@ export default function ReportsPage() {
         setClients(data);
     }, (error) => {
         console.error("Error fetching clients: ", error);
-        toast({ variant: 'destructive', title: 'Error', description: 'Failed to fetch client data.' });
+        toast({ variant: 'destructive', title: t('error'), description: 'Failed to fetch client data.' });
     }));
 
     const qProjects = query(collection(firestore, 'projects'));
@@ -162,7 +162,7 @@ export default function ReportsPage() {
         setProjects(data);
     }, (error) => {
       console.error("Error fetching projects: ", error);
-      toast({ variant: 'destructive', title: 'Error', description: 'Failed to fetch project data.' });
+      toast({ variant: 'destructive', title: t('error'), description: 'Failed to fetch project data.' });
     }));
 
 
