@@ -225,8 +225,9 @@ export default function AssetDetailPage({ params }: { params: { id: string } }) 
                         <Badge variant={statusVariant[asset.status]}>{asset.status}</Badge>
                     </div>
                     <div className="flex justify-between">
-                        <span className="text-muted-foreground">{t('assets.purchase_date')}</span>
-                        <span>{format(asset.purchaseDate.toDate(), 'PPP')}</span>
+                        <span className="text-muted-foreground">{t('assets.purchase_date')}</span
+>
+                        <span>{asset.purchaseDate ? format(asset.purchaseDate.toDate(), 'PPP') : 'N/A'}</span>
                     </div>
                     <div className="flex justify-between">
                         <span className="text-muted-foreground">{t('assets.purchase_cost_label')}</span>
@@ -283,7 +284,7 @@ export default function AssetDetailPage({ params }: { params: { id: string } }) 
                             <TableBody>
                                 {maintenanceLogs.map(log => (
                                     <TableRow key={log.id}>
-                                        <TableCell>{format(log.date.toDate(), 'PPP')}</TableCell>
+                                        <TableCell>{log.date ? format(log.date.toDate(), 'PPP') : 'N/A'}</TableCell>
                                         <TableCell><Badge variant="outline">{log.type}</Badge></TableCell>
                                         <TableCell>{log.description}</TableCell>
                                         <TableCell className="text-right">{log.cost ? formatCurrency(log.cost) : 'N/A'}</TableCell>

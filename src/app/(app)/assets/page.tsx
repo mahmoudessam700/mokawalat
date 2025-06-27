@@ -139,6 +139,7 @@ const getMaintenanceStatus = (maintenanceDate?: Timestamp): 'ok' | 'upcoming' | 
  */
 function MaintenanceStatusIndicator({ maintenanceDate }: { maintenanceDate?: Timestamp }) {
   const [status, setStatus] = React.useState<'ok' | 'upcoming' | 'overdue'>('ok');
+  const { t } = useLanguage();
 
   useEffect(() => {
     // This logic now runs only on the client, avoiding server-client mismatch
@@ -155,7 +156,7 @@ function MaintenanceStatusIndicator({ maintenanceDate }: { maintenanceDate?: Tim
         <AlertCircle className={cn('size-4', status === 'overdue' ? 'text-destructive' : 'text-yellow-500')} />
       </TooltipTrigger>
       <TooltipContent>
-        <p>Maintenance {status}</p>
+        <p>{t('assets.maintenance_status')} {status === 'overdue' ? t('assets.overdue') : t('assets.upcoming')}</p>
       </TooltipContent>
     </Tooltip>
   );
@@ -321,7 +322,7 @@ export default function AssetsPage() {
                 <DialogContent className="sm:max-w-xl">
                     <DialogHeader>
                     <DialogTitle>{assetToEdit ? t('assets.edit_title') : t('assets.add_title')}</DialogTitle>
-                    <DialogDescription>{t('assets.edit_desc')}</DialogDescription>
+                    <DialogDescription>{assetToEdit ? t('assets.edit_desc') : t('assets.add_desc')}</DialogDescription>
                     </DialogHeader>
                     <Form {...form}>
                     <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 py-4">
@@ -405,7 +406,7 @@ export default function AssetsPage() {
                         <TableCell className="hidden md:table-cell">
                             <div className="flex items-center gap-2">
                                <span>{asset.nextMaintenanceDate ? format(asset.nextMaintenanceDate.toDate(), 'PPP') : 'N/A'}</span>
-                               <MaintenanceStatusIndicator maintenanceDate={asset.nextMaintenanceDate} />
+                               {isClient && <MaintenanceStatusIndicator maintenanceDate={asset.nextMaintenanceDate} />}
                             </div>
                         </TableCell>
                         <TableCell><Badge variant={statusVariant[asset.status]}>{asset.status}</Badge></TableCell>
