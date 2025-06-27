@@ -1172,7 +1172,7 @@
     "email_placeholder": "e.g., contact@company.com",
     "company_logo": "Company Logo",
     "no_logo_uploaded": "No logo uploaded",
-    "purchase_orders": "Purchase Orders"
+    "purchase_orders": "أوامر الشراء"
   },
   "ar": {
     "dashboard_title": "لوحة التحكم",
@@ -1833,6 +1833,21 @@
         "completed_project_profitability": "ربحية المشاريع المكتملة",
         "completed_project_profitability_desc": "نظرة عامة على الدخل مقابل المصروفات لجميع المشاريع المكتملة.",
         "no_completed_projects": "لم يتم العثور على مشاريع مكتملة ببيانات مالية."
+    },
+    "activity_log_page": {
+      "title": "سجل النشاط",
+      "description": "سجل زمني لجميع الأحداث الرئيسية في النظام.",
+      "history_title": "سجل النظام",
+      "history_description": "تصفح جميع الأنشطة المسجلة.",
+      "search_placeholder": "ابحث بالرسالة...",
+      "filter_placeholder": "تصفية حسب نوع الحدث",
+      "all_event_types": "جميع أنواع الأحداث",
+      "event_header": "الحدث",
+      "description_header": "الوصف",
+      "type_header": "النوع",
+      "time_header": "الوقت",
+      "no_filtered_results": "لا توجد أنشطة تطابق الفلاتر الخاصة بك.",
+      "no_activity_yet": "لم يتم تسجيل أي نشاط بعد."
     },
     "activity_types": {
         "PROJECT_CREATED": "تم إنشاء مشروع",
