@@ -12,6 +12,9 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { useLanguage } from '@/hooks/use-language';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { Button } from '@/components/ui/button';
+import { MoreHorizontal, Trash2 } from 'lucide-react';
 
 interface Employee {
   id: string;
@@ -23,13 +26,15 @@ interface ProjectTasksKanbanProps {
   tasks: Task[];
   projectId: string;
   team: Employee[];
+  onEditTask: (task: Task) => void;
+  onDeleteTask: (task: Task) => void;
 }
 
 type TaskStatus = 'To Do' | 'In Progress' | 'Done';
 
 const columns: TaskStatus[] = ['To Do', 'In Progress', 'Done'];
 
-export function ProjectTasksKanban({ tasks, projectId, team }: ProjectTasksKanbanProps) {
+export function ProjectTasksKanban({ tasks, projectId, team, onEditTask, onDeleteTask }: ProjectTasksKanbanProps) {
   const [isClient, setIsClient] = useState(false);
   const { toast } = useToast();
   const { t } = useLanguage();
@@ -48,8 +53,6 @@ export function ProjectTasksKanban({ tasks, projectId, team }: ProjectTasksKanba
     const newStatus = destination.droppableId as TaskStatus;
     const taskId = draggableId;
 
-    // Firestore `onSnapshot` will handle the UI update automatically when the data changes.
-    // This removes the need for complex optimistic UI updates here.
     const response = await updateTaskStatus(projectId, taskId, newStatus);
 
     if (!response.success) {
@@ -112,10 +115,29 @@ export function ProjectTasksKanban({ tasks, projectId, team }: ProjectTasksKanba
                                     {...provided.draggableProps}
                                     {...provided.dragHandleProps}
                                   >
-                                    <Card className={`bg-card hover:bg-card/90 ${snapshot.isDragging ? 'shadow-lg ring-2 ring-primary' : ''}`}>
+                                    <Card className={`bg-card hover:bg-card/90 group/task relative ${snapshot.isDragging ? 'shadow-lg ring-2 ring-primary' : ''}`}>
                                       <CardContent className="p-3">
+                                        <div className="absolute top-1 right-1 z-10">
+                                            <DropdownMenu>
+                                                <DropdownMenuTrigger asChild>
+                                                    <Button variant="ghost" size="icon" className="h-7 w-7 opacity-0 group-hover/task:opacity-100 focus:opacity-100">
+                                                        <MoreHorizontal className="size-4" />
+                                                    </Button>
+                                                </DropdownMenuTrigger>
+                                                <DropdownMenuContent>
+                                                    <DropdownMenuItem onSelect={() => onEditTask(task)}>
+                                                        {t('edit')}
+                                                    </DropdownMenuItem>
+                                                    <DropdownMenuItem onSelect={() => onDeleteTask(task)} className="text-destructive">
+                                                        <Trash2 className="mr-2" />
+                                                        {t('delete')}
+                                                    </DropdownMenuItem>
+                                                </DropdownMenuContent>
+                                            </DropdownMenu>
+                                        </div>
+
                                         <div className="flex justify-between items-start">
-                                          <p className="font-medium text-sm pr-2">{task.name}</p>
+                                          <p className="font-medium text-sm pr-8">{task.name}</p>
                                           {assignedEmployee && (
                                             <Tooltip>
                                               <TooltipTrigger>

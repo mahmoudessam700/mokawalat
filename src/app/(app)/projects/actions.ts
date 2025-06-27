@@ -566,6 +566,51 @@ export async function addTask(projectId: string, values: TaskFormValues) {
 }
 
 /**
+ * Updates an existing task in a project's sub-collection.
+ * @param {string} projectId - The ID of the project.
+ * @param {string} taskId - The ID of the task to update.
+ * @param {TaskFormValues} values - The new task data.
+ * @returns {Promise<{message: string, errors: object|null}>} An object with a success or error message.
+ */
+export async function updateTask(projectId: string, taskId: string, values: TaskFormValues) {
+  if (!projectId || !taskId) {
+    return { message: 'Project and Task ID are required.', errors: { _server: ['IDs not provided.'] } };
+  }
+
+  const validatedFields = taskFormSchema.safeParse(values);
+  if (!validatedFields.success) {
+    return { errors: validatedFields.error.flatten().fieldErrors, message: 'Invalid data provided.' };
+  }
+
+  try {
+    const { assignedTo, ...taskData } = validatedFields.data;
+    let assignedToName = '';
+
+    if (assignedTo) {
+      const employeeDoc = await getDoc(doc(firestore, 'employees', assignedTo));
+      if (employeeDoc.exists()) {
+        assignedToName = employeeDoc.data().name;
+      }
+    }
+
+    const taskRef = doc(firestore, 'projects', projectId, 'tasks', taskId);
+    await updateDoc(taskRef, {
+      ...taskData,
+      assignedTo: assignedTo || null,
+      assignedToName: assignedToName || '',
+      dueDate: taskData.dueDate ? new Date(taskData.dueDate) : null,
+    });
+    
+    revalidatePath(`/projects/${projectId}`);
+    return { message: 'Task updated successfully.', errors: null };
+  } catch (error) {
+    console.error('Error updating task:', error);
+    return { message: 'Failed to update task.', errors: { _server: ['An unexpected error occurred.'] } };
+  }
+}
+
+
+/**
  * Updates the status of a project task.
  * @param {string} projectId - The ID of the project.
  * @param {string} taskId - The ID of the task to update.

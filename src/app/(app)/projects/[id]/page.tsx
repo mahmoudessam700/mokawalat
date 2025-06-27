@@ -31,7 +31,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useToast } from '@/hooks/use-toast';
 import { addMaterialRequest } from '../../material-requests/actions';
-import { addDailyLog, addProjectDocument, deleteProjectDocument, addTask, type TaskFormValues, updateTaskStatus, deleteTask, suggestTasksForProject } from '../actions';
+import { addDailyLog, addProjectDocument, deleteProjectDocument, addTask, type TaskFormValues, updateTaskStatus, deleteTask, suggestTasksForProject, updateTask } from '../actions';
 import { Loader2 } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ProjectAiAssistant } from './project-ai-assistant';
@@ -40,7 +40,7 @@ import { z } from 'zod';
 import { Textarea } from '@/components/ui/textarea';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { updateMaterialRequestStatus } from '../../material-requests/actions';
-import { ProjectTasksKanban } from './project-tasks-kanban';
+import { ProjectTasksView } from './project-tasks-view';
 import { useLanguage } from '@/hooks/use-language';
 
 type ProjectStatus = 'In Progress' | 'Planning' | 'Completed' | 'On Hold';
@@ -223,6 +223,7 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
   const [error, setError] = useState<string | null>(null);
   const [isRequestDialogOpen, setIsRequestDialogOpen] = useState(false);
   const [isTaskDialogOpen, setIsTaskDialogOpen] = useState(false);
+  const [taskToEdit, setTaskToEdit] = useState<Task | null>(null);
   const [isDocumentDialogOpen, setIsDocumentDialogOpen] = useState(false);
   const [documentToDelete, setDocumentToDelete] = useState<Document | null>(null);
   const [taskToDelete, setTaskToDelete] = useState<Task | null>(null);
@@ -357,6 +358,20 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
     defaultValues: { title: '' },
   });
 
+  useEffect(() => {
+    if (isTaskDialogOpen) {
+      if (taskToEdit) {
+        taskForm.reset({
+          name: taskToEdit.name,
+          dueDate: taskToEdit.dueDate ? format(taskToEdit.dueDate.toDate(), 'yyyy-MM-dd') : '',
+          assignedTo: taskToEdit.assignedTo || '',
+        });
+      } else {
+        taskForm.reset({ name: '', dueDate: '', assignedTo: ''});
+      }
+    }
+  }, [isTaskDialogOpen, taskToEdit, taskForm]);
+
   async function onMaterialRequestSubmit(values: MaterialRequestFormValues) {
     const result = await addMaterialRequest(projectId, values);
     if (result.errors) {
@@ -369,13 +384,17 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
   }
 
   async function onTaskSubmit(values: TaskFormValues) {
-    const result = await addTask(projectId, values);
+    const result = taskToEdit 
+        ? await updateTask(projectId, taskToEdit.id, values)
+        : await addTask(projectId, values);
+
     if (result.errors) {
       toast({ variant: 'destructive', title: 'Error', description: result.message });
     } else {
       toast({ title: 'Success', description: result.message });
       taskForm.reset();
       setIsTaskDialogOpen(false);
+      setTaskToEdit(null);
     }
   }
 
@@ -461,13 +480,6 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
         toast({ title: 'Success', description: result.message });
     } else {
         toast({ variant: 'destructive', title: 'Error', description: result.message });
-    }
-  }
-  
-  async function handleTaskStatusUpdate(taskId: string, status: TaskStatus) {
-    const result = await updateTaskStatus(projectId, taskId, status);
-    if (!result.success) {
-      toast({ variant: 'destructive', title: 'Error', description: result.message });
     }
   }
   
@@ -655,9 +667,9 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
                         </div>
                         <div className="flex items-center gap-2">
                             <Dialog open={isTaskDialogOpen} onOpenChange={setIsTaskDialogOpen}>
-                                <DialogTrigger asChild><Button><PlusCircle className="mr-2" /> Add Task</Button></DialogTrigger>
+                                <DialogTrigger asChild><Button onClick={() => setTaskToEdit(null)}><PlusCircle className="mr-2" /> Add Task</Button></DialogTrigger>
                                 <DialogContent>
-                                    <DialogHeader><DialogTitle>Add New Task</DialogTitle></DialogHeader>
+                                    <DialogHeader><DialogTitle>{taskToEdit ? 'Edit Task' : 'Add New Task'}</DialogTitle></DialogHeader>
                                     <Form {...taskForm}>
                                         <form onSubmit={taskForm.handleSubmit(onTaskSubmit)} className="space-y-4 py-4">
                                             <FormField control={taskForm.control} name="name" render={({ field }) => (<FormItem><FormLabel>Task Name</FormLabel><FormControl><Input placeholder="e.g., Lay building foundations" {...field} /></FormControl><FormMessage /></FormItem>)} />
@@ -697,7 +709,16 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
                         </div>
                     </CardHeader>
                     <CardContent>
-                       <ProjectTasksKanban projectId={projectId} tasks={tasks} team={assignedTeam} />
+                       <ProjectTasksView
+                        projectId={projectId}
+                        tasks={tasks}
+                        team={assignedTeam}
+                        onEditTask={(task) => {
+                            setTaskToEdit(task);
+                            setIsTaskDialogOpen(true);
+                        }}
+                        onDeleteTask={(task) => setTaskToDelete(task)}
+                       />
                     </CardContent>
                 </Card>
             </TabsContent>
