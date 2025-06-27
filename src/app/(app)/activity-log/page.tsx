@@ -40,6 +40,8 @@ import {
   Receipt,
   Star,
 } from 'lucide-react';
+import { useLanguage } from '@/hooks/use-language';
+import { ar, enUS } from 'date-fns/locale';
 
 type Activity = {
   id: string;
@@ -92,16 +94,15 @@ const activityIcons: { [key: string]: React.ReactNode } = {
 
 const activityTypes = Object.keys(activityIcons).filter(k => k !== 'DEFAULT').sort();
 
-const formatActivityType = (type: string) => {
-    return type.replace(/_/g, ' ').replace(/\w\S*/g, (txt) => txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase());
-}
-
 export default function ActivityLogPage() {
   const [activities, setActivities] = useState<Activity[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [typeFilter, setTypeFilter] = useState('All');
   const [searchTerm, setSearchTerm] = useState('');
   const { toast } = useToast();
+  const { t, locale } = useLanguage();
+
+  const fnsLocale = useMemo(() => (locale === 'ar' ? ar : enUS), [locale]);
 
   useEffect(() => {
     const q = query(collection(firestore, 'activityLog'), orderBy('timestamp', 'desc'));
@@ -116,14 +117,14 @@ export default function ActivityLogPage() {
       console.error("Error fetching activity log: ", error);
       toast({
         variant: 'destructive',
-        title: 'Error',
+        title: t('error'),
         description: 'Failed to fetch activity log.',
       });
       setIsLoading(false);
     });
 
     return () => unsubscribe();
-  }, [toast]);
+  }, [toast, t]);
 
   const filteredActivities = useMemo(() => {
     const lowercasedTerm = searchTerm.toLowerCase();
@@ -137,23 +138,23 @@ export default function ActivityLogPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="font-headline text-3xl font-bold tracking-tight">Activity Log</h1>
-        <p className="text-muted-foreground">A complete audit trail of all major events in the system.</p>
+        <h1 className="font-headline text-3xl font-bold tracking-tight">{t('activity_log_page.title')}</h1>
+        <p className="text-muted-foreground">{t('activity_log_page.description')}</p>
       </div>
 
       <Card>
         <CardHeader>
           <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
              <div>
-                <CardTitle>Log History</CardTitle>
-                <CardDescription>All recorded activities, sorted by most recent.</CardDescription>
+                <CardTitle>{t('activity_log_page.history_title')}</CardTitle>
+                <CardDescription>{t('activity_log_page.history_description')}</CardDescription>
              </div>
             <div className="flex flex-col items-stretch gap-2 md:flex-row md:items-center">
               <div className="relative w-full md:w-auto">
                 <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
                 <Input
                   type="search"
-                  placeholder="Search activities..."
+                  placeholder={t('activity_log_page.search_placeholder')}
                   className="w-full pl-8 md:w-[250px]"
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
@@ -161,12 +162,12 @@ export default function ActivityLogPage() {
               </div>
               <Select value={typeFilter} onValueChange={setTypeFilter}>
                 <SelectTrigger className="w-full md:w-[220px]">
-                  <SelectValue placeholder="Filter by event type" />
+                  <SelectValue placeholder={t('activity_log_page.filter_placeholder')} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="All">All Event Types</SelectItem>
+                  <SelectItem value="All">{t('activity_log_page.all_event_types')}</SelectItem>
                   {activityTypes.map(type => (
-                      <SelectItem key={type} value={type}>{formatActivityType(type)}</SelectItem>
+                      <SelectItem key={type} value={type}>{t(`activity_types.${type}`)}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
@@ -177,10 +178,10 @@ export default function ActivityLogPage() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead className="w-[50px]">Event</TableHead>
-                <TableHead>Description</TableHead>
-                <TableHead>Type</TableHead>
-                <TableHead className="text-right">Time</TableHead>
+                <TableHead className="w-[50px]">{t('activity_log_page.event_header')}</TableHead>
+                <TableHead>{t('activity_log_page.description_header')}</TableHead>
+                <TableHead>{t('activity_log_page.type_header')}</TableHead>
+                <TableHead className="text-right">{t('activity_log_page.time_header')}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -207,10 +208,10 @@ export default function ActivityLogPage() {
                       </Link>
                     </TableCell>
                     <TableCell>
-                      <Badge variant="outline">{formatActivityType(activity.type)}</Badge>
+                      <Badge variant="outline">{t(`activity_types.${activity.type}`)}</Badge>
                     </TableCell>
                     <TableCell className="text-right text-muted-foreground text-xs">
-                      {activity.timestamp ? formatDistanceToNow(activity.timestamp.toDate(), { addSuffix: true }) : 'N/A'}
+                      {activity.timestamp ? formatDistanceToNow(activity.timestamp.toDate(), { addSuffix: true, locale: fnsLocale }) : 'N/A'}
                     </TableCell>
                   </TableRow>
                 ))
@@ -220,8 +221,8 @@ export default function ActivityLogPage() {
                     <div className="flex flex-col items-center justify-center gap-2 text-muted-foreground">
                         <History className="size-12" />
                         {activities.length > 0
-                            ? 'No activities match the current filters.'
-                            : 'No activity has been recorded yet.'
+                            ? t('activity_log_page.no_filtered_results')
+                            : t('activity_log_page.no_activity_yet')
                         }
                     </div>
                   </TableCell>
