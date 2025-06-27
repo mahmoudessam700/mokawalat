@@ -112,10 +112,15 @@ export default function ReportsPage() {
   const { toast } = useToast();
   const { t } = useLanguage();
   
-  const [date, setDate] = useState<DateRange | undefined>({
-    from: subDays(new Date(), 29),
-    to: new Date(),
-  });
+  const [date, setDate] = useState<DateRange | undefined>(undefined);
+
+  useEffect(() => {
+    // Set the initial date range only on the client side after hydration
+    setDate({
+      from: subDays(new Date(), 29),
+      to: new Date(),
+    });
+  }, []);
 
   useEffect(() => {
     const unsubscribes: (() => void)[] = [];
@@ -351,6 +356,7 @@ export default function ReportsPage() {
                         "w-full justify-start text-left font-normal md:w-[300px]",
                         !date && "text-muted-foreground"
                     )}
+                    disabled={!date}
                     >
                     <CalendarIcon className="mr-2 h-4 w-4" />
                     {date?.from ? (
