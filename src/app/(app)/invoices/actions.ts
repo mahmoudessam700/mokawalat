@@ -119,47 +119,20 @@ export async function updateInvoice(invoiceId: string, values: InvoiceFormValues
   }
 }
 
-export async function updateInvoiceStatus(invoiceId: string, status: 'Sent' | 'Paid' | 'Void') {
+export async function updateInvoiceStatus(invoiceId: string, status: 'Sent' | 'Void') {
     if (!invoiceId) {
         return { success: false, message: 'Invoice ID is required.' };
     }
 
     const invoiceRef = doc(firestore, 'invoices', invoiceId);
     
-    const invoiceSnap = await getDoc(invoiceRef);
-    if (!invoiceSnap.exists()) {
-        throw new Error("Invoice not found.");
-    }
-    const invoiceData = invoiceSnap.data();
-
     try {
-        if (status === 'Paid') {
-            const accountsQuery = query(collection(firestore, 'accounts'), limit(1));
-            const accountsSnap = await getDocs(accountsQuery);
-            if (accountsSnap.empty) {
-                throw new Error("No bank accounts found. Please add an account in Financials > Manage Accounts before marking invoices as paid.");
-            }
-            const accountId = accountsSnap.docs[0].id;
-
-            await addDoc(collection(firestore, 'transactions'), {
-                description: `Payment for Invoice ${invoiceData.invoiceNumber}`,
-                amount: invoiceData.totalAmount,
-                type: 'Income',
-                date: serverTimestamp(),
-                accountId: accountId,
-                clientId: invoiceData.clientId,
-                projectId: invoiceData.projectId,
-                createdAt: serverTimestamp(),
-            });
-
-            await addDoc(collection(firestore, 'activityLog'), {
-                message: `Payment of ${invoiceData.totalAmount.toLocaleString()} received for invoice ${invoiceData.invoiceNumber}`,
-                type: "TRANSACTION_ADDED",
-                link: `/financials`,
-                timestamp: serverTimestamp(),
-            });
+        const invoiceSnap = await getDoc(invoiceRef);
+        if (!invoiceSnap.exists()) {
+            throw new Error("Invoice not found.");
         }
-
+        const invoiceData = invoiceSnap.data();
+        
         await updateDoc(invoiceRef, { status });
 
         await addDoc(collection(firestore, 'activityLog'), {
@@ -172,18 +145,84 @@ export async function updateInvoiceStatus(invoiceId: string, status: 'Sent' | 'P
         revalidatePath('/invoices');
         revalidatePath(`/invoices/${invoiceId}`);
         
-        if (status === 'Paid') {
-            revalidatePath('/financials');
-            revalidatePath('/financials/accounts');
-            if (invoiceData?.clientId) {
-                revalidatePath(`/clients/${invoiceData.clientId}`);
-            }
-        }
-        
         return { success: true, message: `Invoice status updated to ${status}.` };
 
     } catch (error: any) {
         console.error("Error updating invoice status:", error);
         return { success: false, message: error.message || 'Failed to update status.' };
+    }
+}
+
+const markAsPaidSchema = z.object({
+  accountId: z.string().min(1, 'An account is required.'),
+});
+
+export type MarkAsPaidFormValues = z.infer<typeof markAsPaidSchema>;
+
+export async function markInvoiceAsPaid(invoiceId: string, values: MarkAsPaidFormValues) {
+    if (!invoiceId) {
+        return { success: false, message: 'Invoice ID is required.' };
+    }
+    
+    const validatedFields = markAsPaidSchema.safeParse(values);
+    if (!validatedFields.success) {
+        return { success: false, message: 'Invalid data provided.' };
+    }
+    const { accountId } = validatedFields.data;
+
+    const invoiceRef = doc(firestore, 'invoices', invoiceId);
+    
+    try {
+        const invoiceSnap = await getDoc(invoiceRef);
+        if (!invoiceSnap.exists()) {
+            throw new Error("Invoice not found.");
+        }
+        const invoiceData = invoiceSnap.data();
+
+        // 1. Create the income transaction
+        await addDoc(collection(firestore, 'transactions'), {
+            description: `Payment for Invoice ${invoiceData.invoiceNumber}`,
+            amount: invoiceData.totalAmount,
+            type: 'Income',
+            date: serverTimestamp(),
+            accountId: accountId,
+            clientId: invoiceData.clientId,
+            projectId: invoiceData.projectId,
+            createdAt: serverTimestamp(),
+        });
+
+        // 2. Log the financial transaction
+        await addDoc(collection(firestore, 'activityLog'), {
+            message: `Payment of ${invoiceData.totalAmount.toLocaleString()} received for invoice ${invoiceData.invoiceNumber}`,
+            type: "TRANSACTION_ADDED",
+            link: `/financials`,
+            timestamp: serverTimestamp(),
+        });
+
+        // 3. Update the invoice status to 'Paid'
+        await updateDoc(invoiceRef, { status: 'Paid' });
+
+        // 4. Log the status change
+        await addDoc(collection(firestore, 'activityLog'), {
+            message: `Invoice ${invoiceData.invoiceNumber} status updated to Paid`,
+            type: "INVOICE_STATUS_CHANGED",
+            link: `/invoices/${invoiceId}`,
+            timestamp: serverTimestamp(),
+        });
+        
+        // 5. Revalidate paths
+        revalidatePath('/invoices');
+        revalidatePath(`/invoices/${invoiceId}`);
+        revalidatePath('/financials');
+        revalidatePath('/financials/accounts');
+        if (invoiceData?.clientId) {
+            revalidatePath(`/clients/${invoiceData.clientId}`);
+        }
+        
+        return { success: true, message: `Invoice marked as paid and transaction recorded.` };
+
+    } catch (error: any) {
+        console.error("Error marking invoice as paid:", error);
+        return { success: false, message: error.message || 'Failed to process payment.' };
     }
 }

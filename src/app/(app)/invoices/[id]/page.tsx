@@ -35,6 +35,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useAuth } from '@/hooks/use-auth';
 import { useLanguage } from '@/hooks/use-language';
+import { MarkAsPaidDialog } from './mark-as-paid-dialog';
 
 // Types
 type InvoiceStatus = 'Draft' | 'Sent' | 'Paid' | 'Void';
@@ -53,6 +54,7 @@ type Invoice = {
 type Client = { id: string; name: string; company?: string; email?: string; phone?: string; };
 type Project = { id: string; name: string; clientId: string; };
 type CompanyProfile = { name: string; address?: string; phone?: string; email?: string; logoUrl?: string; };
+type Account = { id: string; name: string; };
 
 // Form Schema
 const lineItemSchema = z.object({
@@ -89,6 +91,7 @@ export default function InvoiceDetailPage({ params }: { params: { id: string } }
   const [company, setCompany] = useState<CompanyProfile | null>(null);
   const [allClients, setAllClients] = useState<Client[]>([]);
   const [allProjects, setAllProjects] = useState<Project[]>([]);
+  const [accounts, setAccounts] = useState<Account[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isFormDialogOpen, setIsFormDialogOpen] = useState(false);
@@ -111,6 +114,7 @@ export default function InvoiceDetailPage({ params }: { params: { id: string } }
     unsubscribes.push(onSnapshot(doc(firestore, 'company', 'main'), (doc) => setCompany(doc.exists() ? doc.data() as CompanyProfile : null)));
     unsubscribes.push(onSnapshot(query(collection(firestore, 'clients'), orderBy('name')), (snap) => setAllClients(snap.docs.map(d => ({id: d.id, ...d.data()} as Client)))));
     unsubscribes.push(onSnapshot(query(collection(firestore, 'projects'), orderBy('name')), (snap) => setAllProjects(snap.docs.map(d => ({id: d.id, ...d.data()} as Project)))));
+    unsubscribes.push(onSnapshot(query(collection(firestore, 'accounts'), orderBy('name')), (snap) => setAccounts(snap.docs.map(d => ({id: d.id, ...d.data()} as Account)))));
 
     // Fetch main invoice document and its direct relations
     const invoiceRef = doc(firestore, 'invoices', invoiceId);
@@ -155,7 +159,7 @@ export default function InvoiceDetailPage({ params }: { params: { id: string } }
     }
   }
 
-  async function handleStatusUpdate(id: string, status: 'Sent' | 'Paid' | 'Void') {
+  async function handleStatusUpdate(id: string, status: 'Sent' | 'Void') {
     const result = await updateInvoiceStatus(id, status);
     if (result.success) {
       toast({ title: t('success'), description: result.message });
@@ -216,7 +220,11 @@ export default function InvoiceDetailPage({ params }: { params: { id: string } }
                         <DropdownMenuLabel>{t('actions')}</DropdownMenuLabel>
                         <DropdownMenuSeparator/>
                         {invoice.status === 'Draft' && <DropdownMenuItem onSelect={() => handleStatusUpdate(invoice.id, 'Sent')}><Send className="mr-2"/>{t('invoices.detail.mark_sent')}</DropdownMenuItem>}
-                        {invoice.status === 'Sent' && <DropdownMenuItem onSelect={() => handleStatusUpdate(invoice.id, 'Paid')}><CheckCircle className="mr-2"/>{t('invoices.detail.mark_paid')}</DropdownMenuItem>}
+                        {invoice.status === 'Sent' && (
+                            <MarkAsPaidDialog invoice={invoice} accounts={accounts}>
+                                <DropdownMenuItem onSelect={(e) => e.preventDefault()}><CheckCircle className="mr-2"/>{t('invoices.detail.mark_paid')}</DropdownMenuItem>
+                            </MarkAsPaidDialog>
+                        )}
                         <DropdownMenuItem className="text-destructive" onSelect={() => handleStatusUpdate(invoice.id, 'Void')}><X className="mr-2"/>{t('invoices.detail.void_invoice')}</DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
@@ -277,5 +285,3 @@ export default function InvoiceDetailPage({ params }: { params: { id: string } }
     </div>
   )
 }
-
-    

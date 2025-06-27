@@ -542,6 +542,12 @@
             "footer_note": "Thank you for your business. Please make payment by the due date.",
             "edit_title": "Edit Invoice",
             "edit_desc": "You can only edit invoices that are in 'Draft' status."
+        },
+        "mark_as_paid_dialog": {
+            "title": "Confirm Payment Received",
+            "desc": "This will mark invoice #{number} for {amount} as paid and create an income transaction. Please select the account where the payment was received.",
+            "account_label": "Receiving Account",
+            "confirm_button": "Confirm Payment"
         }
     },
     "procurement": {
@@ -1505,6 +1511,12 @@
             "footer_note": "شكرًا لتعاملكم معنا. يرجى سداد المبلغ قبل تاريخ الاستحقاق.",
             "edit_title": "تعديل الفاتورة",
             "edit_desc": "يمكنك فقط تعديل الفواتير التي في حالة 'مسودة'."
+        },
+        "mark_as_paid_dialog": {
+            "title": "تأكيد استلام الدفعة",
+            "desc": "سيؤدي هذا إلى وضع علامة على الفاتورة رقم {number} بمبلغ {amount} كمدفوعة وإنشاء معاملة دخل. يرجى تحديد الحساب الذي تم استلام الدفعة فيه.",
+            "account_label": "الحساب المستلم",
+            "confirm_button": "تأكيد الدفع"
         }
     },
     "procurement": {
