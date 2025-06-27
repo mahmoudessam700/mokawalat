@@ -140,8 +140,11 @@ export async function addContract(clientId: string, formData: FormData) {
     
     await setDoc(newContractRef, contractData);
 
+    const clientSnap = await getDoc(doc(firestore, 'clients', clientId));
+    const clientName = clientSnap.exists() ? clientSnap.data().name : 'Unknown Client';
+    
     await addDoc(collection(firestore, 'activityLog'), {
-        message: `New contract added for client: ${validatedFields.data.title}`,
+        message: `New contract "${validatedFields.data.title}" added for client: ${clientName}`,
         type: "CONTRACT_ADDED",
         link: `/clients/${clientId}`,
         timestamp: serverTimestamp(),
