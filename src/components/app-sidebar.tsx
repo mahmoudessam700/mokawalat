@@ -130,13 +130,13 @@ export function AppSidebar() {
       try {
         await signOut(auth);
         toast({
-          title: 'Logged Out',
-          description: 'You have been successfully logged out.',
+          title: t('success'),
+          description: t('logout_confirm_desc'),
         });
       } catch (error) {
         toast({
           variant: 'destructive',
-          title: 'Logout Failed',
+          title: t('error'),
           description: 'An error occurred while signing out.',
         });
       } finally {

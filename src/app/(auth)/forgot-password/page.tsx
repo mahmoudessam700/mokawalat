@@ -18,19 +18,21 @@ import { sendPasswordResetEmail } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2 } from 'lucide-react';
+import { useLanguage } from '@/hooks/use-language';
 
 export default function ForgotPasswordPage() {
   const { toast } = useToast();
   const [email, setEmail] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isSent, setIsSent] = useState(false);
+  const { t } = useLanguage();
 
   const handleResetPassword = async (e: FormEvent) => {
     e.preventDefault();
     if (!email) {
       toast({
         variant: 'destructive',
-        title: 'Error',
+        title: t('error'),
         description: 'Please enter your email address.',
       });
       return;
@@ -40,8 +42,8 @@ export default function ForgotPasswordPage() {
       await sendPasswordResetEmail(auth, email);
       setIsSent(true);
       toast({
-        title: 'Password Reset Email Sent',
-        description: 'Please check your inbox to reset your password.',
+        title: t('success'),
+        description: t('forgot_password_page.sent_description'),
       });
     } catch (error: any) {
       let errorMessage = 'An unexpected error occurred.';
@@ -52,7 +54,7 @@ export default function ForgotPasswordPage() {
       }
       toast({
         variant: 'destructive',
-        title: 'Error',
+        title: t('error'),
         description: errorMessage,
       });
     } finally {
@@ -66,23 +68,23 @@ export default function ForgotPasswordPage() {
         <div className="mb-4 flex justify-center">
           <Logo className="size-12 text-primary" />
         </div>
-        <CardTitle className="font-headline text-2xl font-bold">Forgot Password</CardTitle>
+        <CardTitle className="font-headline text-2xl font-bold">{t('forgot_password_page.title')}</CardTitle>
         <CardDescription>
           {isSent
-            ? 'A password reset link has been sent to your email.'
-            : 'Enter your email to receive a password reset link.'}
+            ? t('forgot_password_page.sent_description')
+            : t('forgot_password_page.form_description')}
         </CardDescription>
       </CardHeader>
       <CardContent>
         {isSent ? (
            <Button asChild className="w-full">
-              <Link href="/login">Back to Login</Link>
+              <Link href="/login">{t('forgot_password_page.back_to_login')}</Link>
             </Button>
         ) : (
           <form onSubmit={handleResetPassword}>
             <div className="grid gap-4">
               <div className="grid gap-2">
-                <Label htmlFor="email">Email</Label>
+                <Label htmlFor="email">{t('email')}</Label>
                 <Input
                   id="email"
                   type="email"
@@ -95,15 +97,15 @@ export default function ForgotPasswordPage() {
               </div>
               <Button type="submit" className="w-full" disabled={isLoading}>
                 {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                Send Reset Link
+                {t('forgot_password_page.send_button')}
               </Button>
             </div>
           </form>
         )}
         <div className="mt-4 text-center text-sm">
-          Remembered your password?{' '}
+          {t('forgot_password_page.remembered_password')}{' '}
           <Link href="/login" className="underline">
-            Login
+            {t('login_button')}
           </Link>
         </div>
       </CardContent>

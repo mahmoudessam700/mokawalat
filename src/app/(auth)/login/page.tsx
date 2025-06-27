@@ -35,8 +35,8 @@ export default function LoginPage() {
     try {
       await signInWithEmailAndPassword(auth, email, password);
       toast({
-        title: 'Success',
-        description: 'Logged in successfully.',
+        title: t('success'),
+        description: t('login_welcome'),
       });
       router.push('/dashboard');
     } catch (error: any) {
@@ -48,7 +48,7 @@ export default function LoginPage() {
       }
       toast({
         variant: 'destructive',
-        title: 'Login Failed',
+        title: t('error'),
         description: errorMessage,
       });
     } finally {
