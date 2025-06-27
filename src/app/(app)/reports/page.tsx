@@ -26,9 +26,10 @@ import { Button } from '@/components/ui/button';
 import { Calendar as CalendarIcon, DollarSign, Briefcase, Contact } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
-import { subDays, format } from 'date-fns';
+import { subDays, format, differenceInDays } from 'date-fns';
 import type { DateRange } from 'react-day-picker';
 import { cn } from '@/lib/utils';
+import { useLanguage } from '@/hooks/use-language';
 
 // Types from other modules
 type TransactionType = 'Income' | 'Expense';
@@ -109,6 +110,7 @@ export default function ReportsPage() {
   const [projects, setProjects] = useState<Project[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
+  const { t } = useLanguage();
   
   const [date, setDate] = useState<DateRange | undefined>({
     from: subDays(new Date(), 29),
@@ -193,17 +195,31 @@ export default function ReportsPage() {
   }, [transactions, date]);
 
   const financialChartData = useMemo(() => {
-    const totals = filteredTransactions.reduce((acc, t) => {
-      if (t.type === 'Income') acc.income += t.amount;
-      else if (t.type === 'Expense') acc.expense += t.amount;
-      return acc;
-    }, { income: 0, expense: 0 });
+    if (!date?.from || !date?.to) return [];
 
-    return [
-      { type: 'Income', total: totals.income, fill: 'var(--color-income)' },
-      { type: 'Expense', total: totals.expense, fill: 'var(--color-expense)' },
-    ];
-  }, [filteredTransactions]);
+    const isLongRange = differenceInDays(date.to, date.from) > 90;
+    const groupFormat = isLongRange ? 'yyyy-MM' : 'yyyy-MM-dd';
+    const displayFormat = isLongRange ? 'MMM yyyy' : 'dd MMM';
+
+    const groupedData = filteredTransactions.reduce((acc, t) => {
+      if (!t.date) return acc;
+      const dateKey = format(t.date.toDate(), groupFormat);
+      
+      if (!acc[dateKey]) {
+        acc[dateKey] = { date: dateKey, displayDate: format(t.date.toDate(), displayFormat), income: 0, expense: 0 };
+      }
+      
+      if (t.type === 'Income') {
+        acc[dateKey].income += t.amount;
+      } else {
+        acc[dateKey].expense += t.amount;
+      }
+      
+      return acc;
+    }, {} as Record<string, { date: string, displayDate: string, income: number, expense: number }>);
+    
+    return Object.values(groupedData).sort((a, b) => a.date.localeCompare(b.date));
+  }, [filteredTransactions, date]);
 
   const periodMetrics = useMemo(() => {
     const from = date?.from ? new Date(new Date(date.from).setHours(0, 0, 0, 0)) : null;
@@ -319,10 +335,10 @@ export default function ReportsPage() {
        <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div>
             <h1 className="font-headline text-3xl font-bold tracking-tight">
-            Reporting & Analytics
+              {t('reports_page.title')}
             </h1>
             <p className="text-muted-foreground">
-            Generate and view detailed reports on all business activities.
+              {t('reports_page.desc')}
             </p>
         </div>
         <div className="flex items-center gap-2">
@@ -347,7 +363,7 @@ export default function ReportsPage() {
                         format(date.from, "LLL dd, y")
                         )
                     ) : (
-                        <span>Pick a date</span>
+                        <span>{t('reports_page.pick_date_range')}</span>
                     )}
                     </Button>
                 </PopoverTrigger>
@@ -368,7 +384,7 @@ export default function ReportsPage() {
        <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
         <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Transactions in Period</CardTitle>
+                <CardTitle className="text-sm font-medium">{t('reports_page.transactions_in_period')}</CardTitle>
                 <DollarSign className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
@@ -377,7 +393,7 @@ export default function ReportsPage() {
         </Card>
         <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Projects Started</CardTitle>
+                <CardTitle className="text-sm font-medium">{t('reports_page.projects_started')}</CardTitle>
                 <Briefcase className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
@@ -386,7 +402,7 @@ export default function ReportsPage() {
         </Card>
         <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">New Clients Acquired</CardTitle>
+                <CardTitle className="text-sm font-medium">{t('reports_page.new_clients_acquired')}</CardTitle>
                 <Contact className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
@@ -396,29 +412,32 @@ export default function ReportsPage() {
       </div>
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-          <Card>
+          <Card className="lg:col-span-2">
            <CardHeader>
-             <CardTitle>Financial Overview</CardTitle>
-             <CardDescription>A summary of total income and expenses for the selected period.</CardDescription>
+             <CardTitle>{t('reports_page.income_vs_expense_title')}</CardTitle>
+             <CardDescription>{t('reports_page.income_vs_expense_desc')}</CardDescription>
            </CardHeader>
            <CardContent className="pl-2">
-             {isLoading ? <Skeleton className="h-[250px] w-full" /> : (
-                <ChartContainer config={chartConfig} className="h-[250px] w-full">
-                <BarChart data={financialChartData} layout="vertical" margin={{ left: 20 }}>
-                    <CartesianGrid horizontal={false} />
-                    <YAxis
-                    dataKey="type"
-                    type="category"
-                    tickLine={false}
-                    axisLine={false}
-                    tickMargin={10}
+             {isLoading ? <Skeleton className="h-[350px] w-full" /> : (
+                <ChartContainer config={chartConfig} className="h-[350px] w-full">
+                <BarChart data={financialChartData}>
+                    <CartesianGrid vertical={false} />
+                    <XAxis
+                        dataKey="displayDate"
+                        tickLine={false}
+                        axisLine={false}
+                        tickMargin={8}
                     />
-                    <XAxis dataKey="total" type="number" hide />
+                    <YAxis 
+                        tickFormatter={(value) => `LE ${(Number(value) / 1000).toLocaleString()}k`}
+                    />
                     <ChartTooltip
-                      cursor={false}
-                      content={<ChartTooltipContent indicator="line" />}
+                        cursor={false}
+                        content={<ChartTooltipContent indicator="dot" />}
                     />
-                    <Bar dataKey="total" radius={4} />
+                    <ChartLegend content={<ChartLegendContent />} />
+                    <Bar dataKey="income" fill="var(--color-income)" radius={4} />
+                    <Bar dataKey="expense" fill="var(--color-expense)" radius={4} />
                 </BarChart>
                 </ChartContainer>
              )}
@@ -426,8 +445,8 @@ export default function ReportsPage() {
          </Card>
           <Card>
            <CardHeader>
-             <CardTitle>Inventory Status</CardTitle>
-             <CardDescription>The current status of all inventory items.</CardDescription>
+             <CardTitle>{t('reports_page.inventory_status')}</CardTitle>
+             <CardDescription>{t('reports_page.inventory_status_desc')}</CardDescription>
            </CardHeader>
            <CardContent className="flex items-center justify-center pl-2">
              {isLoading ? <Skeleton className="h-[250px] w-[250px] rounded-full" /> : (
@@ -450,8 +469,8 @@ export default function ReportsPage() {
          </Card>
           <Card>
            <CardHeader>
-             <CardTitle>Employee Distribution</CardTitle>
-             <CardDescription>Breakdown of employees by department.</CardDescription>
+             <CardTitle>{t('reports_page.employee_distribution')}</CardTitle>
+             <CardDescription>{t('reports_page.employee_distribution_desc')}</CardDescription>
            </CardHeader>
            <CardContent className="flex items-center justify-center pl-2">
              {isLoading ? <Skeleton className="h-[250px] w-[250px] rounded-full" /> : (
@@ -474,8 +493,8 @@ export default function ReportsPage() {
          </Card>
           <Card>
            <CardHeader>
-             <CardTitle>Client Status</CardTitle>
-             <CardDescription>A breakdown of clients by their status.</CardDescription>
+             <CardTitle>{t('reports_page.client_status')}</CardTitle>
+             <CardDescription>{t('reports_page.client_status_desc')}</CardDescription>
            </CardHeader>
            <CardContent className="flex items-center justify-center pl-2">
              {isLoading ? <Skeleton className="h-[250px] w-[250px] rounded-full" /> : (
@@ -498,9 +517,9 @@ export default function ReportsPage() {
          </Card>
           <Card className="lg:col-span-2">
             <CardHeader>
-                <CardTitle>Project Budget vs. Actuals</CardTitle>
+                <CardTitle>{t('reports_page.project_budget_vs_actuals')}</CardTitle>
                 <CardDescription>
-                    An overview of budget consumption across all projects. This report includes all expenses ever linked to a project, regardless of the date range selected above.
+                    {t('reports_page.project_budget_vs_actuals_desc')}
                 </CardDescription>
             </CardHeader>
             <CardContent>
@@ -535,16 +554,16 @@ export default function ReportsPage() {
                 ) : (
                     <div className="flex flex-col items-center justify-center gap-2 py-8 text-center text-muted-foreground">
                         <DollarSign className="size-12" />
-                        <p>No project data available to generate a report.</p>
+                        <p>{t('reports_page.no_project_data')}</p>
                     </div>
                 )}
             </CardContent>
         </Card>
         <Card className="lg:col-span-2">
             <CardHeader>
-                <CardTitle>Completed Project Profitability</CardTitle>
+                <CardTitle>{t('reports_page.completed_project_profitability')}</CardTitle>
                 <CardDescription>
-                    An overview of income versus expenses for all completed projects.
+                    {t('reports_page.completed_project_profitability_desc')}
                 </CardDescription>
             </CardHeader>
             <CardContent>
@@ -579,7 +598,7 @@ export default function ReportsPage() {
                 ) : (
                     <div className="flex flex-col items-center justify-center gap-2 py-8 text-center text-muted-foreground">
                         <DollarSign className="size-12" />
-                        <p>No completed projects with financial data found.</p>
+                        <p>{t('reports_page.no_completed_projects')}</p>
                     </div>
                 )}
             </CardContent>
