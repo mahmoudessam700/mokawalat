@@ -587,6 +587,11 @@
         "reject_button": "Reject",
         "mark_ordered_button": "Mark as Ordered",
         "mark_received_button": "Mark as Received",
+        "order_dialog": {
+            "title": "Order & Pay Purchase Order",
+            "desc": "This will mark the PO for {name} ({amount}) as 'Ordered' and create an expense transaction. Please select the account to pay from.",
+            "confirm_button": "Confirm Order & Pay"
+        },
         "detail": {
             "title": "PO: {name}",
             "page_desc": "Detailed information for this purchase order.",
@@ -1556,6 +1561,11 @@
         "reject_button": "رفض",
         "mark_ordered_button": "وضع علامة كـ 'تم الطلب'",
         "mark_received_button": "وضع علامة كـ 'تم الاستلام'",
+        "order_dialog": {
+            "title": "طلب ودفع أمر الشراء",
+            "desc": "سيؤدي هذا إلى وضع علامة على أمر الشراء لـ {name} ({amount}) كـ 'تم الطلب' وإنشاء معاملة مصروفات. يرجى تحديد الحساب للدفع منه.",
+            "confirm_button": "تأكيد الطلب والدفع"
+        },
         "detail": {
             "title": "أمر شراء: {name}",
             "page_desc": "معلومات مفصلة عن أمر الشراء هذا.",

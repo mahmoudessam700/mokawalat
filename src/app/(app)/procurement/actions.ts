@@ -16,6 +16,13 @@ const procurementFormSchema = z.object({
 
 export type ProcurementFormValues = z.infer<typeof procurementFormSchema>;
 
+// New schema for the dialog form
+const orderPoFormSchema = z.object({
+  accountId: z.string().min(1, 'A bank account is required.'),
+});
+export type OrderPoFormValues = z.infer<typeof orderPoFormSchema>;
+
+
 export async function addPurchaseRequest(values: ProcurementFormValues) {
   const validatedFields = procurementFormSchema.safeParse(values);
 
@@ -138,7 +145,84 @@ export async function deletePurchaseRequest(requestId: string) {
     }
 }
 
-export async function updatePurchaseRequestStatus(requestId: string, newStatus: 'Approved' | 'Rejected' | 'Ordered') {
+export async function orderAndPayPurchaseRequest(requestId: string, values: OrderPoFormValues) {
+  if (!requestId) {
+    return { success: false, message: 'Request ID is required.' };
+  }
+
+  const validatedFields = orderPoFormSchema.safeParse(values);
+  if (!validatedFields.success) {
+      return { success: false, message: 'Invalid data provided.' };
+  }
+
+  const { accountId } = validatedFields.data;
+  const requestRef = doc(firestore, 'procurement', requestId);
+  
+  try {
+    const poDoc = await getDoc(requestRef);
+    if (!poDoc.exists()) {
+      throw new Error("Purchase Order not found.");
+    }
+    const poData = poDoc.data();
+
+    if (poData.status !== 'Approved') {
+      throw new Error("Only 'Approved' purchase orders can be ordered and paid.");
+    }
+
+    const batch = writeBatch(firestore);
+
+    // 1. Update PO status to 'Ordered'
+    batch.update(requestRef, { status: 'Ordered' });
+
+    // 2. Create new Expense transaction
+    const newTransactionRef = doc(collection(firestore, 'transactions'));
+    batch.set(newTransactionRef, {
+        description: `Payment for PO: ${poData.itemName}`,
+        amount: poData.totalCost,
+        type: 'Expense',
+        date: serverTimestamp(),
+        accountId,
+        projectId: poData.projectId,
+        supplierId: poData.supplierId,
+        purchaseOrderId: requestId,
+        createdAt: serverTimestamp(),
+    });
+
+    // 3. Log the status change
+    const statusLogRef = doc(collection(firestore, 'activityLog'));
+    batch.set(statusLogRef, {
+        message: `PO for "${poData.itemName}" status changed to Ordered`,
+        type: "PO_STATUS_CHANGED",
+        link: `/procurement/${requestId}`,
+        timestamp: serverTimestamp(),
+    });
+
+    // 4. Log the financial transaction
+    const transactionLogRef = doc(collection(firestore, 'activityLog'));
+    batch.set(transactionLogRef, {
+        message: `Expense of ${poData.totalCost.toLocaleString()} recorded for PO: ${poData.itemName}`,
+        type: "TRANSACTION_ADDED",
+        link: `/financials`,
+        timestamp: serverTimestamp(),
+    });
+
+    await batch.commit();
+
+    revalidatePath('/procurement');
+    revalidatePath(`/procurement/${requestId}`);
+    revalidatePath('/financials');
+    revalidatePath('/financials/accounts');
+    revalidatePath('/approvals');
+
+    return { success: true, message: 'Purchase Order marked as Ordered and payment transaction created.' };
+  } catch (error: any) {
+    console.error('Error ordering PO:', error);
+    return { success: false, message: error.message || 'Failed to update status and create transaction.' };
+  }
+}
+
+
+export async function updatePurchaseRequestStatus(requestId: string, newStatus: 'Approved' | 'Rejected') {
   if (!requestId) {
     return { success: false, message: 'Request ID is required.' };
   }
@@ -151,80 +235,23 @@ export async function updatePurchaseRequestStatus(requestId: string, newStatus: 
       throw new Error("Purchase Order not found.");
     }
     const poData = poDoc.data();
-    const currentStatus = poData.status;
 
-    const allowedTransitions: { [key: string]: string[] } = {
-        'Pending': ['Approved', 'Rejected'],
-        'Approved': ['Ordered'],
-    };
-
-    if (!allowedTransitions[currentStatus] || !allowedTransitions[currentStatus].includes(newStatus)) {
-        throw new Error(`Cannot change status from '${currentStatus}' to '${newStatus}'.`);
+    if (poData.status !== 'Pending') {
+        throw new Error(`Cannot change status from '${poData.status}' to '${newStatus}'. Only pending requests can be actioned here.`);
     }
     
-    if (newStatus === 'Ordered') {
-        const transactionsQuery = query(collection(firestore, 'transactions'), where('purchaseOrderId', '==', requestId), limit(1));
-        const transactionSnapshot = await getDocs(transactionsQuery);
-        
-        if (!transactionSnapshot.empty) {
-            await updateDoc(requestRef, { status: newStatus });
-        } else {
-            const accountsQuery = query(collection(firestore, 'accounts'), limit(1));
-            const accountsSnap = await getDocs(accountsQuery);
-            if (accountsSnap.empty) {
-                throw new Error("No bank accounts found. Please add an account in Financials > Manage Accounts before ordering.");
-            }
-            const accountId = accountsSnap.docs[0].id;
-            
-            const batch = writeBatch(firestore);
-
-            // 1. Update PO status
-            batch.update(requestRef, { status: newStatus });
-
-            // 2. Create new transaction
-            const newTransactionRef = doc(collection(firestore, 'transactions'));
-            batch.set(newTransactionRef, {
-                description: `Purchase Order for: ${poData.itemName}`,
-                amount: poData.totalCost,
-                type: 'Expense',
-                date: serverTimestamp(),
-                accountId: accountId,
-                projectId: poData.projectId,
-                supplierId: poData.supplierId,
-                purchaseOrderId: requestId,
-                createdAt: serverTimestamp(),
-            });
-            
-            // 3. Log the financial transaction
-            const activityLogRef = doc(collection(firestore, 'activityLog'));
-            batch.set(activityLogRef, {
-                message: `Expense of ${poData.totalCost.toLocaleString()} recorded for PO: ${poData.itemName}`,
-                type: "TRANSACTION_ADDED",
-                link: `/financials`,
-                timestamp: serverTimestamp(),
-            });
-
-            await batch.commit();
-        }
-    } else {
-        await updateDoc(requestRef, { status: newStatus });
-    }
+    await updateDoc(requestRef, { status: newStatus });
     
-    const poDocForLog = await getDoc(requestRef);
-    if (poDocForLog.exists()) {
-      const poDataForLog = poDocForLog.data();
-      await addDoc(collection(firestore, 'activityLog'), {
-          message: `PO for "${poDataForLog.itemName}" status changed to ${newStatus}`,
-          type: "PO_STATUS_CHANGED",
-          link: `/procurement/${requestId}`,
-          timestamp: serverTimestamp(),
-      });
-    }
+    await addDoc(collection(firestore, 'activityLog'), {
+        message: `PO for "${poData.itemName}" status changed to ${newStatus}`,
+        type: "PO_STATUS_CHANGED",
+        link: `/procurement/${requestId}`,
+        timestamp: serverTimestamp(),
+    });
     
     revalidatePath('/procurement');
     revalidatePath(`/procurement/${requestId}`);
-    revalidatePath('/financials');
-    revalidatePath('/financials/accounts');
+    revalidatePath('/approvals');
 
     return { success: true, message: `Purchase Order status updated to ${newStatus}.` };
   } catch (error: any) {

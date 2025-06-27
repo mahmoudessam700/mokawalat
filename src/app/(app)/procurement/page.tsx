@@ -75,6 +75,8 @@ import { format } from 'date-fns';
 import Link from 'next/link';
 import { useAuth } from '@/hooks/use-auth';
 import { useLanguage } from '@/hooks/use-language';
+import { OrderPoDialog } from './order-po-dialog';
+
 
 type RequestStatus = 'Pending' | 'Approved' | 'Rejected' | 'Ordered' | 'Received';
 
@@ -85,6 +87,7 @@ type PurchaseOrder = {
   quantity: number;
   supplierId: string;
   projectId: string;
+  unitCost: number;
   totalCost: number;
   status: RequestStatus;
   requestedAt: Timestamp;
@@ -93,6 +96,7 @@ type PurchaseOrder = {
 type Project = { id: string; name: string; };
 type Supplier = { id: string; name: string; rating?: number; };
 type InventoryItem = { id: string; name: string };
+type Account = { id: string; name: string };
 
 const statusVariant: { [key in RequestStatus]: 'default' | 'secondary' | 'destructive' | 'outline' } = {
   Pending: 'default',
@@ -133,6 +137,7 @@ export default function ProcurementPage() {
   const [projects, setProjects] = useState<Project[]>([]);
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
   const [inventoryItems, setInventoryItems] = useState<InventoryItem[]>([]);
+  const [accounts, setAccounts] = useState<Account[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [requestToEdit, setRequestToEdit] = useState<PurchaseOrder | null>(null);
@@ -149,33 +154,35 @@ export default function ProcurementPage() {
   const [supplierFilter, setSupplierFilter] = useState('All');
 
   useEffect(() => {
+    const unsubscribes: (() => void)[] = [];
+
     const qRequests = query(collection(firestore, 'procurement'), orderBy('requestedAt', 'desc'));
-    const unsubscribeRequests = onSnapshot(qRequests, (snapshot) => {
+    unsubscribes.push(onSnapshot(qRequests, (snapshot) => {
       setRequests(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as PurchaseOrder)));
       setIsLoading(false);
-    });
+    }));
 
     const qProjects = query(collection(firestore, 'projects'), orderBy('name', 'asc'));
-    const unsubscribeProjects = onSnapshot(qProjects, (snapshot) => {
+    unsubscribes.push(onSnapshot(qProjects, (snapshot) => {
       setProjects(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Project)));
-    });
+    }));
 
     const qSuppliers = query(collection(firestore, 'suppliers'), orderBy('name', 'asc'));
-    const unsubscribeSuppliers = onSnapshot(qSuppliers, (snapshot) => {
+    unsubscribes.push(onSnapshot(qSuppliers, (snapshot) => {
       setSuppliers(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Supplier)));
-    });
+    }));
 
     const qInventory = query(collection(firestore, 'inventory'), orderBy('name', 'asc'));
-    const unsubscribeInventory = onSnapshot(qInventory, (snapshot) => {
+    unsubscribes.push(onSnapshot(qInventory, (snapshot) => {
         setInventoryItems(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as InventoryItem)));
-    });
+    }));
+    
+    const qAccounts = query(collection(firestore, 'accounts'), orderBy('name', 'asc'));
+    unsubscribes.push(onSnapshot(qAccounts, (snapshot) => {
+      setAccounts(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Account)));
+    }));
 
-    return () => {
-      unsubscribeRequests();
-      unsubscribeProjects();
-      unsubscribeSuppliers();
-      unsubscribeInventory();
-    };
+    return () => unsubscribes.forEach(unsub => unsub());
   }, []);
 
   const projectNames = useMemo(() => new Map(projects.map(p => [p.id, p.name])), [projects]);
@@ -245,7 +252,7 @@ export default function ProcurementPage() {
     setRequestToDelete(null);
   }
   
-  async function handleStatusUpdate(id: string, status: 'Approved' | 'Rejected' | 'Ordered') {
+  async function handleStatusUpdate(id: string, status: 'Approved' | 'Rejected') {
     const result = await updatePurchaseRequestStatus(id, status);
     if (result.success) {
         toast({ title: t('success'), description: result.message });
@@ -518,7 +525,7 @@ export default function ProcurementPage() {
                            <DropdownMenuItem asChild>
                               <Link href={`/procurement/${request.id}`}>{t('view_details')}</Link>
                             </DropdownMenuItem>
-                          {profile?.role === 'admin' && (
+                          {['admin', 'manager'].includes(profile?.role || '') && (
                             <>
                               <DropdownMenuSeparator />
                               {request.status === 'Pending' && (
@@ -534,10 +541,12 @@ export default function ProcurementPage() {
                                 </>
                               )}
                               {request.status === 'Approved' && (
-                                <DropdownMenuItem onSelect={() => handleStatusUpdate(request.id, 'Ordered')}>
-                                  <Send className="mr-2 h-4 w-4" />
-                                  {t('procurement.mark_ordered_button')}
-                                </DropdownMenuItem>
+                                <OrderPoDialog request={request} accounts={accounts}>
+                                    <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
+                                        <Send className="mr-2 h-4 w-4" />
+                                        {t('procurement.mark_ordered_button')}
+                                    </DropdownMenuItem>
+                                </OrderPoDialog>
                               )}
                               {request.status === 'Ordered' && (
                                 <DropdownMenuItem onSelect={() => handleMarkAsReceived(request.id)}>
@@ -546,7 +555,7 @@ export default function ProcurementPage() {
                                 </DropdownMenuItem>
                               )}
                               
-                              {(request.status === 'Pending') && (
+                              {(request.status === 'Pending' && profile?.role === 'admin') && (
                                 <>
                                   <DropdownMenuSeparator />
                                   <DropdownMenuItem onSelect={() => {
@@ -611,5 +620,3 @@ export default function ProcurementPage() {
     </>
   );
 }
-
-    
