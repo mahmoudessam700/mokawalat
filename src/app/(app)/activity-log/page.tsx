@@ -118,7 +118,7 @@ export default function ActivityLogPage() {
       toast({
         variant: 'destructive',
         title: t('error'),
-        description: 'Failed to fetch activity log.',
+        description: t('activity_log_page.fetch_error'),
       });
       setIsLoading(false);
     });

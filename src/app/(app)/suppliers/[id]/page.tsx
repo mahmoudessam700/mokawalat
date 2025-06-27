@@ -197,9 +197,9 @@ export default function SupplierDetailPage({ params }: { params: { id: string } 
 
     const result = await addContract(supplier.id, formData);
     if (result.errors) {
-      toast({ variant: 'destructive', title: 'Error', description: result.message });
+      toast({ variant: 'destructive', title: t('error'), description: result.message });
     } else {
-      toast({ title: 'Success', description: result.message });
+      toast({ title: t('success'), description: result.message });
       contractForm.reset();
       setIsContractDialogOpen(false);
     }
@@ -212,9 +212,9 @@ export default function SupplierDetailPage({ params }: { params: { id: string } 
     setIsDeletingContract(false);
 
     if (result.success) {
-      toast({ title: 'Success', description: result.message });
+      toast({ title: t('success'), description: result.message });
     } else {
-      toast({ variant: 'destructive', title: 'Error', description: result.message });
+      toast({ variant: 'destructive', title: t('error'), description: result.message });
     }
     setContractToDelete(null);
   }

@@ -59,7 +59,7 @@ export async function updateSupplier(supplierId: string, values: SupplierFormVal
   if (!validatedFields.success) {
     return {
       errors: validatedFields.error.flatten().fieldErrors,
-      message: 'Invalid data provided. Please check the form.',
+      message: 'Invalid data provided.',
     };
   }
 
@@ -285,5 +285,3 @@ export async function getSupplierPerformanceSummary(supplierId: string) {
     } catch(error) {
         console.error('Error generating supplier performance summary:', error);
         return { error: true, message: 'An unexpected error occurred while generating the summary.', data: null };
-    }
-}
