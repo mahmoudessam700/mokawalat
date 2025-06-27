@@ -2,7 +2,7 @@
 'use server';
 
 import { firestore } from '@/lib/firebase';
-import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
+import { collection, addDoc, serverTimestamp, doc, getDoc } from 'firebase/firestore';
 import { z } from 'zod';
 import { revalidatePath } from 'next/cache';
 
@@ -36,11 +36,25 @@ export async function addMaintenanceLog(assetId: string, values: MaintenanceLogF
   }
 
   try {
+    const assetRef = doc(firestore, 'assets', assetId);
+    const assetSnap = await getDoc(assetRef);
+    if (!assetSnap.exists()) {
+      throw new Error("Asset not found.");
+    }
+    const assetName = assetSnap.data().name;
+
     const logRef = collection(firestore, 'assets', assetId, 'maintenanceLogs');
     await addDoc(logRef, {
       ...validatedFields.data,
       date: new Date(validatedFields.data.date),
       createdAt: serverTimestamp(),
+    });
+
+    await addDoc(collection(firestore, 'activityLog'), {
+        message: `Maintenance logged for asset: ${assetName}`,
+        type: "ASSET_MAINTENANCE_LOGGED",
+        link: `/assets/${assetId}`,
+        timestamp: serverTimestamp(),
     });
     
     revalidatePath(`/assets/${assetId}`);

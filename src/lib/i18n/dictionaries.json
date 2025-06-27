@@ -698,6 +698,7 @@
         "ASSET_ADDED": "Asset Added",
         "ASSET_UPDATED": "Asset Updated",
         "ASSET_DELETED": "Asset Deleted",
+        "ASSET_MAINTENANCE_LOGGED": "Asset Maintenance Logged",
         "PO_CREATED": "PO Created",
         "PO_UPDATED": "PO Updated",
         "PO_DELETED": "PO Deleted",
@@ -705,13 +706,17 @@
         "CONTRACT_ADDED": "Contract Added",
         "CONTRACT_DELETED": "Contract Deleted",
         "MATERIAL_REQUESTED": "Material Requested",
+        "MATERIAL_REQUEST_APPROVED": "Material Request Approved",
+        "MATERIAL_REQUEST_REJECTED": "Material Request Rejected",
         "TASK_ADDED": "Task Added",
         "TASK_STATUS_CHANGED": "Task Status Changed",
         "TASK_DELETED": "Task Deleted",
         "DOCUMENT_UPLOADED": "Document Uploaded",
         "DOCUMENT_DELETED": "Document Deleted",
         "INVOICE_CREATED": "Invoice Created",
-        "INVOICE_STATUS_CHANGED": "Invoice Status Changed"
+        "INVOICE_STATUS_CHANGED": "Invoice Status Changed",
+        "TEAM_ASSIGNED_TO_PROJECT": "Team Assigned to Project",
+        "AI_TASKS_SUGGESTED": "AI Task Suggestion"
     },
     "success": "Success",
     "item": "Item",
@@ -1866,6 +1871,7 @@
         "ASSET_ADDED": "تمت إضافة أصل",
         "ASSET_UPDATED": "تم تحديث الأصل",
         "ASSET_DELETED": "تم حذف الأصل",
+        "ASSET_MAINTENANCE_LOGGED": "تم تسجيل صيانة للأصل",
         "PO_CREATED": "تم إنشاء أمر شراء",
         "PO_UPDATED": "تم تحديث أمر الشراء",
         "PO_DELETED": "تم حذف أمر الشراء",
@@ -1873,13 +1879,17 @@
         "CONTRACT_ADDED": "تمت إضافة عقد",
         "CONTRACT_DELETED": "تم حذف العقد",
         "MATERIAL_REQUESTED": "تم طلب مواد",
+        "MATERIAL_REQUEST_APPROVED": "تمت الموافقة على طلب المواد",
+        "MATERIAL_REQUEST_REJECTED": "تم رفض طلب المواد",
         "TASK_ADDED": "تمت إضافة مهمة",
         "TASK_STATUS_CHANGED": "تم تغيير حالة المهمة",
         "TASK_DELETED": "تم حذف المهمة",
         "DOCUMENT_UPLOADED": "تم تحميل المستند",
         "DOCUMENT_DELETED": "تم حذف المستند",
         "INVOICE_CREATED": "تم إنشاء فاتورة",
-        "INVOICE_STATUS_CHANGED": "تم تغيير حالة الفاتورة"
+        "INVOICE_STATUS_CHANGED": "تم تغيير حالة الفاتورة",
+        "TEAM_ASSIGNED_TO_PROJECT": "تم تعيين فريق للمشروع",
+        "AI_TASKS_SUGGESTED": "اقتراح مهام بالذكاء الاصطناعي"
     },
     "success": "نجاح",
     "item": "الصنف",
@@ -2229,4 +2239,3 @@
     "purchase_orders": "أوامر الشراء"
   }
 }
-

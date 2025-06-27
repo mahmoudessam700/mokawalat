@@ -39,6 +39,9 @@ import {
   Wrench,
   Receipt,
   Star,
+  PackageCheck,
+  PackageX,
+  Sparkles,
 } from 'lucide-react';
 import { useLanguage } from '@/hooks/use-language';
 import { ar, enUS } from 'date-fns/locale';
@@ -75,6 +78,7 @@ const activityIcons: { [key: string]: React.ReactNode } = {
   ASSET_ADDED: <Wrench className="size-4" />,
   ASSET_UPDATED: <Pencil className="size-4" />,
   ASSET_DELETED: <Trash2 className="size-4" />,
+  ASSET_MAINTENANCE_LOGGED: <Wrench className="size-4" />,
   PO_CREATED: <ShoppingCart className="size-4" />,
   PO_UPDATED: <Pencil className="size-4" />,
   PO_DELETED: <Trash2 className="size-4" />,
@@ -82,6 +86,8 @@ const activityIcons: { [key: string]: React.ReactNode } = {
   CONTRACT_ADDED: <FileText className="size-4" />,
   CONTRACT_DELETED: <Trash2 className="size-4" />,
   MATERIAL_REQUESTED: <ClipboardList className="size-4" />,
+  MATERIAL_REQUEST_APPROVED: <PackageCheck className="size-4" />,
+  MATERIAL_REQUEST_REJECTED: <PackageX className="size-4" />,
   TASK_ADDED: <ClipboardList className="size-4" />,
   TASK_STATUS_CHANGED: <ListChecks className="size-4" />,
   TASK_DELETED: <Trash2 className="size-4" />,
@@ -89,6 +95,8 @@ const activityIcons: { [key: string]: React.ReactNode } = {
   DOCUMENT_DELETED: <Trash2 className="size-4" />,
   INVOICE_CREATED: <Receipt className="size-4" />,
   INVOICE_STATUS_CHANGED: <ListChecks className="size-4" />,
+  TEAM_ASSIGNED_TO_PROJECT: <Users className="size-4" />,
+  AI_TASKS_SUGGESTED: <Sparkles className="size-4" />,
   DEFAULT: <Bell className="size-4" />,
 };
 

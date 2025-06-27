@@ -229,6 +229,17 @@ export async function assignTeamToProject(projectId: string, values: AssignTeamF
         await updateDoc(projectRef, {
             teamMemberIds: validatedFields.data.employeeIds,
         });
+
+        const projectSnap = await getDoc(projectRef);
+        const projectName = projectSnap.exists() ? projectSnap.data().name : 'Unknown Project';
+
+        await addDoc(collection(firestore, 'activityLog'), {
+            message: `Team updated for project: ${projectName}`,
+            type: "TEAM_ASSIGNED_TO_PROJECT",
+            link: `/projects/${projectId}`,
+            timestamp: serverTimestamp(),
+        });
+        
         revalidatePath(`/projects/${projectId}`);
         return { message: 'Team updated successfully.', errors: null };
     } catch (error) {
@@ -724,6 +735,14 @@ export async function suggestTasksForProject(projectId: string) {
 
         await batch.commit();
         await recalculateProjectProgress(projectId);
+
+        await addDoc(collection(firestore, 'activityLog'), {
+            message: `AI suggested ${result.tasks.length} tasks for project: ${projectData.name}`,
+            type: "AI_TASKS_SUGGESTED",
+            link: `/projects/${projectId}`,
+            timestamp: serverTimestamp(),
+        });
+        
         revalidatePath(`/projects/${projectId}`);
         
         return { success: true, message: `${result.tasks.length} tasks suggested and added.` };

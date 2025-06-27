@@ -74,6 +74,7 @@ export async function updateMaterialRequestStatus(requestId: string, newStatus: 
     }
     const requestData = requestSnapshot.data();
     const projectId = requestData.projectId;
+    const itemName = requestData.itemName;
 
     if (newStatus === 'Approved') {
         await runTransaction(firestore, async (transaction) => {
@@ -114,6 +115,13 @@ export async function updateMaterialRequestStatus(requestId: string, newStatus: 
     } else { // 'Rejected'
         await updateDoc(requestRef, { status: 'Rejected' });
     }
+
+    await addDoc(collection(firestore, 'activityLog'), {
+        message: `Material request for "${itemName}" was ${newStatus.toLowerCase()}`,
+        type: newStatus === 'Approved' ? "MATERIAL_REQUEST_APPROVED" : "MATERIAL_REQUEST_REJECTED",
+        link: `/projects/${projectId}`,
+        timestamp: serverTimestamp(),
+    });
 
     if (projectId) {
         revalidatePath(`/projects/${projectId}`);
