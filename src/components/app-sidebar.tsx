@@ -72,7 +72,7 @@ export function AppSidebar() {
   const { user, profile, isLoading: isAuthLoading } = useAuth();
   const { t } = useLanguage();
 
-  const menuGroups = [
+  const menuGroups = React.useMemo(() => [
     {
       items: [
         { href: '/dashboard', label: t('dashboard'), icon: LayoutDashboard },
@@ -109,7 +109,7 @@ export function AppSidebar() {
         { href: '/roadmap', label: t('roadmap_title'), icon: ListOrdered },
       ],
     },
-  ];
+  ], [t]);
 
   const isActive = (href: string) => {
     if (href === '/dashboard' || href === '/approvals' || href === '/reports' || href === '/activity-log' || href === '/iso-compliance' || href === '/roadmap') {
