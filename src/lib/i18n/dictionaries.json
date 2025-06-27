@@ -637,6 +637,7 @@
             "no_financial_records": "No financial records are linked to this purchase order."
         }
     },
+    "reports": "Reports",
     "reports_page": {
         "title": "Reporting & Analytics",
         "desc": "Generate and view detailed reports on all business activities.",
@@ -1810,6 +1811,7 @@
             "no_financial_records": "لا توجد سجلات مالية مرتبطة بأمر الشراء هذا."
         }
     },
+    "reports": "التقارير",
     "reports_page": {
         "title": "التقارير والتحليلات",
         "desc": "إنشاء وعرض تقارير مفصلة عن جميع أنشطة الأعمال.",
@@ -1831,21 +1833,6 @@
         "completed_project_profitability": "ربحية المشاريع المكتملة",
         "completed_project_profitability_desc": "نظرة عامة على الدخل مقابل المصروفات لجميع المشاريع المكتملة.",
         "no_completed_projects": "لم يتم العثور على مشاريع مكتملة ببيانات مالية."
-    },
-    "activity_log_page": {
-        "title": "سجل النشاط",
-        "description": "سجل زمني لجميع الأحداث الرئيسية في النظام.",
-        "history_title": "سجل النظام",
-        "history_description": "تصفح جميع الأنشطة المسجلة.",
-        "search_placeholder": "ابحث بالرسالة...",
-        "filter_placeholder": "تصفية حسب نوع الحدث",
-        "all_event_types": "جميع أنواع الأحداث",
-        "event_header": "الحدث",
-        "description_header": "الوصف",
-        "type_header": "النوع",
-        "time_header": "الوقت",
-        "no_filtered_results": "لا توجد أنشطة تطابق عوامل التصفية الخاصة بك.",
-        "no_activity_yet": "لم يتم تسجيل أي نشاط حتى الآن."
     },
     "activity_types": {
         "PROJECT_CREATED": "تم إنشاء مشروع",
@@ -2083,11 +2070,11 @@
         },
         "no_requests_found": "لم يتم العثور على طلبات مواد."
     },
-    "iso_compliance_title": "الامتثال لـ ISO",
+    "iso_compliance_title": "الامتثال لمعيار ISO",
     "iso_compliance_desc": "احصل على اقتراحات مدعومة بالذكاء الاصطناعي لتحسين عملياتك.",
-    "describe_erp_ops": "صف عمليات ERP الخاصة بك",
+    "describe_erp_ops": "صف عمليات نظام تخطيط موارد المؤسسات لديك",
     "describe_erp_ops_desc": "قدم وصفًا تفصيليًا لكيفية استخدامك حاليًا لنظام ERP لإدارة المشاريع والمالية والمخزون والمزيد. كلما زادت التفاصيل، كانت الاقتراحات أفضل.",
-    "erp_ops_placeholder": "مثال: نحن نستخدم النظام لتتبع ميزانيات المشاريع من البداية إلى النهاية. يتم إنشاء أوامر الشراء للموردين الرئيسيين، ولكن تتم الموافقة عليها يدويًا عبر البريد الإلكتروني. يتم تحديث المخزون فقط عند استلام البضائع...",
+    "erp_ops_placeholder": "مثال: نستخدم النظام لتتبع ميزانيات المشاريع من البداية إلى النهاية. يتم إنشاء أوامر الشراء للموردين الرئيسيين، ولكن تتم الموافقة عليها يدويًا عبر البريد الإلكتروني. يتم تحديث المخزون فقط عند استلام البضائع...",
     "suggestions_by_ai": "الاقتراحات مقدمة من الذكاء الاصطناعي",
     "get_suggestions": "الحصول على الاقتراحات",
     "generating": "جارٍ الإنشاء",
@@ -2114,7 +2101,7 @@
     "profile_desc": "إدارة تفاصيل حسابك وتفضيلاتك.",
     "update_profile_photo": "تحديث صورة الملف الشخصي",
     "new_photo": "صورة جديدة",
-    "uploading": "جارٍ التحميل",
+    "uploading": "جارٍ التحميل...",
     "upload_photo": "تحميل الصورة",
     "view_full_profile": "عرض الملف الشخصي الكامل للموظف",
     "account_security": "أمان الحساب",
@@ -2132,8 +2119,8 @@
     "logout_confirm_title": "هل أنت متأكد من رغبتك في تسجيل الخروج؟",
     "logout_confirm_desc": "سيتم تسجيل خروجك من حسابك.",
     "cancel": "إلغاء",
-    "deleting": "جارٍ الحذف",
-    "logging_out": "جارٍ تسجيل الخروج",
+    "deleting": "جارٍ الحذف...",
+    "logging_out": "جارٍ تسجيل الخروج...",
     "forgot_password": "هل نسيت كلمة المرور؟",
     "forgot_password_page": {
         "title": "هل نسيت كلمة المرور؟",
@@ -2160,7 +2147,7 @@
     "actions": "الإجراءات",
     "edit": "تعديل",
     "delete": "حذف",
-    "saving": "جارٍ الحفظ",
+    "saving": "جارٍ الحفظ...",
     "save_changes": "حفظ التغييرات",
     "view_project": "عرض المشروع",
     "settings": "الإعدادات",

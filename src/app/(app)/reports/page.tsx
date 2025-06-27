@@ -27,6 +27,7 @@ import { Calendar as CalendarIcon, DollarSign, Briefcase, Contact } from 'lucide
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
 import { subDays, format, differenceInDays } from 'date-fns';
+import { ar, enUS } from 'date-fns/locale';
 import type { DateRange } from 'react-day-picker';
 import { cn } from '@/lib/utils';
 import { useLanguage } from '@/hooks/use-language';
@@ -62,46 +63,6 @@ type Project = {
 };
 
 
-const chartConfig = {
-  income: {
-    label: 'Income',
-    color: 'hsl(var(--chart-2))',
-  },
-  expense: {
-    label: 'Expense',
-    color: 'hsl(var(--chart-5))',
-  },
-  inStock: {
-    label: 'In Stock',
-    color: 'hsl(var(--chart-2))',
-  },
-  lowStock: {
-    label: 'Low Stock',
-    color: 'hsl(var(--chart-4))',
-  },
-  outOfStock: {
-    label: 'Out of Stock',
-    color: 'hsl(var(--chart-5))',
-  },
-  Budget: {
-    label: "Budget",
-    color: "hsl(var(--chart-1))",
-  },
-  Expenses: {
-    label: "Expenses",
-    color: "hsl(var(--chart-3))",
-  },
-  Income: {
-    label: 'Income',
-    color: 'hsl(var(--chart-2))',
-  },
-  Expense: {
-    label: 'Expense',
-    color: 'hsl(var(--chart-5))',
-  },
-} satisfies ChartConfig;
-
-
 export default function ReportsPage() {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [inventory, setInventory] = useState<InventoryItem[]>([]);
@@ -110,9 +71,50 @@ export default function ReportsPage() {
   const [projects, setProjects] = useState<Project[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
-  const { t } = useLanguage();
+  const { t, locale } = useLanguage();
   
   const [date, setDate] = useState<DateRange | undefined>(undefined);
+  
+  const fnsLocale = useMemo(() => (locale === 'ar' ? ar : enUS), [locale]);
+
+  const chartConfig: ChartConfig = useMemo(() => ({
+    income: {
+      label: t('financials.income'),
+      color: 'hsl(var(--chart-2))',
+    },
+    expense: {
+      label: t('financials.expense'),
+      color: 'hsl(var(--chart-5))',
+    },
+    inStock: {
+      label: t('inventory.status.In Stock'),
+      color: 'hsl(var(--chart-2))',
+    },
+    lowStock: {
+      label: t('inventory.status.Low Stock'),
+      color: 'hsl(var(--chart-4))',
+    },
+    outOfStock: {
+      label: t('inventory.status.Out of Stock'),
+      color: 'hsl(var(--chart-5))',
+    },
+    budget: {
+      label: t('projects.budget'),
+      color: "hsl(var(--chart-1))",
+    },
+    Lead: {
+      label: t('clients.status.Lead'),
+      color: 'hsl(var(--chart-1))'
+    },
+    Active: {
+      label: t('clients.status.Active'),
+      color: 'hsl(var(--chart-2))'
+    },
+    Inactive: {
+      label: t('clients.status.Inactive'),
+      color: 'hsl(var(--chart-5))'
+    }
+  }), [t]);
 
   useEffect(() => {
     // Set the initial date range only on the client side after hydration
@@ -211,7 +213,7 @@ export default function ReportsPage() {
       const dateKey = format(t.date.toDate(), groupFormat);
       
       if (!acc[dateKey]) {
-        acc[dateKey] = { date: dateKey, displayDate: format(t.date.toDate(), displayFormat), income: 0, expense: 0 };
+        acc[dateKey] = { date: dateKey, displayDate: format(t.date.toDate(), displayFormat, { locale: fnsLocale }), income: 0, expense: 0 };
       }
       
       if (t.type === 'Income') {
@@ -224,7 +226,7 @@ export default function ReportsPage() {
     }, {} as Record<string, { date: string, displayDate: string, income: number, expense: number }>);
     
     return Object.values(groupedData).sort((a, b) => a.date.localeCompare(b.date));
-  }, [filteredTransactions, date]);
+  }, [filteredTransactions, date, fnsLocale]);
 
   const periodMetrics = useMemo(() => {
     const from = date?.from ? new Date(new Date(date.from).setHours(0, 0, 0, 0)) : null;
@@ -259,9 +261,9 @@ export default function ReportsPage() {
     }, { inStock: 0, lowStock: 0, outOfStock: 0 });
 
     return [
-      { name: 'In Stock', value: statusCounts.inStock, fill: 'var(--color-inStock)' },
-      { name: 'Low Stock', value: statusCounts.lowStock, fill: 'var(--color-lowStock)' },
-      { name: 'Out of Stock', value: statusCounts.outOfStock, fill: 'var(--color-outOfStock)' },
+      { name: 'inStock', value: statusCounts.inStock, fill: 'var(--color-inStock)' },
+      { name: 'lowStock', value: statusCounts.lowStock, fill: 'var(--color-lowStock)' },
+      { name: 'outOfStock', value: statusCounts.outOfStock, fill: 'var(--color-outOfStock)' },
     ].filter(d => d.value > 0);
   }, [inventory]);
 
@@ -286,18 +288,11 @@ export default function ReportsPage() {
         return acc;
     }, {} as Record<string, number>);
 
-    const colors: {[key: string]: string} = {
-        Lead: 'hsl(var(--chart-1))',
-        Active: 'hsl(var(--chart-2))',
-        Inactive: 'hsl(var(--chart-5))',
-        Unknown: 'hsl(var(--chart-3))'
-    };
-
-    return Object.entries(statusCounts).map(([name, value]) => ({
-        name,
-        value,
-        fill: colors[name],
-    })).filter(d => d.value > 0);
+    return [
+        { name: 'Lead', value: statusCounts.Lead || 0, fill: 'var(--color-Lead)' },
+        { name: 'Active', value: statusCounts.Active || 0, fill: 'var(--color-Active)' },
+        { name: 'Inactive', value: statusCounts.Inactive || 0, fill: 'var(--color-Inactive)' },
+    ].filter(d => d.value > 0);
 }, [clients]);
 
  const projectFinancialsChartData = useMemo(() => {
@@ -308,10 +303,10 @@ export default function ReportsPage() {
         
         return {
             name: project.name,
-            Budget: project.budget,
-            Expenses: projectExpenses,
+            budget: project.budget,
+            expense: projectExpenses,
         };
-    }).sort((a, b) => b.Budget - a.Budget);
+    }).sort((a, b) => b.budget - a.budget);
   }, [projects, transactions]);
 
   const projectProfitabilityData = useMemo(() => {
@@ -328,10 +323,10 @@ export default function ReportsPage() {
         
         return {
             name: project.name,
-            Income: income,
-            Expense: expense,
+            income: income,
+            expense: expense,
         };
-    }).sort((a,b) => (b.Income - b.Expense) - (a.Income - a.Expense));
+    }).sort((a,b) => (b.income - b.expense) - (a.income - a.expense));
   }, [projects, transactions]);
 
 
@@ -362,11 +357,11 @@ export default function ReportsPage() {
                     {date?.from ? (
                         date.to ? (
                         <>
-                            {format(date.from, "LLL dd, y")} -{" "}
-                            {format(date.to, "LLL dd, y")}
+                            {format(date.from, "LLL dd, y", { locale: fnsLocale })} -{" "}
+                            {format(date.to, "LLL dd, y", { locale: fnsLocale })}
                         </>
                         ) : (
-                        format(date.from, "LLL dd, y")
+                        format(date.from, "LLL dd, y", { locale: fnsLocale })
                         )
                     ) : (
                         <span>{t('reports_page.pick_date_range')}</span>
@@ -467,7 +462,7 @@ export default function ReportsPage() {
                       cy="50%"
                       outerRadius={80}
                     />
-                    <ChartLegend content={<ChartLegendContent />} />
+                    <ChartLegend content={<ChartLegendContent nameKey="name" />} />
                   </PieChart>
                 </ChartContainer>
              )}
@@ -504,7 +499,7 @@ export default function ReportsPage() {
            </CardHeader>
            <CardContent className="flex items-center justify-center pl-2">
              {isLoading ? <Skeleton className="h-[250px] w-[250px] rounded-full" /> : (
-                <ChartContainer config={{}} className="h-[250px] w-full">
+                <ChartContainer config={chartConfig} className="h-[250px] w-full">
                   <PieChart>
                     <ChartTooltip content={<ChartTooltipContent nameKey="name" hideLabel />} />
                     <Pie
@@ -515,7 +510,7 @@ export default function ReportsPage() {
                       cy="50%"
                       outerRadius={80}
                     />
-                    <ChartLegend content={<ChartLegendContent />} />
+                    <ChartLegend content={<ChartLegendContent nameKey="name" />} />
                   </PieChart>
                 </ChartContainer>
              )}
@@ -553,8 +548,8 @@ export default function ReportsPage() {
                                 content={<ChartTooltipContent indicator="line" />}
                             />
                             <ChartLegend content={<ChartLegendContent />} />
-                            <Bar dataKey="Budget" fill="var(--color-Budget)" radius={[4, 4, 0, 0]} />
-                            <Bar dataKey="Expenses" fill="var(--color-Expenses)" radius={[4, 4, 0, 0]} />
+                            <Bar dataKey="budget" fill="var(--color-budget)" radius={[4, 4, 0, 0]} />
+                            <Bar dataKey="expense" fill="var(--color-expense)" radius={[4, 4, 0, 0]} />
                         </BarChart>
                     </ChartContainer>
                 ) : (
@@ -597,8 +592,8 @@ export default function ReportsPage() {
                                 content={<ChartTooltipContent indicator="line" />}
                             />
                             <ChartLegend content={<ChartLegendContent />} />
-                            <Bar dataKey="Income" fill="var(--color-Income)" radius={[4, 4, 0, 0]} />
-                            <Bar dataKey="Expense" fill="var(--color-Expense)" radius={[4, 4, 0, 0]} />
+                            <Bar dataKey="income" fill="var(--color-income)" radius={[4, 4, 0, 0]} />
+                            <Bar dataKey="expense" fill="var(--color-expense)" radius={[4, 4, 0, 0]} />
                         </BarChart>
                     </ChartContainer>
                 ) : (
