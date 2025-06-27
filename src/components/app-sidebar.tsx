@@ -106,14 +106,13 @@ export function AppSidebar() {
      {
       items: [
         { href: '/iso-compliance', label: t('iso_compliance_title'), icon: CheckSquare },
-        { href: '/roadmap', label: t('roadmap_title'), icon: ListOrdered },
       ],
     },
   ], [t]);
 
   const isActive = (href: string) => {
     // Exact match for top-level pages
-    if (href === '/dashboard' || href === '/approvals' || href === '/reports' || href === '/activity-log' || href === '/iso-compliance' || href === '/roadmap') {
+    if (href === '/dashboard' || href === '/approvals' || href === '/reports' || href === '/activity-log' || href === '/iso-compliance') {
       return pathname === href;
     }
     // Prefix match for nested pages
@@ -267,5 +266,3 @@ export function AppSidebar() {
     </AlertDialog>
   );
 }
-
-    
