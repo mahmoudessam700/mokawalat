@@ -60,12 +60,12 @@ export function AssignTeamDialog({ projectId, employees, assignedEmployeeIds }: 
     if (result.errors) {
       toast({
         variant: 'destructive',
-        title: 'Error',
+        title: t('error'),
         description: result.message,
       });
     } else {
       toast({
-        title: 'Success',
+        title: t('success'),
         description: result.message,
       });
       setIsOpen(false);

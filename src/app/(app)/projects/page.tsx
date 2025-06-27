@@ -82,6 +82,7 @@ import { format } from 'date-fns';
 import Link from 'next/link';
 import { useAuth } from '@/hooks/use-auth';
 import { Progress } from '@/components/ui/progress';
+import { useLanguage } from '@/hooks/use-language';
 
 type ProjectStatus = 'In Progress' | 'Planning' | 'Completed' | 'On Hold';
 
@@ -141,6 +142,7 @@ export default function ProjectsPage() {
   const [statusFilter, setStatusFilter] = useState('All');
   const { toast } = useToast();
   const { profile } = useAuth();
+  const { t } = useLanguage();
 
   useEffect(() => {
     const unsubscribes: (() => void)[] = [];
@@ -226,12 +228,12 @@ export default function ProjectsPage() {
     if (result.errors) {
       toast({
         variant: 'destructive',
-        title: 'Error',
+        title: t('error'),
         description: result.message,
       });
     } else {
       toast({
-        title: 'Success',
+        title: t('success'),
         description: result.message,
       });
       setIsDialogOpen(false);
@@ -248,13 +250,13 @@ export default function ProjectsPage() {
 
     if (result.success) {
       toast({
-        title: 'Success',
+        title: t('success'),
         description: result.message,
       });
     } else {
       toast({
         variant: 'destructive',
-        title: 'Error',
+        title: t('error'),
         description: result.message,
       });
     }
@@ -282,10 +284,10 @@ export default function ProjectsPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="font-headline text-3xl font-bold tracking-tight">
-            Project Management
+            {t('projects.page_title')}
           </h1>
           <p className="text-muted-foreground">
-            Track and manage all construction projects.
+            {t('projects.page_desc')}
           </p>
         </div>
         {profile?.role === 'admin' && (
@@ -293,14 +295,14 @@ export default function ProjectsPage() {
             <DialogTrigger asChild>
                 <Button onClick={() => setProjectToEdit(null)}>
                 <PlusCircle className="mr-2" />
-                Add Project
+                {t('projects.add_button')}
                 </Button>
             </DialogTrigger>
             <DialogContent className="sm:max-w-[480px]">
                 <DialogHeader>
-                <DialogTitle>{projectToEdit ? 'Edit Project' : 'Add New Project'}</DialogTitle>
+                <DialogTitle>{projectToEdit ? t('projects.edit_title') : t('projects.add_title')}</DialogTitle>
                 <DialogDescription>
-                    {projectToEdit ? 'Update the details of the project.' : 'Fill in the details below to add a new project.'}
+                    {projectToEdit ? t('projects.edit_desc') : t('projects.add_desc')}
                 </DialogDescription>
                 </DialogHeader>
                 <Form {...form}>
@@ -313,10 +315,10 @@ export default function ProjectsPage() {
                     name="name"
                     render={({ field }) => (
                         <FormItem>
-                        <FormLabel>Project Name</FormLabel>
+                        <FormLabel>{t('projects.name_label')}</FormLabel>
                         <FormControl>
                             <Input
-                            placeholder="e.g., Al-Rayan Tower Construction"
+                            placeholder={t('projects.name_placeholder')}
                             {...field}
                             />
                         </FormControl>
@@ -329,10 +331,10 @@ export default function ProjectsPage() {
                     name="description"
                     render={({ field }) => (
                         <FormItem>
-                        <FormLabel>Description (Optional)</FormLabel>
+                        <FormLabel>{t('projects.desc_label')}</FormLabel>
                         <FormControl>
                             <Textarea
-                            placeholder="Describe the project..."
+                            placeholder={t('projects.desc_placeholder')}
                             {...field}
                             />
                         </FormControl>
@@ -345,18 +347,18 @@ export default function ProjectsPage() {
                       name="clientId"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Client (Optional)</FormLabel>
+                          <FormLabel>{t('projects.client_label')}</FormLabel>
                           <Select
                             onValueChange={(value) => field.onChange(value === 'none' ? '' : value)}
                             value={field.value || ''}
                           >
                             <FormControl>
                               <SelectTrigger>
-                                <SelectValue placeholder="Link to a client" />
+                                <SelectValue placeholder={t('projects.client_placeholder')} />
                               </SelectTrigger>
                             </FormControl>
                             <SelectContent>
-                              <SelectItem value="none">None</SelectItem>
+                              <SelectItem value="none">{t('projects.none')}</SelectItem>
                               {clients.map((client) => (
                                 <SelectItem key={client.id} value={client.id}>
                                   {client.name}
@@ -373,10 +375,10 @@ export default function ProjectsPage() {
                       name="location"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Location (Optional)</FormLabel>
+                          <FormLabel>{t('projects.location_label')}</FormLabel>
                           <FormControl>
                             <Input
-                              placeholder="e.g., New Capital, Cairo"
+                              placeholder={t('projects.location_placeholder')}
                               {...field}
                             />
                           </FormControl>
@@ -390,11 +392,11 @@ export default function ProjectsPage() {
                         name="budget"
                         render={({ field }) => (
                         <FormItem>
-                            <FormLabel>Budget (LE)</FormLabel>
+                            <FormLabel>{t('projects.budget_label')}</FormLabel>
                             <FormControl>
                             <Input
                                 type="number"
-                                placeholder="e.g., 5000000"
+                                placeholder={t('projects.budget_placeholder')}
                                 {...field}
                             />
                             </FormControl>
@@ -407,7 +409,7 @@ export default function ProjectsPage() {
                         name="startDate"
                         render={({ field }) => (
                         <FormItem>
-                            <FormLabel>Start Date</FormLabel>
+                            <FormLabel>{t('projects.start_date_label')}</FormLabel>
                             <FormControl>
                             <Input type="date" {...field} />
                             </FormControl>
@@ -421,23 +423,23 @@ export default function ProjectsPage() {
                     name="status"
                     render={({ field }) => (
                         <FormItem>
-                        <FormLabel>Status</FormLabel>
+                        <FormLabel>{t('status')}</FormLabel>
                         <Select
                             onValueChange={field.onChange}
                             value={field.value}
                         >
                             <FormControl>
                             <SelectTrigger>
-                                <SelectValue placeholder="Select status" />
+                                <SelectValue placeholder={t('clients.select_status')} />
                             </SelectTrigger>
                             </FormControl>
                             <SelectContent>
-                            <SelectItem value="Planning">Planning</SelectItem>
+                            <SelectItem value="Planning">{t('project_status_planning')}</SelectItem>
                             <SelectItem value="In Progress">
-                                In Progress
+                                {t('project_status_in_progress')}
                             </SelectItem>
-                            <SelectItem value="Completed">Completed</SelectItem>
-                            <SelectItem value="On Hold">On Hold</SelectItem>
+                            <SelectItem value="Completed">{t('project_status_completed')}</SelectItem>
+                            <SelectItem value="On Hold">{t('project_status_on_hold')}</SelectItem>
                             </SelectContent>
                         </Select>
                         <FormMessage />
@@ -449,10 +451,10 @@ export default function ProjectsPage() {
                         {form.formState.isSubmitting ? (
                         <>
                             <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                            Saving...
+                            {t('saving')}
                         </>
                         ) : (
-                        projectToEdit ? 'Save Changes' : 'Save Project'
+                        projectToEdit ? t('save_changes') : t('projects.save_button')
                         )}
                     </Button>
                     </DialogFooter>
@@ -467,9 +469,9 @@ export default function ProjectsPage() {
         <CardHeader>
            <div className="flex items-center justify-between gap-4">
             <div>
-              <CardTitle>Project List</CardTitle>
+              <CardTitle>{t('projects.list_title')}</CardTitle>
               <CardDescription>
-                A list of all projects in the system.
+                {t('projects.list_desc')}
               </CardDescription>
             </div>
             <div className="flex items-center gap-2">
@@ -477,7 +479,7 @@ export default function ProjectsPage() {
                   <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
                   <Input
                       type="search"
-                      placeholder="Search by name..."
+                      placeholder={t('projects.search_placeholder')}
                       className="pl-8"
                       value={searchTerm}
                       onChange={(e) => setSearchTerm(e.target.value)}
@@ -485,14 +487,14 @@ export default function ProjectsPage() {
               </div>
               <Select value={statusFilter} onValueChange={setStatusFilter}>
                 <SelectTrigger className="w-[180px]">
-                  <SelectValue placeholder="Filter by status" />
+                  <SelectValue placeholder={t('clients.filter_by_status')} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="All">All Statuses</SelectItem>
-                  <SelectItem value="Planning">Planning</SelectItem>
-                  <SelectItem value="In Progress">In Progress</SelectItem>
-                  <SelectItem value="Completed">Completed</SelectItem>
-                  <SelectItem value="On Hold">On Hold</SelectItem>
+                  <SelectItem value="All">{t('clients.all_statuses')}</SelectItem>
+                  <SelectItem value="Planning">{t('project_status_planning')}</SelectItem>
+                  <SelectItem value="In Progress">{t('project_status_in_progress')}</SelectItem>
+                  <SelectItem value="Completed">{t('project_status_completed')}</SelectItem>
+                  <SelectItem value="On Hold">{t('project_status_on_hold')}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -502,17 +504,17 @@ export default function ProjectsPage() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Project Name</TableHead>
-                <TableHead>Client</TableHead>
+                <TableHead>{t('projects.name_label')}</TableHead>
+                <TableHead>{t('client')}</TableHead>
                 <TableHead className="hidden md:table-cell">
-                  Start Date
+                  {t('projects.start_date_label')}
                 </TableHead>
-                <TableHead>Budget</TableHead>
-                <TableHead className="hidden sm:table-cell">Team</TableHead>
-                <TableHead>Progress</TableHead>
-                <TableHead>Status</TableHead>
+                <TableHead>{t('projects.budget')}</TableHead>
+                <TableHead className="hidden sm:table-cell">{t('projects.team_header')}</TableHead>
+                <TableHead>{t('projects.progress')}</TableHead>
+                <TableHead>{t('status')}</TableHead>
                 <TableHead>
-                  <span className="sr-only">Actions</span>
+                  <span className="sr-only">{t('actions')}</span>
                 </TableHead>
               </TableRow>
             </TableHeader>
@@ -583,7 +585,7 @@ export default function ProjectsPage() {
                     </TableCell>
                     <TableCell>
                       <Badge variant={statusVariant[project.status]}>
-                        {project.status}
+                        {t(`project_status_${project.status.toLowerCase().replace(' ', '_')}`)}
                       </Badge>
                     </TableCell>
                     <TableCell>
@@ -595,13 +597,13 @@ export default function ProjectsPage() {
                             variant="ghost"
                           >
                             <MoreHorizontal className="h-4 w-4" />
-                            <span className="sr-only">Toggle menu</span>
+                            <span className="sr-only">{t('toggle_menu')}</span>
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
-                          <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                          <DropdownMenuLabel>{t('actions')}</DropdownMenuLabel>
                           <DropdownMenuItem asChild>
-                            <Link href={`/projects/${project.id}`}>View Details</Link>
+                            <Link href={`/projects/${project.id}`}>{t('view_details')}</Link>
                           </DropdownMenuItem>
                           {profile?.role === 'admin' && (
                             <>
@@ -609,7 +611,7 @@ export default function ProjectsPage() {
                                     setProjectToEdit(project);
                                     setIsDialogOpen(true);
                                 }}>
-                                    Edit
+                                    {t('edit')}
                                 </DropdownMenuItem>
                                 <DropdownMenuItem
                                     className="text-destructive"
@@ -619,7 +621,7 @@ export default function ProjectsPage() {
                                     }}
                                 >
                                     <Trash2 className="mr-2 h-4 w-4" />
-                                    Delete
+                                    {t('delete')}
                                 </DropdownMenuItem>
                             </>
                           )}
@@ -631,7 +633,7 @@ export default function ProjectsPage() {
               ) : (
                 <TableRow>
                   <TableCell colSpan={8} className="h-24 text-center">
-                    No projects found for the current filter.
+                    {t('clients.no_clients_match_filters')}
                   </TableCell>
                 </TableRow>
               )}
@@ -643,22 +645,22 @@ export default function ProjectsPage() {
     <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
       <AlertDialogContent>
         <AlertDialogHeader>
-          <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+          <AlertDialogTitle>{t('are_you_sure')}</AlertDialogTitle>
           <AlertDialogDescription>
-            This action cannot be undone. This will permanently delete the project "{projectToDelete?.name}".
+            {t('projects.delete_confirm_desc', { name: projectToDelete?.name })}
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
-          <AlertDialogCancel onClick={() => setProjectToDelete(null)}>Cancel</AlertDialogCancel>
+          <AlertDialogCancel onClick={() => setProjectToDelete(null)}>{t('cancel')}</AlertDialogCancel>
           <AlertDialogAction
             onClick={handleDeleteProject}
             disabled={isDeleting}
             className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
           >
             {isDeleting ? (
-              <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Deleting...</>
+              <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> {t('deleting')}</>
             ) : (
-              <><Trash2 className="mr-2 h-4 w-4" /> Delete</>
+              <><Trash2 className="mr-2 h-4 w-4" /> {t('delete')}</>
             )}
           </AlertDialogAction>
         </AlertDialogFooter>

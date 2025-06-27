@@ -39,7 +39,7 @@ export function ProjectTasksList({ tasks, projectId, team, onEditTask, onDeleteT
     if (!response.success) {
       toast({
         variant: 'destructive',
-        title: 'Error updating task',
+        title: t('error'),
         description: response.message,
       });
     }
@@ -66,8 +66,8 @@ export function ProjectTasksList({ tasks, projectId, team, onEditTask, onDeleteT
                     <div className="flex-1 space-y-1">
                       <p className="font-medium">{task.name}</p>
                       <div className="flex items-center gap-4 text-xs text-muted-foreground">
-                        <span>Status: {task.status}</span>
-                        {task.dueDate && <span>Due: {format(task.dueDate.toDate(), 'PPP')}</span>}
+                        <span>{t('status')}: {task.status}</span>
+                        {task.dueDate && <span>{t('assets.due')}: {format(task.dueDate.toDate(), 'PPP')}</span>}
                       </div>
                     </div>
                     <div className="flex items-center gap-2">
@@ -80,7 +80,7 @@ export function ProjectTasksList({ tasks, projectId, team, onEditTask, onDeleteT
                                 </Avatar>
                               </TooltipTrigger>
                               <TooltipContent>
-                                <p>Assigned to {assignedEmployee.name}</p>
+                                <p>{t('assigned_to')} {assignedEmployee.name}</p>
                               </TooltipContent>
                             </Tooltip>
                         )}
@@ -92,11 +92,11 @@ export function ProjectTasksList({ tasks, projectId, team, onEditTask, onDeleteT
                             </DropdownMenuTrigger>
                             <DropdownMenuContent>
                                 <DropdownMenuSub>
-                                    <DropdownMenuSubTrigger>Change Status</DropdownMenuSubTrigger>
+                                    <DropdownMenuSubTrigger>{t('change_status')}</DropdownMenuSubTrigger>
                                     <DropdownMenuSubContent>
-                                        <DropdownMenuItem disabled={task.status === 'To Do'} onClick={() => handleStatusChange(task.id, 'To Do')}>To Do</DropdownMenuItem>
-                                        <DropdownMenuItem disabled={task.status === 'In Progress'} onClick={() => handleStatusChange(task.id, 'In Progress')}>In Progress</DropdownMenuItem>
-                                        <DropdownMenuItem disabled={task.status === 'Done'} onClick={() => handleStatusChange(task.id, 'Done')}>Done</DropdownMenuItem>
+                                        <DropdownMenuItem disabled={task.status === 'To Do'} onClick={() => handleStatusChange(task.id, 'To Do')}>{t('to_do')}</DropdownMenuItem>
+                                        <DropdownMenuItem disabled={task.status === 'In Progress'} onClick={() => handleStatusChange(task.id, 'In Progress')}>{t('in_progress')}</DropdownMenuItem>
+                                        <DropdownMenuItem disabled={task.status === 'Done'} onClick={() => handleStatusChange(task.id, 'Done')}>{t('done')}</DropdownMenuItem>
                                     </DropdownMenuSubContent>
                                 </DropdownMenuSub>
                                 <DropdownMenuSeparator />

@@ -58,7 +58,7 @@ export function ProjectTasksKanban({ tasks, projectId, team, onEditTask, onDelet
     if (!response.success) {
       toast({
         variant: 'destructive',
-        title: 'Error updating task',
+        title: t('error'),
         description: response.message,
       });
     }
@@ -147,14 +147,14 @@ export function ProjectTasksKanban({ tasks, projectId, team, onEditTask, onDelet
                                                 </Avatar>
                                               </TooltipTrigger>
                                               <TooltipContent>
-                                                <p>Assigned to {assignedEmployee.name}</p>
+                                                <p>{t('assigned_to')} {assignedEmployee.name}</p>
                                               </TooltipContent>
                                             </Tooltip>
                                           )}
                                         </div>
                                         {task.dueDate && (
                                           <p className="text-xs text-muted-foreground mt-2">
-                                            {t('due')}: {format(task.dueDate.toDate(), 'PPP')}
+                                            {t('assets.due')}: {format(task.dueDate.toDate(), 'PPP')}
                                           </p>
                                         )}
                                       </CardContent>
