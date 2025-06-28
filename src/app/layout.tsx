@@ -30,7 +30,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
       <body className={`${inter.variable} ${lexend.variable} font-body antialiased`} suppressHydrationWarning>
         <ThemeProvider
           attribute="class"
