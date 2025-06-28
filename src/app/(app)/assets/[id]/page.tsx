@@ -155,9 +155,9 @@ export default function AssetDetailPage({ params }: { params: { id: string } }) 
   async function onLogSubmit(values: MaintenanceLogFormValues) {
     const result = await addMaintenanceLog(assetId, values);
     if (result.errors) {
-      toast({ variant: 'destructive', title: 'Error', description: result.message });
+      toast({ variant: 'destructive', title: t('error'), description: result.message });
     } else {
-      toast({ title: 'Success', description: result.message });
+      toast({ title: t('success'), description: result.message });
       logForm.reset();
       setIsLogDialogOpen(false);
     }
@@ -225,8 +225,7 @@ export default function AssetDetailPage({ params }: { params: { id: string } }) 
                         <Badge variant={statusVariant[asset.status]}>{asset.status}</Badge>
                     </div>
                     <div className="flex justify-between">
-                        <span className="text-muted-foreground">{t('assets.purchase_date')}</span
->
+                        <span className="text-muted-foreground">{t('assets.purchase_date_label')}</span>
                         <span>{asset.purchaseDate ? format(asset.purchaseDate.toDate(), 'PPP') : 'N/A'}</span>
                     </div>
                     <div className="flex justify-between">

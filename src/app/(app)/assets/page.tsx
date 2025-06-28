@@ -333,7 +333,7 @@ export default function AssetsPage() {
                         </div>
                         <div className="grid grid-cols-2 gap-4">
                             <FormField control={form.control} name="purchaseDate" render={({ field }) => (<FormItem><FormLabel>{t('assets.purchase_date')}</FormLabel><FormControl><Input type="date" {...field} /></FormControl><FormMessage /></FormItem>)} />
-                            <FormField control={form.control} name="purchaseCost" render={({ field }) => (<FormItem><FormLabel>{t('assets.purchase_cost')}</FormLabel><FormControl><Input type="number" placeholder={t('assets.purchase_cost_placeholder')} {...field} /></FormControl><FormMessage /></FormItem>)} />
+                            <FormField control={form.control} name="purchaseCost" render={({ field }) => (<FormItem><FormLabel>{t('assets.purchase_cost_label')}</FormLabel><FormControl><Input type="number" placeholder={t('assets.purchase_cost_placeholder')} {...field} /></FormControl><FormMessage /></FormItem>)} />
                         </div>
                          <div className="grid grid-cols-2 gap-4">
                             <FormField control={form.control} name="currentProjectId" render={({ field }) => (<FormItem><FormLabel>{t('assets.assigned_project_optional')}</FormLabel><Select onValueChange={(value) => field.onChange(value === 'none' ? '' : value)} value={field.value || 'none'}><FormControl><SelectTrigger><SelectValue placeholder={t('assets.select_project')} /></SelectTrigger></FormControl><SelectContent><SelectItem value="none">{t('projects.none')}</SelectItem>{projects.map(p => (<SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>))}</SelectContent></Select><FormMessage /></FormItem>)} />

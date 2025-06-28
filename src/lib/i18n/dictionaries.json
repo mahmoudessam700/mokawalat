@@ -720,23 +720,23 @@
         "AI_TASKS_SUGGESTED": "AI Task Suggestion"
     },
     "success": "Success",
-    "item": "Item",
-    "project": "Project",
-    "to_do": "To Do",
-    "in_progress": "In Progress",
-    "done": "Done",
-    "category": "Category",
-    "document": "Document",
-    "title": "Title",
-    "type": "Type",
-    "date": "Date",
-    "notes": "Notes",
-    "amount": "Amount",
-    "description": "Description",
-    "client": "Client",
-    "supplier": "Supplier",
-    "company": "Company",
-    "name": "Name",
+    "item": "الصنف",
+    "project": "المشروع",
+    "to_do": "قيد التنفيذ",
+    "in_progress": "قيد الإنجاز",
+    "done": "تم",
+    "category": "الفئة",
+    "document": "مستند",
+    "title": "العنوان",
+    "type": "النوع",
+    "date": "التاريخ",
+    "notes": "ملاحظات",
+    "amount": "المبلغ",
+    "description": "الوصف",
+    "client": "العميل",
+    "supplier": "المورد",
+    "company": "الشركة",
+    "name": "الاسم",
     "roadmap": {
       "phase1": {
         "title": "Phase 1: Core Modules & Setup",
@@ -1173,6 +1173,7 @@
     "company_logo": "Company Logo",
     "no_logo_uploaded": "No logo uploaded",
     "purchase_orders": "أوامر الشراء",
+    "department": "القسم",
     "departments": {
       "Engineering": "Engineering",
       "Human_Resources": "Human Resources",
@@ -1928,163 +1929,271 @@
     "name": "الاسم",
     "roadmap": {
       "phase1": {
-        "title": "المرحلة الأولى: الوحدات الأساسية والإعداد",
-        "objective": "بناء أساس نظام تخطيط موارد المؤسسات (ERP)، مع التركيز على إدارة المشاريع والعملاء والموردين والموظفين.",
+        "title": "Phase 1: Core Modules & Setup",
+        "objective": "Build the foundation of the ERP, focusing on project, client, supplier, and employee management.",
         "subtask1": {
-          "title": "إعداد المشروع",
-          "details": ["إعداد Next.js و Firebase.", "تكوين ShadCN و Tailwind CSS."]
+          "title": "Project Setup",
+          "details": [
+            "Initialize Next.js and Firebase.",
+            "Configure ShadCN and Tailwind CSS."
+          ]
         },
         "subtask2": {
-          "title": "إدارة المشاريع",
-          "details": ["إنشاء وعرض وتحديث وحذف المشاريع.", "عرض تفاصيل المشروع."]
+          "title": "Project Management",
+          "details": [
+              "Create, view, update, and delete projects.",
+              "Display project details."
+          ]
         },
         "subtask3": {
-          "title": "لوحة التحكم",
-          "details": ["إنشاء لوحة تحكم مركزية تعرض المقاييس الرئيسية."]
+          "title": "Dashboard",
+          "details": [
+              "Create a central dashboard displaying key metrics."
+          ]
         },
         "subtask4": {
-          "title": "إدارة العملاء والموردين والموظفين",
-          "details": ["وحدات CRUD كاملة للعملاء والموردين.", "إدارة ملفات تعريف الموظفين.", "صفحات تفصيلية لكل منها.", "القدرة على تقييم الموردين."]
+          "title": "Client, Supplier & Employee Management",
+          "details": [
+            "Full CRUD modules for clients and suppliers.",
+            "Manage employee profiles.",
+            "Detail pages for each.",
+            "Ability to evaluate suppliers."
+          ]
         },
         "subtask5": {
-          "title": "المصادقة والتفويض",
-          "details": ["إعداد تسجيل الدخول والتسجيل وتدفقات إعادة تعيين كلمة المرور."]
+          "title": "Authentication & Authorization",
+          "details": [
+            "Set up login, signup, and password reset flows."
+          ]
         }
       },
       "phase2": {
-        "title": "المرحلة الثانية: الشؤون المالية والمشتريات",
-        "objective": "دمج الوحدات المالية الأساسية بما في ذلك الفواتير والمشتريات وتدفقات الموافقة.",
+        "title": "Phase 2: Financials & Procurement",
+        "objective": "Integrate core financial modules including invoicing, procurement, and approval workflows.",
         "subtask1": {
-          "title": "الوحدة المالية",
-          "details": ["تنفيذ سجل معاملات لتتبع الدخل والمصروفات."]
+          "title": "Financial Module",
+          "details": [
+            "Implement a transaction ledger to track income and expenses."
+          ]
         },
         "subtask2": {
-          "title": "إدارة الحسابات",
-          "details": ["السماح للمسؤولين بإدارة الحسابات المصرفية للشركة."]
+          "title": "Account Management",
+          "details": [
+            "Allow administrators to manage company bank accounts."
+          ]
         },
         "subtask3": {
-          "title": "وحدة الفواتير",
-          "details": ["إنشاء وإرسال وتتبع فواتير العملاء.", "تكامل الفواتير المدفوعة مع الوحدة المالية."]
+          "title": "Invoicing Module",
+          "details": [
+            "Create, send, and track client invoices.",
+            "Integrate paid invoices with the financial module."
+          ]
         },
         "subtask4": {
-          "title": "وحدة المشتريات",
-          "details": ["إنشاء وتتبع أوامر الشراء من الطلب إلى الاستلام.", "تكامل أوامر الشراء المكتملة مع الشؤون المالية."]
+          "title": "Procurement Module",
+          "details": [
+            "Create and track purchase orders from request to receipt.",
+            "Integrate completed POs with financials."
+          ]
         },
         "subtask5": {
-          "title": "لوحة معلومات الموافقات",
-          "details": ["إنشاء لوحة معلومات مركزية للمديرين للموافقة على أوامر الشراء وطلبات المواد."]
+          "title": "Approvals Dashboard",
+          "details": [
+            "Create a central dashboard for managers to approve POs and material requests."
+          ]
         },
         "subtask6": {
-          "title": "إدارة العقود",
-          "details": ["إضافة عقود للعملاء والموردين.", "السماح بتحميل ملفات العقود وتنزيلها.", "ربط المعاملات بالعقود."]
+          "title": "Contract Management",
+          "details": [
+            "Add contracts for both clients and suppliers.",
+            "Allow contract file uploads and downloads.",
+            "Link transactions to contracts."
+          ]
         }
       },
       "phase3": {
-        "title": "المرحلة الثالثة: المخزون والأصول",
-        "objective": "بناء وحدات قوية لتتبع الأصول المادية والمخزون عبر مواقع مختلفة.",
+        "title": "Phase 3: Inventory & Assets",
+        "objective": "Build robust modules for tracking physical assets and inventory across different locations.",
         "subtask1": {
-          "title": "إدارة المخزون",
-          "details": ["تتبع جميع المواد والأدوات والمعدات.", "تنبيهات للمخزون المنخفض ونفاد المخزون.", "القدرة على تعديل مستويات المخزون."]
+          "title": "Inventory Management",
+          "details": [
+            "Track all materials, tools, and equipment.",
+            "Alerts for low and out-of-stock items.",
+            "Ability to adjust stock levels."
+          ]
         },
         "subtask2": {
-          "title": "إدارة المستودعات والفئات",
-          "details": ["السماح للمسؤولين بتكوين المستودعات.", "السماح للمسؤولين بتكوين فئات المخزون.", "ربط عناصر المخزون بالمستودعات والفئات.", "التصفية حسب المستودع والفئة."]
+          "title": "Warehouse & Category Management",
+          "details": [
+            "Allow admins to configure warehouses.",
+            "Allow admins to configure inventory categories.",
+            "Link inventory items to warehouses and categories.",
+            "Filter by warehouse and category."
+          ]
         },
         "subtask3": {
-          "title": "طلبات المواد",
-          "details": ["السماح للفرق بطلب مواد من المخزون لمشاريع محددة.", "تكامل الطلبات المعتمدة مع مستويات المخزون.", "إدارة الطلبات في صفحة مخصصة."]
+          "title": "Material Requests",
+          "details": [
+            "Allow teams to request materials from inventory for specific projects.",
+            "Integrate approved requests with inventory levels.",
+            "Manage requests in a dedicated page."
+          ]
         },
         "subtask4": {
-          "title": "إدارة الأصول",
-          "details": ["تتبع الأصول ذات القيمة العالية مثل المركبات والآلات.", "تسجيل تفاصيل الشراء وتعيين الأصول للمشاريع.", "إدارة سجل الصيانة الكامل لكل أصل."]
+          "title": "Asset Management",
+          "details": [
+            "Track high-value assets like vehicles and machinery.",
+            "Log purchase details and assign assets to projects.",
+            "Manage a complete maintenance history for each item."
+          ]
         },
         "subtask5": {
-          "title": "إدارة مهام المشروع",
-          "details": ["تنفيذ لوحة Kanban لتتبع المهام.", "السماح بتعيين المهام لأعضاء الفريق.", "تحديث حالة المهمة عن طريق السحب والإفلات."]
+          "title": "Project Task Management",
+          "details": [
+            "Implement a Kanban board for task tracking.",
+            "Allow assignment of tasks to team members.",
+            "Update task status via drag-and-drop."
+          ]
         }
       },
       "phase4": {
-        "title": "المرحلة الرابعة: تجربة المستخدم والإدارة",
-        "objective": "تحسين قابلية الاستخدام من خلال البحث الشامل وتوفير أدوات إدارية قوية.",
+        "title": "Phase 4: User Experience & Admin",
+        "objective": "Enhance usability with system-wide search and provide powerful administrative tools.",
         "subtask1": {
-          "title": "البحث العالمي",
-          "details": ["تنفيذ شريط بحث عالمي في الرأس.", "البحث في جميع الوحدات الرئيسية (المشاريع، العملاء، إلخ).", "توفير وصول سريع للمعلومات."]
+          "title": "Global Search",
+          "details": [
+            "Implement a global search bar in the header.",
+            "Search across all major modules (Projects, Clients, etc.).",
+            "Provide quick access to information."
+          ]
         },
         "subtask2": {
-          "title": "إدارة المستخدمين والأدوار",
-          "details": ["إنشاء صفحة مخصصة للمسؤولين لإدارة المستخدمين.", "القدرة على تعيين أدوار (مسؤول، مدير، مستخدم).", "تقييد الوصول إلى الميزات بناءً على الدور.", "واجهة مستخدم لعرض جميع المستخدمين وتغيير أدوارهم."]
+          "title": "User & Role Management",
+          "details": [
+            "Create a dedicated page for admins to manage users.",
+            "Ability to assign roles (admin, manager, user).",
+            "Restrict feature access based on role.",
+            "UI to view all users and change roles."
+          ]
         },
         "subtask3": {
-          "title": "سجل النشاط",
-          "details": ["تنفيذ سجل تدقيق عالمي.", "تسجيل الأحداث الرئيسية مثل إنشاء المشاريع والمعاملات.", "توفير رابط مباشر للعنصر ذي الصلة."]
+          "title": "Activity Log",
+          "details": [
+            "Implement a global audit trail.",
+            "Log key events like project creation and transactions.",
+            "Provide a direct link to the relevant item."
+          ]
         },
         "subtask4": {
-          "title": "إعدادات الشركة",
-          "details": ["السماح للمسؤولين بإدارة ملف تعريف الشركة.", "تحميل وتحديث شعار الشركة.", "تكوين تفاصيل الاتصال بالشركة.", "عرض المعلومات في جميع أنحاء التطبيق."]
+          "title": "Company Settings",
+          "details": [
+            "Allow admins to manage the company profile.",
+            "Upload and update the company logo.",
+            "Configure company contact details.",
+            "Display information throughout the app."
+          ]
         },
         "subtask5": {
-          "title": "ملف تعريف المستخدم",
-          "details": ["إنشاء صفحة ملف تعريف للمستخدمين.", "القدرة على تغيير كلمة المرور.", "تغيير إعدادات السمة.", "عرض تفاصيل الموظف المرتبطة."]
+          "title": "User Profile",
+          "details": [
+            "Create a user profile page.",
+            "Ability to change password.",
+            "Change theme settings.",
+            "View linked employee details."
+          ]
         }
       },
       "phase5": {
-        "title": "المرحلة الخامسة: تكامل الذكاء الاصطناعي",
-        "objective": "دمج قدرات الذكاء الاصطناعي لتقديم رؤى قابلة للتنفيذ وأتمتة المهام المعقدة.",
+        "title": "Phase 5: AI Integration",
+        "objective": "Embed AI capabilities to provide actionable insights and automate complex tasks.",
         "subtask1": {
-          "title": "تحليل مخاطر المشروع",
-          "details": ["استخدام الذكاء الاصطناعي لتحليل تفاصيل المشروع وتحديد المخاطر المحتملة."]
+          "title": "Project Risk Analysis",
+          "details": [
+            "Use AI to analyze project details and identify potential risks."
+          ]
         },
         "subtask2": {
-          "title": "اقتراحات مهام المشروع",
-          "details": ["استخدام الذكاء الاصطناعي لاقتراح قائمة مهام كاملة بناءً على وصف المشروع."]
+          "title": "Project Task Suggestions",
+          "details": [
+            "Use AI to suggest a full task list based on the project description."
+          ]
         },
         "subtask3": {
-          "title": "ملخص تفاعلات العملاء",
-          "details": ["إنشاء ملخص بالذكاء الاصطناعي لسجل تفاعلات العميل."]
+          "title": "Client Interaction Summary",
+          "details": [
+            "Generate an AI summary of a client's interaction history."
+          ]
         },
         "subtask4": {
-          "title": "ملخص السجلات اليومية للمشروع",
-          "details": ["استخدام الذكاء الاصطناعي لتلخيص التقدم والمشاعر من السجلات اليومية."]
+          "title": "Project Daily Log Summary",
+          "details": [
+            "Use AI to summarize progress and sentiment from daily logs."
+          ]
         },
         "subtask5": {
-          "title": "ملخص أداء الموظفين والموردين",
-          "details": ["إنشاء ملخصات أداء للموظفين بناءً على مشاركتهم في المشاريع.", "إنشاء ملخصات للموردين بناءً على سجل الطلبات والتقييمات."]
+          "title": "Employee & Supplier Performance Summary",
+          "details": [
+            "Generate performance summaries for employees based on their project involvement.",
+            "Generate summaries for suppliers based on order history and ratings."
+          ]
         },
         "subtask6": {
-          "title": "مساعد الامتثال لـ ISO 9001",
-          "details": ["إنشاء صفحة مخصصة حيث يمكن للمستخدمين وصف عملياتهم.", "توفير اقتراحات مدعومة بالذكاء الاصطناعي لتحسين التوافق مع ISO 9001.", "التركيز على جمع الملاحظات والتحسين المستمر."]
+          "title": "ISO 9001 Compliance Assistant",
+          "details": [
+            "Create a dedicated page where users can describe their operations.",
+            "Provide AI-powered suggestions for improving ISO 9001 alignment.",
+            "Focus on feedback collection and continuous improvement."
+          ]
         },
         "subtask7": {
-          "title": "كشوف المرتبات للموظفين",
-          "details": ["تنفيذ ملخص الرواتب وإنشاء المعاملات بنقرة واحدة."]
+          "title": "Employee Payroll",
+          "details": [
+            "Implement payroll summary and one-click transaction creation."
+          ]
         }
       },
       "phase6": {
-        "title": "المرحلة السادسة: الإنهاء والتلميع",
-        "objective": "ضمان أن يكون التطبيق قويًا وسهل الاستخدام ومتاحًا لجمهور أوسع.",
+        "title": "Phase 6: Finalization & Polish",
+        "objective": "Ensure the application is robust, user-friendly, and accessible to a wider audience.",
         "subtask1": {
-          "title": "التدويل (i18n)",
-          "details": ["تنفيذ دعم كامل للغتين الإنجليزية والعربية.", "ترجمة جميع الصفحات والمكونات والنصوص الثابتة."]
+          "title": "Internationalization (i18n)",
+          "details": [
+            "Implement full support for English and Arabic languages.",
+            "Translate all pages, components, and static text."
+          ]
         },
         "subtask2": {
-          "title": "الاستجابة وتحسين واجهة المستخدم",
-          "details": ["ضمان أن يكون التطبيق قابلاً للاستخدام على جميع أحجام الشاشات.", "تنفيذ طرق عرض بديلة للجوال للمكونات المعقدة مثل لوحات المهام."]
+          "title": "Responsiveness & UI Refinement",
+          "details": [
+            "Ensure the app is usable on all screen sizes.",
+            "Implement alternative mobile views for complex components like task boards."
+          ]
         },
         "subtask3": {
-          "title": "التقارير والتحليلات",
-          "details": ["إنشاء صفحة تقارير تفاعلية.", "تصور الأداء المالي وربحية المشروع وحالة المخزون.", "السماح بالتصفية حسب النطاق الزمني."]
+          "title": "Reporting & Analytics",
+          "details": [
+            "Create an interactive reporting page.",
+            "Visualize financial performance, project profitability, and inventory status.",
+            "Allow filtering by date range."
+          ]
         },
         "subtask4": {
-          "title": "تحسينات الجودة",
-          "details": ["إصلاح الأخطاء وتحسين الأداء ومعالجة حالات الحافة."]
+          "title": "Quality Assurance",
+          "details": [
+            "Fix bugs, improve performance, and address edge cases."
+          ]
         },
         "subtask5": {
-          "title": "التوثيق",
-          "details": ["إنشاء ملف README.md شامل وملف DATABASE_SCHEMA.md."]
+          "title": "Documentation",
+          "details": [
+            "Create a comprehensive README.md and DATABASE_SCHEMA.md."
+          ]
         },
         "subtask6": {
-          "title": "خارطة طريق المشروع",
-          "details": ["إنشاء صفحة خارطة طريق لتتبع تقدم المشروع والاحتفال باكتماله."]
+          "title": "Project Roadmap",
+          "details": [
+            "Create a roadmap page to track project progress and celebrate its completion."
+          ]
         }
       }
     },
