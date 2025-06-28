@@ -328,7 +328,7 @@ export default function AssetsPage() {
                     <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 py-4">
                         <FormField control={form.control} name="name" render={({ field }) => (<FormItem><FormLabel>{t('assets.name_label')}</FormLabel><FormControl><Input placeholder={t('assets.name_placeholder')} {...field} /></FormControl><FormMessage /></FormItem>)} />
                         <div className="grid grid-cols-2 gap-4">
-                            <FormField control={form.control} name="category" render={({ field }) => (<FormItem><FormLabel>{t('category')}</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue placeholder={t('assets.select_category')} /></SelectTrigger></FormControl><SelectContent>{assetCategories.map(cat => (<SelectItem key={cat} value={cat}>{cat}</SelectItem>))}</SelectContent></Select><FormMessage /></FormItem>)} />
+                            <FormField control={form.control} name="category" render={({ field }) => (<FormItem><FormLabel>{t('category')}</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue placeholder={t('assets.select_category')} /></SelectTrigger></FormControl><SelectContent>{assetCategories.map(cat => (<SelectItem key={cat} value={cat}>{t(`asset_categories.${cat.replace(/ /g, '_')}`)}</SelectItem>))}</SelectContent></Select><FormMessage /></FormItem>)} />
                             <FormField control={form.control} name="status" render={({ field }) => (<FormItem><FormLabel>{t('status')}</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue placeholder={t('assets.select_status')} /></SelectTrigger></FormControl><SelectContent>{Object.keys(statusVariant).map(s => (<SelectItem key={s} value={s}>{s}</SelectItem>))}</SelectContent></Select><FormMessage /></FormItem>)} />
                         </div>
                         <div className="grid grid-cols-2 gap-4">
@@ -363,7 +363,7 @@ export default function AssetsPage() {
                     <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
                     <Input type="search" placeholder={t('assets.search_placeholder')} className="w-full pl-8 md:w-[200px]" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
                   </div>
-                  <Select value={categoryFilter} onValueChange={setCategoryFilter}><SelectTrigger className="w-full md:w-[180px]"><SelectValue placeholder={t('assets.filter_by_category')} /></SelectTrigger><SelectContent><SelectItem value="All">{t('assets.all_categories')}</SelectItem>{assetCategories.map(cat => (<SelectItem key={cat} value={cat}>{cat}</SelectItem>))}</SelectContent></Select>
+                  <Select value={categoryFilter} onValueChange={setCategoryFilter}><SelectTrigger className="w-full md:w-[180px]"><SelectValue placeholder={t('assets.filter_by_category')} /></SelectTrigger><SelectContent><SelectItem value="All">{t('assets.all_categories')}</SelectItem>{assetCategories.map(cat => (<SelectItem key={cat} value={cat}>{t(`asset_categories.${cat.replace(/ /g, '_')}`)}</SelectItem>))}</SelectContent></Select>
                   <Select value={statusFilter} onValueChange={setStatusFilter}><SelectTrigger className="w-full md:w-[150px]"><SelectValue placeholder={t('clients.filter_by_status')} /></SelectTrigger><SelectContent><SelectItem value="All">{t('assets.all_statuses')}</SelectItem>{Object.keys(statusVariant).map(s => (<SelectItem key={s} value={s}>{s}</SelectItem>))}</SelectContent></Select>
                    <Select value={maintenanceFilter} onValueChange={setMaintenanceFilter}><SelectTrigger className="w-full md:w-[180px]"><SelectValue placeholder={t('assets.maintenance_status')} /></SelectTrigger><SelectContent><SelectItem value="All">{t('assets.all_maintenance')}</SelectItem><SelectItem value="Upcoming">{t('assets.upcoming')}</SelectItem><SelectItem value="Overdue">{t('assets.overdue')}</SelectItem></SelectContent></Select>
                 </div>
@@ -401,7 +401,7 @@ export default function AssetsPage() {
                             {asset.name}
                           </Link>
                         </TableCell>
-                        <TableCell>{asset.category}</TableCell>
+                        <TableCell>{t(`asset_categories.${asset.category.replace(/ /g, '_')}`)}</TableCell>
                         <TableCell>{asset.currentProjectId ? <Link href={`/projects/${asset.currentProjectId}`} className="hover:underline">{projectMap.get(asset.currentProjectId) || 'N/A'}</Link> : 'N/A'}</TableCell>
                         <TableCell className="hidden md:table-cell">
                             <div className="flex items-center gap-2">
