@@ -329,7 +329,7 @@ export default function AssetsPage() {
                         <FormField control={form.control} name="name" render={({ field }) => (<FormItem><FormLabel>{t('assets.name_label')}</FormLabel><FormControl><Input placeholder={t('assets.name_placeholder')} {...field} /></FormControl><FormMessage /></FormItem>)} />
                         <div className="grid grid-cols-2 gap-4">
                             <FormField control={form.control} name="category" render={({ field }) => (<FormItem><FormLabel>{t('category')}</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue placeholder={t('assets.select_category')} /></SelectTrigger></FormControl><SelectContent>{assetCategories.map(cat => (<SelectItem key={cat} value={cat}>{t(`asset_categories.${cat.replace(/ /g, '_')}`)}</SelectItem>))}</SelectContent></Select><FormMessage /></FormItem>)} />
-                            <FormField control={form.control} name="status" render={({ field }) => (<FormItem><FormLabel>{t('status')}</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue placeholder={t('assets.select_status')} /></SelectTrigger></FormControl><SelectContent>{Object.keys(statusVariant).map(s => (<SelectItem key={s} value={s}>{s}</SelectItem>))}</SelectContent></Select><FormMessage /></FormItem>)} />
+                            <FormField control={form.control} name="status" render={({ field }) => (<FormItem><FormLabel>{t('status')}</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue placeholder={t('assets.select_status')} /></SelectTrigger></FormControl><SelectContent>{Object.keys(statusVariant).map(s => (<SelectItem key={s} value={s}>{t(`assets.status.${s.replace(/ /g, '_')}`)}</SelectItem>))}</SelectContent></Select><FormMessage /></FormItem>)} />
                         </div>
                         <div className="grid grid-cols-2 gap-4">
                             <FormField control={form.control} name="purchaseDate" render={({ field }) => (<FormItem><FormLabel>{t('assets.purchase_date')}</FormLabel><FormControl><Input type="date" {...field} /></FormControl><FormMessage /></FormItem>)} />
@@ -364,7 +364,7 @@ export default function AssetsPage() {
                     <Input type="search" placeholder={t('assets.search_placeholder')} className="w-full pl-8 md:w-[200px]" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
                   </div>
                   <Select value={categoryFilter} onValueChange={setCategoryFilter}><SelectTrigger className="w-full md:w-[180px]"><SelectValue placeholder={t('assets.filter_by_category')} /></SelectTrigger><SelectContent><SelectItem value="All">{t('assets.all_categories')}</SelectItem>{assetCategories.map(cat => (<SelectItem key={cat} value={cat}>{t(`asset_categories.${cat.replace(/ /g, '_')}`)}</SelectItem>))}</SelectContent></Select>
-                  <Select value={statusFilter} onValueChange={setStatusFilter}><SelectTrigger className="w-full md:w-[150px]"><SelectValue placeholder={t('clients.filter_by_status')} /></SelectTrigger><SelectContent><SelectItem value="All">{t('assets.all_statuses')}</SelectItem>{Object.keys(statusVariant).map(s => (<SelectItem key={s} value={s}>{s}</SelectItem>))}</SelectContent></Select>
+                  <Select value={statusFilter} onValueChange={setStatusFilter}><SelectTrigger className="w-full md:w-[150px]"><SelectValue placeholder={t('clients.filter_by_status')} /></SelectTrigger><SelectContent><SelectItem value="All">{t('assets.all_statuses')}</SelectItem>{Object.keys(statusVariant).map(s => (<SelectItem key={s} value={s}>{t(`assets.status.${s.replace(/ /g, '_')}`)}</SelectItem>))}</SelectContent></Select>
                    <Select value={maintenanceFilter} onValueChange={setMaintenanceFilter}><SelectTrigger className="w-full md:w-[180px]"><SelectValue placeholder={t('assets.maintenance_status')} /></SelectTrigger><SelectContent><SelectItem value="All">{t('assets.all_maintenance')}</SelectItem><SelectItem value="Upcoming">{t('assets.upcoming')}</SelectItem><SelectItem value="Overdue">{t('assets.overdue')}</SelectItem></SelectContent></Select>
                 </div>
               </div>
@@ -409,7 +409,7 @@ export default function AssetsPage() {
                                {isClient && <MaintenanceStatusIndicator maintenanceDate={asset.nextMaintenanceDate} />}
                             </div>
                         </TableCell>
-                        <TableCell><Badge variant={statusVariant[asset.status]}>{asset.status}</Badge></TableCell>
+                        <TableCell><Badge variant={statusVariant[asset.status]}>{t(`assets.status.${asset.status.replace(/ /g, '_')}`)}</Badge></TableCell>
                         <TableCell className="text-right">
                           {['admin', 'manager'].includes(profile?.role || '') && (
                             <DropdownMenu>
@@ -455,3 +455,4 @@ export default function AssetsPage() {
     </>
   );
 }
+

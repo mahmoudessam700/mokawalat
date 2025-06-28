@@ -210,7 +210,7 @@ export default function AssetDetailPage({ params }: { params: { id: string } }) 
             </Button>
             <div>
                 <h1 className="font-headline text-3xl font-bold tracking-tight">{asset.name}</h1>
-                <p className="text-muted-foreground">{asset.category}</p>
+                <p className="text-muted-foreground">{t(`asset_categories.${asset.category.replace(/ /g, '_')}`)}</p>
             </div>
         </div>
 
@@ -222,7 +222,7 @@ export default function AssetDetailPage({ params }: { params: { id: string } }) 
                 <CardContent className="space-y-4 text-sm">
                     <div className="flex justify-between">
                         <span className="text-muted-foreground">{t('status')}</span>
-                        <Badge variant={statusVariant[asset.status]}>{asset.status}</Badge>
+                        <Badge variant={statusVariant[asset.status]}>{t(`assets.status.${asset.status.replace(/ /g, '_')}`)}</Badge>
                     </div>
                     <div className="flex justify-between">
                         <span className="text-muted-foreground">{t('assets.purchase_date_label')}</span>
@@ -300,3 +300,4 @@ export default function AssetDetailPage({ params }: { params: { id: string } }) 
     </div>
   );
 }
+
