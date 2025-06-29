@@ -1,22 +1,23 @@
 
 import type { Metadata } from 'next';
-import { Inter, Lexend } from 'next/font/google';
+import { PT_Sans, Space_Grotesk } from 'next/font/google';
 import { Toaster } from '@/components/ui/toaster';
 import './globals.css';
 import { ThemeProvider } from '@/components/theme-provider';
 import { AuthProvider } from '@/hooks/use-auth';
 import { I18nProvider } from '@/lib/i18n/i18n-provider';
 
-const inter = Inter({
+const ptSans = PT_Sans({
   subsets: ['latin'],
   display: 'swap',
-  variable: '--font-inter',
+  variable: '--font-pt-sans',
+  weight: ['400', '700'],
 });
 
-const lexend = Lexend({
+const spaceGrotesk = Space_Grotesk({
   subsets: ['latin'],
   display: 'swap',
-  variable: '--font-lexend',
+  variable: '--font-space-grotesk',
 });
 
 export const metadata: Metadata = {
@@ -31,7 +32,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className={`${inter.variable} ${lexend.variable} font-body antialiased`} suppressHydrationWarning>
+      <body className={`${ptSans.variable} ${spaceGrotesk.variable} font-body antialiased`} suppressHydrationWarning>
         <ThemeProvider
           attribute="class"
           defaultTheme="system"
