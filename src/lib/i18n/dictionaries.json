@@ -432,10 +432,34 @@
         "save_button": "Save Job",
         "no_jobs_found": "No job postings found. Add one to get started.",
         "delete_confirm_desc": "This will permanently delete the job posting for \"{title}\". This action cannot be undone.",
+        "fetch_error": "Failed to fetch job details.",
+        "back_to_jobs": "Back to Job Postings",
+        "job_description": "Job Description",
         "status": {
             "Open": "Open",
             "Closed": "Closed"
         }
+    },
+    "hr": {
+      "candidates": {
+        "title": "Candidates",
+        "desc": "Manage all candidates for this job posting.",
+        "add_button": "Add Candidate",
+        "add_new": "Add New Candidate",
+        "resume_label": "Resume (Optional)",
+        "save_button": "Save Candidate",
+        "applied_at": "Applied At",
+        "resume_header": "Resume",
+        "view_resume": "View Resume",
+        "no_candidates": "No candidates have applied for this job yet.",
+        "status": {
+          "Applied": "Applied",
+          "Interviewing": "Interviewing",
+          "Offered": "Offered",
+          "Hired": "Hired",
+          "Rejected": "Rejected"
+        }
+      }
     },
     "employees": {
         "page_title": "Employee Directory",
@@ -1671,10 +1695,34 @@
         "save_button": "حفظ الوظيفة",
         "no_jobs_found": "لم يتم العثور على إعلانات وظائف. أضف واحدة للبدء.",
         "delete_confirm_desc": "سيؤدي هذا إلى حذف إعلان الوظيفة لـ \"{title}\" بشكل دائم. لا يمكن التراجع عن هذا الإجراء.",
+        "fetch_error": "فشل في جلب تفاصيل الوظيفة.",
+        "back_to_jobs": "العودة إلى إعلانات الوظائف",
+        "job_description": "الوصف الوظيفي",
         "status": {
             "Open": "مفتوحة",
             "Closed": "مغلقة"
         }
+    },
+    "hr": {
+      "candidates": {
+        "title": "المرشحون",
+        "desc": "إدارة جميع المرشحين لهذا الإعلان الوظيفي.",
+        "add_button": "إضافة مرشح",
+        "add_new": "إضافة مرشح جديد",
+        "resume_label": "السيرة الذاتية (اختياري)",
+        "save_button": "حفظ المرشح",
+        "applied_at": "تاريخ التقديم",
+        "resume_header": "السيرة الذاتية",
+        "view_resume": "عرض السيرة الذاتية",
+        "no_candidates": "لم يتقدم أي مرشحين لهذه الوظيفة بعد.",
+        "status": {
+          "Applied": "تم التقديم",
+          "Interviewing": "مقابلة",
+          "Offered": "تم العرض",
+          "Hired": "تم التوظيف",
+          "Rejected": "مرفوض"
+        }
+      }
     },
     "employees": {
         "page_title": "دليل الموظفين",

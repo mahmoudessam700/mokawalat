@@ -1,10 +1,11 @@
 
 'use server';
 
-import { firestore } from '@/lib/firebase';
-import { collection, addDoc, doc, deleteDoc, updateDoc, serverTimestamp, getDoc, getDocs, query, where } from 'firebase/firestore';
+import { firestore, storage } from '@/lib/firebase';
+import { collection, addDoc, doc, deleteDoc, updateDoc, serverTimestamp, getDoc, getDocs, query, where, setDoc } from 'firebase/firestore';
 import { z } from 'zod';
 import { revalidatePath } from 'next/cache';
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 
 const jobFormSchema = z.object({
   title: z.string().min(3, "Job title must be at least 3 characters long."),
@@ -62,6 +63,7 @@ export async function updateJob(jobId: string, values: JobFormValues) {
     });
     
     revalidatePath('/hr/jobs');
+    revalidatePath(`/hr/jobs/${jobId}`);
     return { message: 'Job posting updated successfully.', errors: null };
   } catch (error) {
     console.error('Error updating job:', error);
@@ -90,5 +92,65 @@ export async function deleteJob(jobId: string) {
   } catch (error) {
     console.error('Error deleting job:', error);
     return { success: false, message: 'Failed to delete job posting.' };
+  }
+}
+
+
+// Candidate Actions
+const candidateFormSchema = z.object({
+  name: z.string().min(2, "Name must be at least 2 characters long."),
+  email: z.string().email("Please enter a valid email address."),
+  phone: z.string().min(10, "Please enter a valid phone number."),
+});
+
+export type CandidateFormValues = z.infer<typeof candidateFormSchema>;
+
+export async function addCandidate(jobId: string, formData: FormData) {
+  if (!jobId) {
+    return { message: 'Job ID is required.', errors: { _server: ['Job ID is missing.'] } };
+  }
+
+  const formValues = {
+    name: formData.get('name'),
+    email: formData.get('email'),
+    phone: formData.get('phone'),
+  };
+
+  const validatedFields = candidateFormSchema.safeParse(formValues);
+  if (!validatedFields.success) {
+    return { errors: validatedFields.error.flatten().fieldErrors, message: 'Invalid data provided.' };
+  }
+
+  const resumeFile = formData.get('resume') as File | null;
+  if (resumeFile && resumeFile.size > 5 * 1024 * 1024) { // 5MB limit
+    return { errors: { resume: ['Resume must be less than 5MB.'] }, message: 'File is too large.' };
+  }
+
+  try {
+    const newCandidateRef = doc(collection(firestore, 'candidates'));
+    let resumeUrl = '';
+    let resumePath = '';
+
+    if (resumeFile && resumeFile.size > 0) {
+      resumePath = `resumes/${jobId}/${newCandidateRef.id}/${resumeFile.name}`;
+      const storageRef = ref(storage, resumePath);
+      await uploadBytes(storageRef, resumeFile);
+      resumeUrl = await getDownloadURL(storageRef);
+    }
+    
+    await setDoc(newCandidateRef, {
+      ...validatedFields.data,
+      jobId,
+      status: 'Applied',
+      appliedAt: serverTimestamp(),
+      resumeUrl,
+      resumePath,
+    });
+
+    revalidatePath(`/hr/jobs/${jobId}`);
+    return { message: 'Candidate added successfully.', errors: null };
+  } catch (error) {
+    console.error('Error adding candidate:', error);
+    return { message: 'Failed to add candidate.', errors: { _server: ['An unexpected error occurred.'] } };
   }
 }

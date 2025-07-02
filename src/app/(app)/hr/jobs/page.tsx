@@ -125,7 +125,7 @@ export default function JobPostingsPage() {
     if (result.errors) {
       toast({ variant: 'destructive', title: t('error'), description: result.message });
     } else {
-      toast({ title: 'Success', description: result.message });
+      toast({ title: t('success'), description: result.message });
       setIsFormDialogOpen(false);
       setJobToEdit(null);
     }
@@ -136,9 +136,9 @@ export default function JobPostingsPage() {
     setIsDeleting(true);
     const result = await deleteJob(jobToDelete.id);
     if (result.success) {
-      toast({ title: t('success'), description: result.message });
+      toast({ title: 'Success', description: result.message });
     } else {
-      toast({ variant: 'destructive', title: t('error'), description: result.message });
+      toast({ variant: 'destructive', title: 'Error', description: result.message });
     }
     setIsDeleteDialogOpen(false);
     setJobToDelete(null);
@@ -203,7 +203,11 @@ export default function JobPostingsPage() {
               : jobs.length > 0 ? (
                 jobs.map((job) => (
                     <TableRow key={job.id}>
-                        <TableCell className="font-medium">{job.title}</TableCell>
+                        <TableCell className="font-medium">
+                            <Link href={`/hr/jobs/${job.id}`} className="hover:underline">
+                                {job.title}
+                            </Link>
+                        </TableCell>
                         <TableCell>{t(`departments.${job.department.replace(/ /g, '_')}`)}</TableCell>
                         <TableCell><Badge variant={job.status === 'Open' ? 'secondary' : 'outline'}>{t(`jobs.status.${job.status}`)}</Badge></TableCell>
                         <TableCell className="text-right">
