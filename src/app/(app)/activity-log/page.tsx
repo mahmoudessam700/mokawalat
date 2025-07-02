@@ -42,6 +42,11 @@ import {
   PackageCheck,
   PackageX,
   Sparkles,
+  CalendarCheck,
+  CalendarX,
+  LogIn,
+  LogOut,
+  CalendarPlus,
 } from 'lucide-react';
 import { useLanguage } from '@/hooks/use-language';
 import { ar, enUS } from 'date-fns/locale';
@@ -98,6 +103,11 @@ const activityIcons: { [key: string]: React.ReactNode } = {
   INVOICE_STATUS_CHANGED: <ListChecks className="size-4" />,
   TEAM_ASSIGNED_TO_PROJECT: <Users className="size-4" />,
   AI_TASKS_SUGGESTED: <Sparkles className="size-4" />,
+  LEAVE_REQUEST_CREATED: <CalendarPlus className="size-4" />,
+  LEAVE_REQUEST_APPROVED: <CalendarCheck className="size-4" />,
+  LEAVE_REQUEST_REJECTED: <CalendarX className="size-4" />,
+  ATTENDANCE_CHECK_IN: <LogIn className="size-4" />,
+  ATTENDANCE_CHECK_OUT: <LogOut className="size-4" />,
   DEFAULT: <Bell className="size-4" />,
 };
 

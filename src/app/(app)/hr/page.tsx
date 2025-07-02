@@ -2,7 +2,7 @@
 
 import { Card, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useLanguage } from '@/hooks/use-language';
-import { Award, ChevronRight, UserMinus, UserPlus, Users, TrendingUp } from 'lucide-react';
+import { Award, ChevronRight, UserMinus, UserPlus, Users, TrendingUp, Calendar, Clock } from 'lucide-react';
 import Link from 'next/link';
 
 export default function HrDashboardPage() {
@@ -21,6 +21,20 @@ export default function HrDashboardPage() {
       description: t('human_capital_management.employee_management_desc'),
       icon: <Users className="size-8" />,
       href: '/employees',
+      disabled: false,
+    },
+    {
+      title: t('human_capital_management.attendance.title'),
+      description: t('human_capital_management.attendance.desc'),
+      icon: <Clock className="size-8" />,
+      href: '/hr/attendance',
+      disabled: false,
+    },
+    {
+      title: t('human_capital_management.leave_management.title'),
+      description: t('human_capital_management.leave_management.desc'),
+      icon: <Calendar className="size-8" />,
+      href: '/hr/leave',
       disabled: false,
     },
     {

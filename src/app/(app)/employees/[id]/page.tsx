@@ -2,12 +2,12 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { doc, onSnapshot, collection, query, where, type Timestamp } from 'firebase/firestore';
+import { doc, onSnapshot, collection, query, where, type Timestamp, orderBy } from 'firebase/firestore';
 import { firestore } from '@/lib/firebase';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
-import { ArrowLeft, User, Mail, Briefcase, Building, CheckCircle, ListTodo, Users, DollarSign } from 'lucide-react';
+import { ArrowLeft, User, Mail, Briefcase, Building, CheckCircle, ListTodo, Users, DollarSign, Calendar, Clock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -23,9 +23,11 @@ import { format } from 'date-fns';
 import { useAuth } from '@/hooks/use-auth';
 import { EmployeeAiSummary } from './employee-ai-summary';
 import { useLanguage } from '@/hooks/use-language';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 type EmployeeStatus = 'Active' | 'On Leave' | 'Inactive';
 type ProjectStatus = 'In Progress' | 'Planning' | 'Completed' | 'On Hold';
+type LeaveStatus = 'Pending' | 'Approved' | 'Rejected';
 
 type Employee = {
   id: string;
@@ -45,6 +47,22 @@ type Project = {
     startDate: Timestamp;
 };
 
+type LeaveRequest = {
+    id: string;
+    leaveType: string;
+    startDate: Timestamp;
+    endDate: Timestamp;
+    status: LeaveStatus;
+};
+
+type AttendanceRecord = {
+    id: string;
+    checkInTime: Timestamp;
+    checkOutTime?: Timestamp;
+    status: string;
+    date: string;
+};
+
 const statusVariant: { [key in EmployeeStatus]: 'secondary' | 'outline' | 'destructive' } = {
   Active: 'secondary',
   'On Leave': 'outline',
@@ -60,6 +78,12 @@ const projectStatusVariant: {
   'On Hold': 'destructive',
 };
 
+const leaveStatusVariant: { [key in LeaveStatus]: 'default' | 'secondary' | 'destructive' } = {
+  Pending: 'default',
+  Approved: 'secondary',
+  Rejected: 'destructive',
+};
+
 const formatCurrency = (value: number) => {
     const formatter = new Intl.NumberFormat('en-US', {
       minimumFractionDigits: 0,
@@ -71,6 +95,8 @@ const formatCurrency = (value: number) => {
 export default function EmployeeDetailPage({ params }: { params: { id: string } }) {
   const [employee, setEmployee] = useState<Employee | null>(null);
   const [projects, setProjects] = useState<Project[]>([]);
+  const [leaveRequests, setLeaveRequests] = useState<LeaveRequest[]>([]);
+  const [attendance, setAttendance] = useState<AttendanceRecord[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const { profile } = useAuth();
@@ -84,8 +110,7 @@ export default function EmployeeDetailPage({ params }: { params: { id: string } 
 
     const unsubscribes: (() => void)[] = [];
 
-    const employeeRef = doc(firestore, 'employees', employeeId);
-    unsubscribes.push(onSnapshot(employeeRef, (doc) => {
+    unsubscribes.push(onSnapshot(doc(firestore, 'employees', employeeId), (doc) => {
         if (doc.exists()) {
             setEmployee({ id: doc.id, ...doc.data() } as Employee);
         } else {
@@ -98,17 +123,17 @@ export default function EmployeeDetailPage({ params }: { params: { id: string } 
         setIsLoading(false);
     }));
 
-    const projectsQuery = query(
-        collection(firestore, 'projects'),
-        where('teamMemberIds', 'array-contains', employeeId)
-    );
-    unsubscribes.push(onSnapshot(projectsQuery, (snapshot) => {
-        const projectsData: Project[] = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Project));
-        setProjects(projectsData);
-    }, (err) => {
-        console.error('Error fetching projects:', err);
-        setError('Failed to fetch assigned projects. If you see a Firestore error in the console, you may need to create a composite index.');
-    }));
+    unsubscribes.push(onSnapshot(query(collection(firestore, 'projects'), where('teamMemberIds', 'array-contains', employeeId)), (snapshot) => {
+        setProjects(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Project)));
+    }, (err) => console.error('Error fetching projects:', err)));
+
+    unsubscribes.push(onSnapshot(query(collection(firestore, 'leaveRequests'), where('employeeId', '==', employeeId), orderBy('startDate', 'desc')), (snapshot) => {
+        setLeaveRequests(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as LeaveRequest)));
+    }, (err) => console.error('Error fetching leave requests:', err)));
+
+    unsubscribes.push(onSnapshot(query(collection(firestore, 'attendance'), where('employeeId', '==', employeeId), orderBy('date', 'desc')), (snapshot) => {
+        setAttendance(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as AttendanceRecord)));
+    }, (err) => console.error('Error fetching attendance:', err)));
 
     return () => unsubscribes.forEach(unsub => unsub());
   }, [employeeId]);
@@ -168,42 +193,57 @@ export default function EmployeeDetailPage({ params }: { params: { id: string } 
             </div>
         </div>
 
-        <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-           <div className="lg:col-span-1 space-y-6">
-                <Card>
-                    <CardHeader>
-                        <div className="flex flex-col items-center gap-4">
-                            <Avatar className="h-24 w-24">
-                                <AvatarImage src={employee.photoUrl || `https://placehold.co/100x100.png`} data-ai-hint="profile picture" />
-                                <AvatarFallback>{employee.name.split(' ').map(n => n[0]).join('')}</AvatarFallback>
-                            </Avatar>
-                            <div className="text-center">
-                                <CardTitle>{employee.name}</CardTitle>
-                                <CardDescription>{employee.role}</CardDescription>
-                            </div>
-                        </div>
-                    </CardHeader>
-                    <CardContent className="space-y-4 pt-4 border-t">
-                        <div className="flex items-center gap-4">
-                            <Mail className="size-4 text-muted-foreground" />
-                            <a href={`mailto:${employee.email}`} className="text-sm hover:underline">{employee.email}</a>
-                        </div>
-                        <div className="flex items-center gap-4">
-                            <Building className="size-4 text-muted-foreground" />
-                            <span className="text-sm">{employee.department}</span>
-                        </div>
-                        <div className="flex items-center gap-4">
-                            <CheckCircle className="size-4 text-muted-foreground" />
-                            <Badge variant={statusVariant[employee.status]}>{t(`employees.status.${employee.status}`)}</Badge>
-                        </div>
-                        {profile?.role === 'admin' && employee.salary && (
-                            <div className="flex items-center gap-4 border-t pt-4">
-                                <DollarSign className="size-4 text-muted-foreground" />
-                                <span className="text-sm">{formatCurrency(employee.salary)} / {t('employees.per_month')}</span>
-                            </div>
-                        )}
-                    </CardContent>
-                </Card>
+        <Tabs defaultValue="overview">
+            <TabsList>
+                <TabsTrigger value="overview">{t('clients.overview_tab')}</TabsTrigger>
+                <TabsTrigger value="projects">{t('clients.projects_tab')}</TabsTrigger>
+                <TabsTrigger value="leave">{t('human_capital_management.leave_management.title')}</TabsTrigger>
+                <TabsTrigger value="attendance">{t('human_capital_management.attendance.title')}</TabsTrigger>
+            </TabsList>
+            <TabsContent value="overview" className="pt-4">
+                <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+                    <div className="lg:col-span-1 space-y-6">
+                            <Card>
+                                <CardHeader>
+                                    <div className="flex flex-col items-center gap-4">
+                                        <Avatar className="h-24 w-24">
+                                            <AvatarImage src={employee.photoUrl || `https://placehold.co/100x100.png`} data-ai-hint="profile picture" />
+                                            <AvatarFallback>{employee.name.split(' ').map(n => n[0]).join('')}</AvatarFallback>
+                                        </Avatar>
+                                        <div className="text-center">
+                                            <CardTitle>{employee.name}</CardTitle>
+                                            <CardDescription>{employee.role}</CardDescription>
+                                        </div>
+                                    </div>
+                                </CardHeader>
+                                <CardContent className="space-y-4 pt-4 border-t">
+                                    <div className="flex items-center gap-4">
+                                        <Mail className="size-4 text-muted-foreground" />
+                                        <a href={`mailto:${employee.email}`} className="text-sm hover:underline">{employee.email}</a>
+                                    </div>
+                                    <div className="flex items-center gap-4">
+                                        <Building className="size-4 text-muted-foreground" />
+                                        <span className="text-sm">{employee.department}</span>
+                                    </div>
+                                    <div className="flex items-center gap-4">
+                                        <CheckCircle className="size-4 text-muted-foreground" />
+                                        <Badge variant={statusVariant[employee.status]}>{t(`employees.status.${employee.status}`)}</Badge>
+                                    </div>
+                                    {profile?.role === 'admin' && employee.salary && (
+                                        <div className="flex items-center gap-4 border-t pt-4">
+                                            <DollarSign className="size-4 text-muted-foreground" />
+                                            <span className="text-sm">{formatCurrency(employee.salary)} / {t('employees.per_month')}</span>
+                                        </div>
+                                    )}
+                                </CardContent>
+                            </Card>
+                    </div>
+                    <div className="lg:col-span-2">
+                        <EmployeeAiSummary employeeId={employee.id} employeeName={employee.name} />
+                    </div>
+                </div>
+            </TabsContent>
+            <TabsContent value="projects" className="pt-4">
                 <Card>
                     <CardHeader>
                         <CardTitle>{t('employees.assigned_projects_title')}</CardTitle>
@@ -243,11 +283,62 @@ export default function EmployeeDetailPage({ params }: { params: { id: string } 
                         )}
                     </CardContent>
                 </Card>
-           </div>
-            <div className="lg:col-span-2">
-                <EmployeeAiSummary employeeId={employee.id} employeeName={employee.name} />
-            </div>
-        </div>
+            </TabsContent>
+            <TabsContent value="leave" className="pt-4">
+                 <Card>
+                    <CardHeader>
+                        <CardTitle>{t('human_capital_management.leave_management.history_title')}</CardTitle>
+                        <CardDescription>{t('human_capital_management.leave_management.history_desc', {name: employee.name})}</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        {leaveRequests.length > 0 ? (
+                           <Table>
+                            <TableHeader><TableRow><TableHead>{t('type')}</TableHead><TableHead>{t('projects.start_date')}</TableHead><TableHead>{t('human_capital_management.leave_management.end_date')}</TableHead><TableHead>{t('status')}</TableHead></TableRow></TableHeader>
+                            <TableBody>
+                                {leaveRequests.map(req => (
+                                <TableRow key={req.id}>
+                                    <TableCell>{t(`human_capital_management.leave_management.leave_types.${req.leaveType}`)}</TableCell>
+                                    <TableCell>{format(req.startDate.toDate(), 'PPP')}</TableCell>
+                                    <TableCell>{format(req.endDate.toDate(), 'PPP')}</TableCell>
+                                    <TableCell><Badge variant={leaveStatusVariant[req.status]}>{t(`human_capital_management.leave_management.status.${req.status}`)}</Badge></TableCell>
+                                </TableRow>
+                                ))}
+                            </TableBody>
+                           </Table>
+                        ) : (
+                            <div className="flex flex-col items-center justify-center gap-2 py-8 text-center text-muted-foreground"><Calendar className="size-12" /><p>{t('human_capital_management.leave_management.no_history')}</p></div>
+                        )}
+                    </CardContent>
+                 </Card>
+            </TabsContent>
+            <TabsContent value="attendance" className="pt-4">
+                 <Card>
+                    <CardHeader>
+                        <CardTitle>{t('human_capital_management.attendance.history_title')}</CardTitle>
+                        <CardDescription>{t('human_capital_management.attendance.history_desc', {name: employee.name})}</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                         {attendance.length > 0 ? (
+                           <Table>
+                            <TableHeader><TableRow><TableHead>{t('date')}</TableHead><TableHead>{t('human_capital_management.attendance.check_in')}</TableHead><TableHead>{t('human_capital_management.attendance.check_out')}</TableHead><TableHead>{t('status')}</TableHead></TableRow></TableHeader>
+                            <TableBody>
+                                {attendance.map(att => (
+                                <TableRow key={att.id}>
+                                    <TableCell>{format(new Date(att.date), 'PPP')}</TableCell>
+                                    <TableCell>{format(att.checkInTime.toDate(), 'p')}</TableCell>
+                                    <TableCell>{att.checkOutTime ? format(att.checkOutTime.toDate(), 'p') : 'N/A'}</TableCell>
+                                    <TableCell><Badge variant={att.status === 'Present' ? 'secondary' : 'default'}>{t(`human_capital_management.attendance.status.${att.status}`)}</Badge></TableCell>
+                                </TableRow>
+                                ))}
+                            </TableBody>
+                           </Table>
+                        ) : (
+                            <div className="flex flex-col items-center justify-center gap-2 py-8 text-center text-muted-foreground"><Clock className="size-12" /><p>{t('human_capital_management.attendance.no_history')}</p></div>
+                        )}
+                    </CardContent>
+                 </Card>
+            </TabsContent>
+        </Tabs>
     </div>
   );
 }

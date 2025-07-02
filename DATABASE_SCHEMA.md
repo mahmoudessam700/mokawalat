@@ -172,6 +172,34 @@ Stores a record of each time payroll has been run for a specific month. This pre
     -   `employeeCount` (number): The number of employees included in this run.
     -   `accountId` (string): A reference to the `accounts` collection document ID from which the payroll was paid.
 
+### `attendance`
+
+Logs daily employee check-in and check-out times.
+
+-   **Document ID**: Auto-generated
+-   **Fields**:
+    -   `employeeId` (string): A reference to the `employees` collection document ID.
+    -   `employeeName` (string): The name of the employee for display purposes.
+    -   `checkInTime` (Timestamp): The timestamp of the check-in.
+    -   `checkOutTime` (Timestamp, optional): The timestamp of the check-out.
+    -   `date` (string): The date of the attendance record in `YYYY-MM-DD` format for easy querying.
+    -   `status` (string): The final status for the day (`Present`, `On Leave`, etc.).
+
+### `leaveRequests`
+
+Tracks all employee requests for time off.
+
+-   **Document ID**: Auto-generated
+-   **Fields**:
+    -   `employeeId` (string): A reference to the `employees` collection document ID.
+    -   `employeeName` (string): The name of the employee for display purposes.
+    -   `leaveType` (string): The type of leave requested (`Annual`, `Sick`, `Unpaid`, `Other`).
+    -   `startDate` (Timestamp): The start date of the leave period.
+    -   `endDate` (Timestamp): The end date of the leave period.
+    -   `reason` (string, optional): The reason provided by the employee for the leave.
+    -   `status` (string): The status of the request (`Pending`, `Approved`, `Rejected`).
+    -   `requestedAt` (Timestamp): The timestamp when the request was submitted.
+
 ---
 
 ### `clients`
