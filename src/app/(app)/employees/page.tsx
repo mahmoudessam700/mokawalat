@@ -18,7 +18,7 @@ import {
   DropdownMenuLabel,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Loader2, MoreHorizontal, PlusCircle, Search, Trash2, DollarSign } from 'lucide-react';
+import { Loader2, MoreHorizontal, PlusCircle, Search, Trash2, DollarSign, ArrowLeft } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   Dialog,
@@ -225,13 +225,21 @@ export default function EmployeesPage() {
     <>
     <div className="space-y-6">
        <div className="flex items-center justify-between">
-        <div>
-          <h1 className="font-headline text-3xl font-bold tracking-tight">
-            {t('employees.page_title')}
-          </h1>
-          <p className="text-muted-foreground">
-            {t('employees.page_desc')}
-          </p>
+        <div className="flex items-center gap-4">
+            <Button asChild variant="outline" size="icon">
+                <Link href="/hr">
+                    <ArrowLeft />
+                    <span className="sr-only">{t('employees.back_to_hr')}</span>
+                </Link>
+            </Button>
+            <div>
+              <h1 className="font-headline text-3xl font-bold tracking-tight">
+                {t('employees.page_title')}
+              </h1>
+              <p className="text-muted-foreground">
+                {t('employees.page_desc')}
+              </p>
+            </div>
         </div>
         {['admin', 'manager'].includes(profile?.role || '') && (
             <div className="flex items-center gap-2">
