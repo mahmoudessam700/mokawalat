@@ -1,4 +1,3 @@
-
 # Mokawalat - Database Schema
 
 This document outlines the database structure for the Mokawalat ERP system, which is built on Firebase Firestore. Understanding this schema is crucial for extending functionality or debugging data-related issues.
@@ -76,9 +75,13 @@ Contains all information related to construction projects.
         -   `photoPath` (string, optional): The path to the photo in Firebase Storage.
         -   `createdAt` (Timestamp)
 
+---
+
+## Human Capital Management (HR) Module
+
 ### `employees`
 
-Manages all employee profiles.
+Manages all employee profiles. This is the central collection for employee data.
 
 -   **Document ID**: Auto-generated
 -   **Fields**:
@@ -91,6 +94,85 @@ Manages all employee profiles.
     -   `salary` (number, optional): The employee's monthly salary.
     -   `photoUrl` (string, optional): A public URL to the employee's profile photo in Firebase Storage.
     -   `photoPath` (string, optional): The full path to the photo file in Firebase Storage.
+
+### `jobs`
+
+Stores information about open job positions for recruitment.
+
+-   **Document ID**: Auto-generated
+-   **Fields**:
+    -   `title` (string): The job title.
+    -   `title_lowercase` (string)
+    -   `description` (string): A detailed job description.
+    -   `department` (string)
+    -   `status` (string): (`Open`, `Closed`).
+    -   `createdAt` (Timestamp)
+
+### `candidates`
+
+Tracks applicants for jobs.
+
+-   **Document ID**: Auto-generated
+-   **Fields**:
+    -   `name` (string)
+    -   `email` (string)
+    -   `phone` (string)
+    -   `jobId` (string): A reference to the `jobs` collection document ID.
+    -   `status` (string): (`Applied`, `Interviewing`, `Offered`, `Hired`, `Rejected`).
+    -   `resumeUrl` (string, optional): Public URL to the candidate's resume in Firebase Storage.
+    -   `resumePath` (string, optional)
+    -   `appliedAt` (Timestamp)
+
+### `performanceReviews`
+
+Stores records of employee performance reviews.
+
+-   **Document ID**: Auto-generated
+-   **Fields**:
+    -   `employeeId` (string): A reference to the `employees` collection document ID.
+    -   `reviewerId` (string): UID of the manager who conducted the review.
+    -   `reviewDate` (Timestamp)
+    -   `goals` (string): Text describing goals for the review period.
+    -   `feedback` (string): Text of the manager's feedback.
+    -   `rating` (number): A 1-5 rating.
+
+### `trainings`
+
+Manages training and development records for employees.
+
+-   **Document ID**: Auto-generated
+-   **Fields**:
+    -   `courseName` (string)
+    -   `employeeId` (string): A reference to the `employees` collection document ID.
+    -   `completionDate` (Timestamp)
+    -   `certificateUrl` (string, optional): Public URL to a certificate in Firebase Storage.
+    -   `certificatePath` (string, optional)
+
+### `offboarding`
+
+Stores information related to employee departures.
+
+-   **Document ID**: Auto-generated
+-   **Fields**:
+    -   `employeeId` (string): A reference to the `employees` collection document ID.
+    -   `exitDate` (Timestamp)
+    -   `reason` (string): The reason for departure.
+    -   `feedback` (string, optional): Notes from the exit interview.
+    -   `assetsReturned` (boolean)
+
+### `payrollRuns`
+
+Stores a record of each time payroll has been run for a specific month. This prevents duplicate payroll runs.
+
+-   **Document ID**: `YYYY-MM` (e.g., '2025-07')
+-   **Fields**:
+    -   `runAt` (Timestamp): The timestamp when the payroll was processed.
+    -   `runByEmail` (string): The email of the user for display.
+    -   `totalAmount` (number): The total cost of this payroll run.
+    -   `employeeCount` (number): The number of employees included in this run.
+    -   `accountId` (string): A reference to the `accounts` collection document ID from which the payroll was paid.
+
+---
 
 ### `clients`
 

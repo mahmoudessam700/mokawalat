@@ -1,4 +1,3 @@
-
 # Mokawalat - Database Schema
 
 This document outlines the database structure for the Mokawalat ERP system, which is built on Firebase Firestore. Understanding this schema is crucial for extending functionality or debugging data-related issues.
