@@ -84,8 +84,8 @@ const employeeFormSchema = z.object({
 
 type EmployeeFormValues = z.infer<typeof employeeFormSchema>;
 
-const departmentKeys = ["Engineering", "Human Resources", "Finance", "Procurement", "Operations"];
-const roleKeys = ["Project Manager", "HR Specialist", "Accountant", "Civil Engineer", "Procurement Officer", "Worker"];
+export const departmentKeys = ["Engineering", "Human Resources", "Finance", "Procurement", "Operations"];
+export const roleKeys = ["Project Manager", "HR Specialist", "Accountant", "Civil Engineer", "Procurement Officer", "Worker"];
 
 
 export default function EmployeesPage() {
