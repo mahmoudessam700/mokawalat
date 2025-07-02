@@ -275,11 +275,11 @@ export default function ReportsPage() {
     }, {} as Record<string, number>);
 
     return Object.entries(departmentCounts).map(([name, value], index) => ({
-        name,
+        name: t(`departments.${name.replace(/ /g, '_')}`),
         value,
         fill: `hsl(var(--chart-${(index % 5) + 1}))`,
     })).filter(d => d.value > 0);
-  }, [employees]);
+  }, [employees, t]);
 
   const clientStatusData = useMemo(() => {
     const statusCounts = clients.reduce((acc, client) => {

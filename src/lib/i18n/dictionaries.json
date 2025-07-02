@@ -1,3 +1,4 @@
+
 {
   "en": {
     "dashboard_title": "Dashboard",
@@ -871,14 +872,14 @@
         "subtask2": {
           "title": "Project Management",
           "details": [
-              "Create, view, update, and delete projects.",
-              "Display project details."
+            "Create, view, update, and delete projects.",
+            "Display project details."
           ]
         },
         "subtask3": {
           "title": "Dashboard",
           "details": [
-              "Create a central dashboard displaying key metrics."
+            "Create a central dashboard displaying key metrics."
           ]
         },
         "subtask4": {
@@ -1655,6 +1656,7 @@
       "contract_value_header": "القيمة",
       "effective_date_header": "تاريخ السريان",
       "no_contracts_found": "لم يتم تسجيل أي عقود لهذا العميل.",
+      "delete_contract_confirm_desc": "سيؤدي هذا إلى حذف العقد \"{title}\" بشكل دائم. لا يمكن التراجع عن هذا الإجراء.",
       "financial_history_title": "السجل المالي",
       "financial_history_desc": "سجل بجميع المعاملات المرتبطة بهذا العميل.",
       "no_financial_records": "لم يتم العثور على سجلات مالية لهذا العميل."

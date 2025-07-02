@@ -70,7 +70,7 @@ export function AppSidebar() {
   const router = useRouter();
   const { toast } = useToast();
   const [isLoggingOut, setIsLoggingOut] = useState(false);
-  const { user, profile, isLoading: isAuthLoading } = useAuth();
+  const { user, profile, isLoading: isAuthLoading } from useAuth();
   const { t } = useLanguage();
 
   const menuGroups = React.useMemo(() => [
@@ -201,7 +201,7 @@ export function AppSidebar() {
                         ) : user ? (
                         <>
                             <Avatar>
-                                <AvatarImage src={`https://placehold.co/40x40.png`} alt={profile?.email || user.email || ''} data-ai-hint="profile picture" />
+                                <AvatarImage src={profile?.photoUrl || `https://placehold.co/40x40.png`} alt={profile?.email || user.email || ''} data-ai-hint="profile picture" />
                                 <AvatarFallback>{(user.email || 'U').charAt(0).toUpperCase()}</AvatarFallback>
                             </Avatar>
                             <div className="flex flex-col overflow-hidden text-start">
