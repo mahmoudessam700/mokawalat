@@ -161,6 +161,18 @@ Stores information related to employee departures.
     -   `feedback` (string, optional): Notes from the exit interview.
     -   `assetsReturned` (boolean)
 
+### `payrollRuns`
+
+Stores a record of each time payroll has been run for a specific month. This prevents duplicate payroll runs.
+
+-   **Document ID**: `YYYY-MM` (e.g., '2025-07')
+-   **Fields**:
+    -   `runAt` (Timestamp): The timestamp when the payroll was processed.
+    -   `runByEmail` (string): The email of the user for display.
+    -   `totalAmount` (number): The total cost of this payroll run.
+    -   `employeeCount` (number): The number of employees included in this run.
+    -   `accountId` (string): A reference to the `accounts` collection document ID from which the payroll was paid.
+
 ---
 
 ### `clients`

@@ -563,7 +563,15 @@
         "assigned_projects_desc": "A list of projects this employee is currently assigned to.",
         "not_assigned_to_projects": "This employee is not currently assigned to any projects.",
         "ai_summary_title": "AI Performance Summary",
-        "ai_summary_desc": "An AI-generated summary of performance for {employeeName}."
+        "ai_summary_desc": "An AI-generated summary of performance for {employeeName}.",
+        "payroll_already_run": "Payroll has already been run for {month}.",
+        "payroll_history": "Payroll History",
+        "payroll_history_desc": "A log of all past payroll runs.",
+        "period": "Period",
+        "date_run": "Date Run",
+        "run_by": "Run By",
+        "employees_count": "Employees",
+        "no_payroll_history": "No payroll history found."
     },
     "financials": {
         "page_title": "Financial Management",
@@ -807,6 +815,7 @@
         "EMPLOYEE_UPDATED": "Employee Updated",
         "EMPLOYEE_DELETED": "Employee Deleted",
         "TRANSACTION_ADDED": "Transaction Added",
+        "PAYROLL_RUN": "Payroll Run",
         "TRANSACTION_UPDATED": "Transaction Updated",
         "TRANSACTION_DELETED": "Transaction Deleted",
         "SUPPLIER_ADDED": "Supplier Added",
@@ -1874,7 +1883,15 @@
       "assigned_projects_desc": "قائمة بالمشاريع التي تم تعيين هذا الموظف لها حاليًا.",
       "not_assigned_to_projects": "هذا الموظف غير معين حاليًا لأي مشاريع.",
       "ai_summary_title": "ملخص الأداء بالذكاء الاصطناعي",
-      "ai_summary_desc": "ملخص تم إنشاؤه بواسطة الذكاء الاصطناعي لأداء {employeeName}."
+      "ai_summary_desc": "ملخص تم إنشاؤه بواسطة الذكاء الاصطناعي لأداء {employeeName}.",
+      "payroll_already_run": "تم تشغيل الرواتب بالفعل لشهر {month}.",
+      "payroll_history": "سجل الرواتب",
+      "payroll_history_desc": "سجل بجميع عمليات تشغيل الرواتب السابقة.",
+      "period": "الفترة",
+      "date_run": "تاريخ التشغيل",
+      "run_by": "تم تشغيله بواسطة",
+      "employees_count": "الموظفون",
+      "no_payroll_history": "لم يتم العثور على سجل رواتب."
     },
     "financials": {
       "page_title": "الإدارة المالية",
@@ -2118,6 +2135,7 @@
       "EMPLOYEE_UPDATED": "تم تحديث الموظف",
       "EMPLOYEE_DELETED": "تم حذف الموظف",
       "TRANSACTION_ADDED": "تمت إضافة معاملة",
+      "PAYROLL_RUN": "تشغيل الرواتب",
       "TRANSACTION_UPDATED": "تم تحديث المعاملة",
       "TRANSACTION_DELETED": "تم حذف المعاملة",
       "SUPPLIER_ADDED": "تمت إضافة مورد",

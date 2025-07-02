@@ -67,6 +67,7 @@ const activityIcons: { [key: string]: React.ReactNode } = {
   TRANSACTION_ADDED: <DollarSign className="size-4" />,
   TRANSACTION_UPDATED: <Pencil className="size-4" />,
   TRANSACTION_DELETED: <Trash2 className="size-4" />,
+  PAYROLL_RUN: <DollarSign className="size-4" />,
   SUPPLIER_ADDED: <Truck className="size-4" />,
   SUPPLIER_UPDATED: <Pencil className="size-4" />,
   SUPPLIER_DELETED: <Trash2 className="size-4" />,

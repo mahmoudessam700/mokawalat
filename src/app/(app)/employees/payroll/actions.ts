@@ -11,9 +11,12 @@ import {
   getDocs,
   writeBatch,
   doc,
+  setDoc,
+  getDoc,
 } from 'firebase/firestore';
 import { z } from 'zod';
 import { revalidatePath } from 'next/cache';
+import { format } from 'date-fns';
 
 const runPayrollSchema = z.object({
   accountId: z.string().min(1, 'A bank account is required to run payroll.'),
@@ -24,7 +27,7 @@ const runPayrollSchema = z.object({
 
 export type RunPayrollFormValues = z.infer<typeof runPayrollSchema>;
 
-export async function runPayroll(values: RunPayrollFormValues) {
+export async function runPayroll(runBy: { uid: string, email: string }, values: RunPayrollFormValues) {
   const validatedFields = runPayrollSchema.safeParse(values);
 
   if (!validatedFields.success) {
@@ -36,8 +39,20 @@ export async function runPayroll(values: RunPayrollFormValues) {
 
   const { accountId, payrollDate } = validatedFields.data;
   const transactionDate = new Date(payrollDate);
+  const payrollPeriodId = format(transactionDate, 'yyyy-MM');
 
   try {
+    // Check if payroll has already been run for this period
+    const payrollRunRef = doc(firestore, 'payrollRuns', payrollPeriodId);
+    const payrollRunSnap = await getDoc(payrollRunRef);
+    if (payrollRunSnap.exists()) {
+        return {
+            message: `Payroll has already been run for ${format(transactionDate, 'MMMM yyyy')}.`,
+            errors: { _server: ['Duplicate payroll run prevented.'] },
+        };
+    }
+
+
     const employeesQuery = query(
       collection(firestore, 'employees'),
       where('status', '==', 'Active'),
@@ -60,7 +75,7 @@ export async function runPayroll(values: RunPayrollFormValues) {
       const employee = doc.data();
       const newTransactionRef = doc(transactionsCollection);
       batch.set(newTransactionRef, {
-        description: `Monthly Salary for ${employee.name}`,
+        description: `Monthly Salary for ${employee.name} (${payrollPeriodId})`,
         amount: employee.salary,
         type: 'Expense',
         date: transactionDate,
@@ -70,13 +85,23 @@ export async function runPayroll(values: RunPayrollFormValues) {
       totalPayroll += employee.salary;
     });
 
+    // Record the payroll run
+    batch.set(payrollRunRef, {
+        runAt: serverTimestamp(),
+        runByEmail: runBy.email,
+        totalAmount: totalPayroll,
+        employeeCount: employeesSnapshot.size,
+        accountId: accountId,
+    });
+
+
     const activityLogCollection = collection(firestore, 'activityLog');
     const newActivityRef = doc(activityLogCollection);
     batch.set(newActivityRef, {
-      message: `Monthly payroll run for ${
+      message: `Payroll run for ${
         employeesSnapshot.size
-      } employees, totaling ${totalPayroll.toLocaleString()}.`,
-      type: 'TRANSACTION_ADDED',
+      } employees, totaling ${totalPayroll.toLocaleString()}`,
+      type: 'PAYROLL_RUN',
       link: `/financials`,
       timestamp: serverTimestamp(),
     });

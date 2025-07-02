@@ -66,6 +66,15 @@ type Account = {
   name: string;
 };
 
+type PayrollRun = {
+    id: string;
+    runAt: Timestamp;
+    runByEmail: string;
+    totalAmount: number;
+    employeeCount: number;
+    accountId: string;
+};
+
 const runPayrollSchema = z.object({
   accountId: z.string().min(1, 'A bank account is required to run payroll.'),
   payrollDate: z.string().refine((date) => !isNaN(Date.parse(date)), {
@@ -85,6 +94,7 @@ const formatCurrency = (value: number) => {
 export default function PayrollSummaryPage() {
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [accounts, setAccounts] = useState<Account[]>([]);
+  const [payrollRuns, setPayrollRuns] = useState<PayrollRun[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const { toast } = useToast();
@@ -116,7 +126,6 @@ export default function PayrollSummaryPage() {
     
     const unsubscribes: (() => void)[] = [];
 
-    // Query for active employees and then filter for salary on the client to avoid needing a composite index.
     const qEmployees = query(
         collection(firestore, 'employees'), 
         where('status', '==', 'Active')
@@ -146,6 +155,11 @@ export default function PayrollSummaryPage() {
     unsubscribes.push(onSnapshot(qAccounts, (snapshot) => {
         setAccounts(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Account)));
     }));
+    
+    const qRuns = query(collection(firestore, 'payrollRuns'), orderBy('id', 'desc'));
+    unsubscribes.push(onSnapshot(qRuns, (snapshot) => {
+        setPayrollRuns(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as PayrollRun)));
+    }));
 
     return () => unsubscribes.forEach(unsub => unsub());
   }, [toast, profile]);
@@ -153,13 +167,19 @@ export default function PayrollSummaryPage() {
   const totalPayroll = useMemo(() => {
     return employees.reduce((acc, employee) => acc + (employee.salary || 0), 0);
   }, [employees]);
+  
+  const accountMap = useMemo(() => new Map(accounts.map(a => [a.id, a.name])), [accounts]);
 
   async function onRunPayrollSubmit(values: RunPayrollFormValues) {
-    const result = await runPayroll(values);
+    if (!profile) {
+      toast({ variant: 'destructive', title: t('error'), description: 'You must be logged in to run payroll.' });
+      return;
+    }
+    const result = await runPayroll({ uid: profile.uid, email: profile.email }, values);
     if (result.errors) {
-      toast({ variant: 'destructive', title: 'Error', description: result.message });
+      toast({ variant: 'destructive', title: t('error'), description: result.message });
     } else {
-      toast({ title: 'Success', description: result.message });
+      toast({ title: t('success'), description: result.message });
       setIsDialogOpen(false);
     }
   }
@@ -311,6 +331,61 @@ export default function PayrollSummaryPage() {
                     <TableCell className="text-right font-bold text-lg font-mono">{formatCurrency(totalPayroll)}</TableCell>
                 </TableRow>
             </TableFooter>
+          </Table>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+            <CardTitle>{t('employees.payroll_history')}</CardTitle>
+            <CardDescription>{t('employees.payroll_history_desc')}</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>{t('employees.period')}</TableHead>
+                <TableHead>{t('employees.date_run')}</TableHead>
+                <TableHead>{t('employees.run_by')}</TableHead>
+                <TableHead>{t('financials.account_header')}</TableHead>
+                <TableHead>{t('employees.employees_count')}</TableHead>
+                <TableHead className="text-right">{t('amount')}</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {isLoading ? (
+                Array.from({ length: 3 }).map((_, index) => (
+                  <TableRow key={index}>
+                    <TableCell><Skeleton className="h-4 w-full" /></TableCell>
+                    <TableCell><Skeleton className="h-4 w-full" /></TableCell>
+                    <TableCell><Skeleton className="h-4 w-full" /></TableCell>
+                    <TableCell><Skeleton className="h-4 w-full" /></TableCell>
+                    <TableCell><Skeleton className="h-4 w-full" /></TableCell>
+                    <TableCell className="text-right"><Skeleton className="h-4 w-full" /></TableCell>
+                  </TableRow>
+                ))
+              ) : payrollRuns.length > 0 ? (
+                payrollRuns.map((run) => (
+                  <TableRow key={run.id}>
+                    <TableCell className="font-mono">{format(new Date(run.id), 'MMMM yyyy')}</TableCell>
+                    <TableCell>{format(run.runAt.toDate(), 'PPP p')}</TableCell>
+                    <TableCell>{run.runByEmail}</TableCell>
+                    <TableCell>{accountMap.get(run.accountId) || 'N/A'}</TableCell>
+                    <TableCell>{run.employeeCount}</TableCell>
+                    <TableCell className="text-right font-mono">{formatCurrency(run.totalAmount)}</TableCell>
+                  </TableRow>
+                ))
+              ) : (
+                 <TableRow>
+                  <TableCell colSpan={6} className="h-24 text-center">
+                    <div className="flex flex-col items-center justify-center gap-2 text-muted-foreground">
+                        <Users className="size-12" />
+                        {t('employees.no_payroll_history')}
+                    </div>
+                  </TableCell>
+                </TableRow>
+              )}
+            </TableBody>
           </Table>
         </CardContent>
       </Card>
