@@ -122,3 +122,168 @@ export async function deleteSupplier(supplierId: string) {
     return { success: false, message: 'Failed to delete supplier.' };
   }
 }
+
+const evaluateSupplierFormSchema = z.object({
+  rating: z.coerce.number().min(1, "Rating is required").max(5),
+  evaluationNotes: z.string().optional(),
+});
+
+export type EvaluateSupplierFormValues = z.infer<typeof evaluateSupplierFormSchema>;
+
+export async function evaluateSupplier(supplierId: string, values: EvaluateSupplierFormValues) {
+  if (!supplierId) {
+    return { message: 'Supplier ID is required.', errors: { _server: ['Supplier ID not provided.'] } };
+  }
+
+  const validatedFields = evaluateSupplierFormSchema.safeParse(values);
+
+  if (!validatedFields.success) {
+    return {
+      errors: validatedFields.error.flatten().fieldErrors,
+      message: 'Invalid data provided.',
+    };
+  }
+
+  try {
+    const supplierRef = doc(firestore, 'suppliers', supplierId);
+    await updateDoc(supplierRef, {
+      rating: validatedFields.data.rating,
+      evaluationNotes: validatedFields.data.evaluationNotes || '',
+    });
+
+    const supplierSnap = await getDoc(supplierRef);
+    const supplierName = supplierSnap.exists() ? supplierSnap.data().name : 'Unknown Supplier';
+
+    await addDoc(collection(firestore, 'activityLog'), {
+        message: `Supplier evaluated: ${supplierName} was given a rating of ${validatedFields.data.rating} stars.`,
+        type: "SUPPLIER_EVALUATED",
+        link: `/suppliers/${supplierId}`,
+        timestamp: serverTimestamp(),
+    });
+
+    revalidatePath('/suppliers');
+    revalidatePath(`/suppliers/${supplierId}`);
+    return { message: 'Supplier evaluation updated successfully.', errors: null };
+  } catch (error) {
+    console.error('Error evaluating supplier:', error);
+    return { message: 'Failed to update evaluation.', errors: { _server: ['An unexpected error occurred.'] } };
+  }
+}
+
+const contractFormSchema = z.object({
+  title: z.string().min(3, 'Contract title must be at least 3 characters long.'),
+  effectiveDate: z.string().refine((date) => !isNaN(Date.parse(date)), {
+    message: 'Please select a valid date.',
+  }),
+});
+
+export type ContractFormValues = z.infer<typeof contractFormSchema>;
+
+export async function addContract(supplierId: string, formData: FormData) {
+  if (!supplierId) {
+    return { message: 'Supplier ID is required.', errors: { _server: ['Supplier ID is missing.'] } };
+  }
+
+  const formValues = {
+      title: formData.get('title'),
+      effectiveDate: formData.get('effectiveDate'),
+  };
+
+  const validatedFields = contractFormSchema.safeParse(formValues);
+  if (!validatedFields.success) {
+    return { errors: validatedFields.error.flatten().fieldErrors, message: 'Invalid data provided.' };
+  }
+  
+  const file = formData.get('file') as File | null;
+
+  try {
+    const newContractRef = doc(collection(firestore, 'suppliers', supplierId, 'contracts'));
+    let fileUrl = '';
+    let filePath = '';
+
+    if (file && file.size > 0) {
+      filePath = `contracts/suppliers/${supplierId}/${newContractRef.id}/${file.name}`;
+      const storageRef = ref(storage, filePath);
+      await uploadBytes(storageRef, file);
+      fileUrl = await getDownloadURL(storageRef);
+    }
+    
+    const contractData = {
+      ...validatedFields.data,
+      effectiveDate: new Date(validatedFields.data.effectiveDate),
+      fileUrl: fileUrl,
+      filePath: filePath,
+      createdAt: serverTimestamp(),
+    };
+
+    await setDoc(newContractRef, contractData);
+
+    await addDoc(collection(firestore, 'activityLog'), {
+        message: `New contract added for supplier: ${validatedFields.data.title}`,
+        type: "CONTRACT_ADDED",
+        link: `/suppliers/${supplierId}`,
+        timestamp: serverTimestamp(),
+    });
+
+    revalidatePath(`/suppliers/${supplierId}`);
+    return { message: 'Contract added successfully.', errors: null };
+  } catch (error) {
+    console.error('Error adding contract:', error);
+    return { message: 'Failed to add contract.', errors: { _server: ['An unexpected error occurred.'] } };
+  }
+}
+
+export async function deleteContract(supplierId: string, contractId: string) {
+  if (!supplierId || !contractId) {
+    return { success: false, message: 'Supplier and Contract ID are required.' };
+  }
+
+  try {
+    const contractRef = doc(firestore, 'suppliers', supplierId, 'contracts', contractId);
+    const contractSnap = await getDoc(contractRef);
+
+    if (contractSnap.exists()) {
+        const contractData = contractSnap.data();
+        if (contractData.filePath) {
+            const fileRef = ref(storage, contractData.filePath);
+            await deleteObject(fileRef).catch(err => {
+                console.error("Failed to delete contract file from storage:", err);
+            });
+        }
+        await addDoc(collection(firestore, 'activityLog'), {
+            message: `Contract "${contractData.title}" deleted from supplier`,
+            type: "CONTRACT_DELETED",
+            link: `/suppliers/${supplierId}`,
+            timestamp: serverTimestamp(),
+        });
+    }
+
+    await deleteDoc(contractRef);
+    revalidatePath(`/suppliers/${supplierId}`);
+    return { success: true, message: 'Contract deleted successfully.' };
+  } catch (error) {
+    console.error('Error deleting contract:', error);
+    return { success: false, message: 'Failed to delete contract.' };
+  }
+}
+
+
+export async function getSupplierPerformanceSummary(supplierId: string) {
+    if (!supplierId) {
+        return { error: true, message: 'Supplier ID is required.', data: null };
+    }
+
+    try {
+        const result = await summarizeSupplierPerformance({ supplierId });
+        
+        if (result.summary) {
+             return { error: false, message: 'Summary generated.', data: result };
+        } else {
+            return { error: true, message: 'AI could not generate a summary.', data: null };
+        }
+
+    } catch(error) {
+        console.error('Error generating supplier performance summary:', error);
+        return { error: true, message: 'An unexpected error occurred while generating the summary.', data: null };
+    }
+}

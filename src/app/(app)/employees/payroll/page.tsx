@@ -205,7 +205,7 @@ export default function PayrollSummaryPage() {
                 <DialogHeader>
                     <DialogTitle>{t('employees.confirm_payroll_title')}</DialogTitle>
                     <DialogDescription>
-                        {t('employees.confirm_payroll_desc', { count: employees.length, total: formatCurrency(totalPayroll) })}
+                        {t('employees.confirm_payroll_desc', { count: employees.length.toString(), total: formatCurrency(totalPayroll) })}
                     </DialogDescription>
                 </DialogHeader>
                  <Form {...form}>

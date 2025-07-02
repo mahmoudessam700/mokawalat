@@ -341,7 +341,7 @@ export default function EmployeesPage() {
                                 </FormControl>
                                 <SelectContent>
                                 <SelectItem value="Active">{t('employees.status.Active')}</SelectItem>
-                                <SelectItem value="On Leave">{t('employees.status.On Leave')}</SelectItem>
+                                <SelectItem value="On Leave">{t('employees.status.On_Leave')}</SelectItem>
                                 <SelectItem value="Inactive">{t('employees.status.Inactive')}</SelectItem>
                                 </SelectContent>
                             </Select>
@@ -427,7 +427,7 @@ export default function EmployeesPage() {
                 <SelectContent>
                   <SelectItem value="All">{t('clients.all_statuses')}</SelectItem>
                   <SelectItem value="Active">{t('employees.status.Active')}</SelectItem>
-                  <SelectItem value="On Leave">{t('employees.status.On Leave')}</SelectItem>
+                  <SelectItem value="On Leave">{t('employees.status.On_Leave')}</SelectItem>
                   <SelectItem value="Inactive">{t('employees.status.Inactive')}</SelectItem>
                 </SelectContent>
               </Select>
@@ -488,7 +488,7 @@ export default function EmployeesPage() {
                     <TableCell className="hidden md:table-cell">{employee.department}</TableCell>
                     <TableCell>
                       <Badge variant={employee.status === 'Active' ? 'secondary' : employee.status === 'On Leave' ? 'outline' : 'destructive'}>
-                        {t(`employees.status.${employee.status}`)}
+                        {t(`employees.status.${employee.status.replace(/ /g, '_')}`)}
                       </Badge>
                     </TableCell>
                     <TableCell>
