@@ -407,7 +407,7 @@
       "page_title": "Human Capital",
       "page_desc": "Manage the entire employee journey, from recruitment to offboarding.",
       "recruitment": "Recruitment",
-      "recruitment_desc": "Manage job postings and track candidates. (Coming soon)",
+      "recruitment_desc": "Manage job postings and track candidates.",
       "employee_management": "Employee Management",
       "employee_management_desc": "View and manage all employee profiles.",
       "performance": "Performance",
@@ -416,6 +416,26 @@
       "training_desc": "Manage courses and track certifications. (Coming soon)",
       "offboarding": "Offboarding",
       "offboarding_desc": "Manage exit interviews and asset returns. (Coming soon)"
+    },
+    "jobs": {
+        "page_title": "Job Postings",
+        "page_desc": "Manage your company's open positions.",
+        "list_title": "All Job Postings",
+        "list_desc": "A list of all currently open and closed positions.",
+        "add_button": "Add Job",
+        "edit_title": "Edit Job",
+        "add_title": "Add New Job Posting",
+        "edit_desc": "Update the details for this job posting.",
+        "add_desc": "Fill in the details for a new job opening.",
+        "title_label": "Job Title",
+        "desc_placeholder": "Describe the responsibilities, requirements, and benefits of the role.",
+        "save_button": "Save Job",
+        "no_jobs_found": "No job postings found. Add one to get started.",
+        "delete_confirm_desc": "This will permanently delete the job posting for \"{title}\". This action cannot be undone.",
+        "status": {
+            "Open": "Open",
+            "Closed": "Closed"
+        }
     },
     "employees": {
         "page_title": "Employee Directory",
@@ -464,6 +484,7 @@
         "no_active_employees_with_salaries": "No active employees with salaries found.",
         "total_monthly_payroll": "Total Monthly Payroll",
         "back_to_employees": "Back to Employees",
+        "back_to_hr": "Back to Human Capital",
         "detail_page_desc": "A complete overview of the employee's profile and project involvement.",
         "per_month": "month",
         "assigned_projects_title": "Assigned Projects",
@@ -1625,7 +1646,7 @@
       "page_title": "رأس المال البشري",
       "page_desc": "إدارة رحلة الموظف بأكملها، من التوظيف إلى إنهاء الخدمة.",
       "recruitment": "التوظيف",
-      "recruitment_desc": "إدارة إعلانات الوظائف وتتبع المرشحين. (قريبا)",
+      "recruitment_desc": "إدارة إعلانات الوظائف وتتبع المرشحين.",
       "employee_management": "إدارة الموظفين",
       "employee_management_desc": "عرض وإدارة جميع ملفات تعريف الموظفين.",
       "performance": "الأداء",
@@ -1634,6 +1655,26 @@
       "training_desc": "إدارة الدورات وتتبع الشهادات. (قريبا)",
       "offboarding": "إنهاء الخدمة",
       "offboarding_desc": "إدارة مقابلات الخروج وإرجاع الأصول. (قريبا)"
+    },
+    "jobs": {
+        "page_title": "إعلانات الوظائف",
+        "page_desc": "إدارة الوظائف الشاغرة في شركتك.",
+        "list_title": "جميع إعلانات الوظائف",
+        "list_desc": "قائمة بجميع الوظائف المفتوحة والمغلقة حاليًا.",
+        "add_button": "إضافة وظيفة",
+        "edit_title": "تعديل وظيفة",
+        "add_title": "إضافة إعلان وظيفة جديد",
+        "edit_desc": "تحديث تفاصيل إعلان الوظيفة هذا.",
+        "add_desc": "املأ تفاصيل وظيفة شاغرة جديدة.",
+        "title_label": "المسمى الوظيفي",
+        "desc_placeholder": "صف مسؤوليات ومتطلبات ومزايا الدور.",
+        "save_button": "حفظ الوظيفة",
+        "no_jobs_found": "لم يتم العثور على إعلانات وظائف. أضف واحدة للبدء.",
+        "delete_confirm_desc": "سيؤدي هذا إلى حذف إعلان الوظيفة لـ \"{title}\" بشكل دائم. لا يمكن التراجع عن هذا الإجراء.",
+        "status": {
+            "Open": "مفتوحة",
+            "Closed": "مغلقة"
+        }
     },
     "employees": {
         "page_title": "دليل الموظفين",
@@ -1682,6 +1723,7 @@
         "no_active_employees_with_salaries": "لم يتم العثور على موظفين نشطين لديهم رواتب.",
         "total_monthly_payroll": "إجمالي الرواتب الشهرية",
         "back_to_employees": "العودة إلى الموظفين",
+        "back_to_hr": "العودة إلى الموارد البشرية",
         "detail_page_desc": "نظرة عامة كاملة على ملف الموظف ومشاركته في المشاريع.",
         "per_month": "شهريًا",
         "assigned_projects_title": "المشاريع المعينة",

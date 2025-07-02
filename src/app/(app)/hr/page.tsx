@@ -14,8 +14,8 @@ export default function HrDashboardPage() {
       title: t('human_capital_management.recruitment'),
       description: t('human_capital_management.recruitment_desc'),
       icon: <UserPlus className="size-8" />,
-      href: '#', 
-      disabled: true,
+      href: '/hr/jobs',
+      disabled: false,
     },
     {
       title: t('human_capital_management.employee_management'),
