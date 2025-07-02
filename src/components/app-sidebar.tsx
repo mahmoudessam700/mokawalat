@@ -70,7 +70,7 @@ export function AppSidebar() {
   const router = useRouter();
   const { toast } = useToast();
   const [isLoggingOut, setIsLoggingOut] = useState(false);
-  const { user, profile, isLoading: isAuthLoading } from useAuth();
+  const { user, profile, isLoading: isAuthLoading } = useAuth();
   const { t } = useLanguage();
 
   const menuGroups = React.useMemo(() => [
@@ -201,11 +201,11 @@ export function AppSidebar() {
                         ) : user ? (
                         <>
                             <Avatar>
-                                <AvatarImage src={profile?.photoUrl || `https://placehold.co/40x40.png`} alt={profile?.email || user.email || ''} data-ai-hint="profile picture" />
-                                <AvatarFallback>{(user.email || 'U').charAt(0).toUpperCase()}</AvatarFallback>
+                                <AvatarImage src={profile?.photoUrl || `https://placehold.co/40x40.png`} alt={profile?.email || user?.email || ''} data-ai-hint="profile picture" />
+                                <AvatarFallback>{(profile?.email || user?.email || 'U').charAt(0).toUpperCase()}</AvatarFallback>
                             </Avatar>
                             <div className="flex flex-col overflow-hidden text-start">
-                                <span className="text-sm font-semibold truncate">{profile?.email || user.email}</span>
+                                <span className="text-sm font-semibold truncate">{profile?.email || user?.email}</span>
                                 <span className="text-xs text-muted-foreground capitalize">{t(`roles.${profile?.role || 'user'}`)}</span>
                             </div>
                         </>

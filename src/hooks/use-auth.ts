@@ -12,6 +12,7 @@ export interface UserProfile {
   uid: string;
   email: string;
   role: UserRole;
+  photoUrl?: string;
 }
 
 interface AuthState {
