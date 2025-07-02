@@ -7,7 +7,7 @@ import { firestore } from '@/lib/firebase';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
-import { ArrowLeft, Briefcase, FileText, Loader2, PlusCircle, UserPlus, Users } from 'lucide-react';
+import { ArrowLeft, Briefcase, FileText, Loader2, PlusCircle, UserPlus, Users, Award, MoreHorizontal } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import {
@@ -21,7 +21,7 @@ import {
 import { format } from 'date-fns';
 import { useAuth } from '@/hooks/use-auth';
 import { useLanguage } from '@/hooks/use-language';
-import { addCandidate, type CandidateFormValues } from '../../actions';
+import { addCandidate, type CandidateFormValues, updateCandidateStatus, type CandidateStatus } from '../../actions';
 import {
   Dialog,
   DialogContent,
@@ -31,6 +31,14 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { useForm } from 'react-hook-form';
@@ -48,7 +56,6 @@ type Job = {
   status: JobStatus;
 };
 
-type CandidateStatus = 'Applied' | 'Interviewing' | 'Offered' | 'Hired' | 'Rejected';
 type Candidate = {
   id: string;
   name: string;
@@ -84,6 +91,7 @@ export default function JobDetailPage({ params }: { params: { id: string } }) {
   const [candidates, setCandidates] = useState<Candidate[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [isUpdatingStatus, setIsUpdatingStatus] = useState<string | null>(null);
   const { profile } = useAuth();
   const jobId = params.id;
   const { t } = useLanguage();
@@ -137,6 +145,17 @@ export default function JobDetailPage({ params }: { params: { id: string } }) {
       form.reset();
       setIsFormDialogOpen(false);
     }
+  }
+
+  async function handleStatusChange(candidateId: string, status: CandidateStatus) {
+    setIsUpdatingStatus(candidateId);
+    const result = await updateCandidateStatus(candidateId, status);
+    if (result.success) {
+        toast({ title: t('success'), description: result.message });
+    } else {
+        toast({ variant: 'destructive', title: t('error'), description: result.message });
+    }
+    setIsUpdatingStatus(null);
   }
   
   if (isLoading) {
@@ -211,7 +230,7 @@ export default function JobDetailPage({ params }: { params: { id: string } }) {
         <CardContent>
           {candidates.length > 0 ? (
             <Table>
-              <TableHeader><TableRow><TableHead>{t('name')}</TableHead><TableHead>{t('email')}</TableHead><TableHead>{t('status')}</TableHead><TableHead>{t('hr.candidates.applied_at')}</TableHead><TableHead className="text-right">{t('hr.candidates.resume_header')}</TableHead></TableRow></TableHeader>
+              <TableHeader><TableRow><TableHead>{t('name')}</TableHead><TableHead>{t('email')}</TableHead><TableHead>{t('status')}</TableHead><TableHead>{t('hr.candidates.applied_at')}</TableHead><TableHead>{t('hr.candidates.resume_header')}</TableHead><TableHead className="text-right">{t('actions')}</TableHead></TableRow></TableHeader>
               <TableBody>
                 {candidates.map(candidate => (
                   <TableRow key={candidate.id}>
@@ -219,8 +238,43 @@ export default function JobDetailPage({ params }: { params: { id: string } }) {
                     <TableCell>{candidate.email}</TableCell>
                     <TableCell><Badge variant={candidateStatusVariant[candidate.status]}>{t(`hr.candidates.status.${candidate.status}`)}</Badge></TableCell>
                     <TableCell>{candidate.appliedAt ? format(candidate.appliedAt.toDate(), 'PPP') : 'N/A'}</TableCell>
-                    <TableCell className="text-right">
+                    <TableCell>
                       {candidate.resumeUrl && (<Button asChild variant="outline" size="sm"><Link href={candidate.resumeUrl} target="_blank" rel="noopener noreferrer"><FileText className="mr-2"/>{t('hr.candidates.view_resume')}</Link></Button>)}
+                    </TableCell>
+                    <TableCell className="text-right">
+                       {isUpdatingStatus === candidate.id ? (
+                        <Loader2 className="animate-spin size-4 ml-auto" />
+                       ) : (
+                         <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                                <Button variant="ghost" size="icon" className="h-8 w-8">
+                                    <MoreHorizontal className="size-4" />
+                                </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent>
+                                <DropdownMenuLabel>{t('change_status')}</DropdownMenuLabel>
+                                <DropdownMenuSeparator />
+                                {(['Applied', 'Interviewing', 'Offered', 'Rejected'] as const).map(status => (
+                                    <DropdownMenuItem
+                                        key={status}
+                                        disabled={candidate.status === status}
+                                        onSelect={() => handleStatusChange(candidate.id, status)}
+                                    >
+                                        {t(`hr.candidates.status.${status}`)}
+                                    </DropdownMenuItem>
+                                ))}
+                                <DropdownMenuSeparator />
+                                <DropdownMenuItem
+                                    className="text-green-800 dark:text-green-300 focus:bg-green-100 dark:focus:bg-green-900/50"
+                                    disabled={candidate.status === 'Hired'}
+                                    onSelect={() => handleStatusChange(candidate.id, 'Hired')}
+                                >
+                                    <Award className="mr-2 size-4" />
+                                    {t('hr.candidates.hire_candidate')}
+                                </DropdownMenuItem>
+                            </DropdownMenuContent>
+                        </DropdownMenu>
+                       )}
                     </TableCell>
                   </TableRow>
                 ))}

@@ -2,7 +2,7 @@
 'use server';
 
 import { firestore, storage } from '@/lib/firebase';
-import { collection, addDoc, doc, deleteDoc, updateDoc, serverTimestamp, getDoc, getDocs, query, where, setDoc } from 'firebase/firestore';
+import { collection, addDoc, doc, deleteDoc, updateDoc, serverTimestamp, getDoc, getDocs, query, where, setDoc, limit } from 'firebase/firestore';
 import { z } from 'zod';
 import { revalidatePath } from 'next/cache';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
@@ -152,5 +152,77 @@ export async function addCandidate(jobId: string, formData: FormData) {
   } catch (error) {
     console.error('Error adding candidate:', error);
     return { message: 'Failed to add candidate.', errors: { _server: ['An unexpected error occurred.'] } };
+  }
+}
+
+export type CandidateStatus = 'Applied' | 'Interviewing' | 'Offered' | 'Hired' | 'Rejected';
+
+export async function updateCandidateStatus(candidateId: string, status: CandidateStatus) {
+  if (!candidateId) {
+    return { success: false, message: 'Candidate ID is required.' };
+  }
+
+  const candidateRef = doc(firestore, 'candidates', candidateId);
+  
+  try {
+    const candidateSnap = await getDoc(candidateRef);
+    if (!candidateSnap.exists()) {
+      throw new Error("Candidate not found.");
+    }
+    const candidateData = candidateSnap.data();
+
+    if (status === 'Hired') {
+        const jobRef = doc(firestore, 'jobs', candidateData.jobId);
+        const jobSnap = await getDoc(jobRef);
+
+        if (!jobSnap.exists()) {
+            throw new Error("Associated job posting not found.");
+        }
+        const jobData = jobSnap.data();
+        const employeeEmail = candidateData.email;
+
+        // Check if employee already exists
+        const q = query(collection(firestore, 'employees'), where('email', '==', employeeEmail), limit(1));
+        const existingEmployeeSnap = await getDocs(q);
+
+        if (!existingEmployeeSnap.empty) {
+            return { success: false, message: `An employee with the email ${employeeEmail} already exists.` };
+        }
+
+        // Create new employee
+        const newEmployeeRef = doc(collection(firestore, 'employees'));
+        await setDoc(newEmployeeRef, {
+            name: candidateData.name,
+            name_lowercase: candidateData.name.toLowerCase(),
+            email: employeeEmail,
+            role: jobData.title,
+            department: jobData.department,
+            status: 'Active',
+            salary: 0,
+            photoUrl: '',
+            photoPath: '',
+            createdAt: serverTimestamp(),
+        });
+
+        // Log the hiring event
+        await addDoc(collection(firestore, 'activityLog'), {
+            message: `New employee hired via recruitment: ${candidateData.name}`,
+            type: "EMPLOYEE_HIRED",
+            link: `/employees/${newEmployeeRef.id}`,
+            timestamp: serverTimestamp(),
+        });
+    }
+    
+    // Update candidate status
+    await updateDoc(candidateRef, { status });
+
+    revalidatePath(`/hr/jobs/${candidateSnap.data().jobId}`);
+    revalidatePath('/employees');
+
+    return { success: true, message: `Candidate status updated to ${status}.` };
+
+  } catch (error: any) {
+    console.error("Error updating candidate status:", error);
+    return { success: false, message: error.message || 'Failed to update status.' };
   }
 }
