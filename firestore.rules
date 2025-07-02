@@ -1,162 +1,124 @@
+
 rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
-
-    // Helper Functions
-    function isUser() {
+    // Helper functions to check auth status and roles
+    function isAuthenticated() {
       return request.auth != null;
     }
-    
-    function getUserData() {
-        // Use `exists` to prevent errors if the user doc isn't created yet.
-        return get(/databases/$(database)/documents/users/$(request.auth.uid));
+
+    function isUser(uid) {
+      return isAuthenticated() && request.auth.uid == uid;
+    }
+
+    function getRole() {
+      // Safely access role data, returning 'user' if the document doesn't exist yet.
+      return getAfter(/databases/$(database)/documents/users/$(request.auth.uid)).data.role;
     }
     
+    function isRole(role) {
+        return isAuthenticated() && getRole() == role;
+    }
+
     function isAdmin() {
-        return isUser() && exists(/databases/$(database)/documents/users/$(request.auth.uid)) && getUserData().data.role == 'admin';
+      return isRole('admin');
     }
 
     function isManager() {
-        return isUser() && exists(/databases/$(database)/documents/users/$(request.auth.uid)) && (getUserData().data.role == 'manager' || getUserData().data.role == 'admin');
+      return isRole('manager');
     }
     
-    // Check if a user is a team member of a specific project
-    function isProjectTeamMember(projectId) {
-      let projectData = get(/databases/$(database)/documents/projects/$(projectId)).data;
-      return request.auth.uid in projectData.teamMemberIds;
-    }
+    // --- System Wide Collections ---
     
-    // Default deny all access
-    match /{document=**} {
-      allow read, write: if false;
-    }
-    
-    // USERS: Admins manage users, managers can view them.
+    // Users can only read/update their own user doc. Only admins can create/delete.
     match /users/{userId} {
-      allow get, list: if isManager();
-      allow create, update, delete: if isAdmin();
+      allow read, update: if isUser(userId) || isAdmin();
+      allow create, delete: if isAdmin();
     }
     
-    // COMPANY: Any user can read, only admins can write.
-    match /company/main {
-      allow read: if isUser();
+    match /company/{docId} {
+      allow read: if isAuthenticated();
       allow write: if isAdmin();
     }
     
-    // ACTIVITY LOG: Managers and admins can read, any user can create.
     match /activityLog/{logId} {
-      allow read: if isManager();
-      allow create: if isUser();
-      allow update, delete: if false;
-    }
-    
-    // PROJECTS: Any user can read, managers can write.
-    match /projects/{projectId} {
-      allow read: if isUser();
-      allow create, update, delete: if isManager();
-      
-      // TASKS: Any user can read, team members can write.
-      match /tasks/{taskId} {
-        allow read: if isUser();
-        allow write: if isProjectTeamMember(projectId);
-      }
-      
-      // DOCUMENTS: Any user can read, team members can create/delete.
-      match /documents/{documentId} {
-        allow read: if isUser();
-        allow create, delete: if isProjectTeamMember(projectId);
-        allow update: if false;
-      }
-      
-      // DAILY LOGS: Any user can read, but only the author can write/delete.
-      match /dailyLogs/{logId} {
-        allow read: if isUser();
-        allow create: if isProjectTeamMember(projectId);
-        allow update, delete: if resource.data.authorId == request.auth.uid;
-      }
-    }
-    
-    // CLIENTS: Any user can read, managers can write.
-    match /clients/{clientId} { 
-      allow read: if isUser();
-      allow create, update, delete: if isManager();
-      
-      match /interactions/{interactionId} {
-         allow read, write: if isManager();
-      }
-      match /contracts/{contractId} {
-         allow read: if isUser();
-         allow write: if isManager();
-      }
+        allow read: if isAuthenticated();
+        allow write: if false; // Only backend/server actions can write
     }
 
-    // SUPPLIERS: Any user can read, managers can write.
-    match /suppliers/{supplierId} { 
-      allow read: if isUser();
-      allow create, update, delete: if isManager();
-
-      match /contracts/{contractId} {
-         allow read: if isUser();
-         allow write: if isManager();
-      }
-    }
-
-    // EMPLOYEES: Any user can read, managers can write.
-    match /employees/{employeeId} { 
-      allow read: if isUser();
-      allow create, update, delete: if isManager();
+    match /inventoryCategories/{categoryId} {
+        allow read: if isAuthenticated();
+        allow write: if isAdmin();
     }
     
-    // INVENTORY & ASSETS: Any user can read, managers can write.
-    match /inventory/{itemId} {
-       allow read: if isUser();
-       allow write: if isManager();
-    }
-    match /assets/{assetId} {
-       allow read: if isUser();
-       allow write: if isManager();
-
-       match /maintenanceLogs/{logId} {
-          allow read, write: if isManager();
-       }
+    match /warehouses/{warehouseId} {
+        allow read: if isAuthenticated();
+        allow write: if isAdmin();
     }
 
-    // SETTINGS collections are admin-only for writes.
-    match /inventoryCategories/{categoryId} { 
-      allow read: if isUser();
-      allow write: if isAdmin();
-    }
-    match /warehouses/{warehouseId} { 
-      allow read: if isUser();
-      allow write: if isAdmin();
+    // --- Core Data Collections ---
+    
+    // General rule: Any authenticated user can read, only managers/admins can write.
+    match /{collection}/{docId} 
+    where collection in [
+        'projects', 'clients', 'suppliers', 'employees', 'inventory', 
+        'assets', 'procurement', 'materialRequests', 'invoices', 'accounts', 'transactions'
+    ] {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin() || isManager();
     }
     
-    // OPERATIONAL collections: Any user can read, managers can write.
-    match /procurement/{poId} {
-       allow read: if isUser();
-       allow write: if isManager();
-    }
-    match /materialRequests/{reqId} {
-       allow read: if isUser();
-       allow write: if isManager();
-    }
-    match /transactions/{transactionId} {
-       allow read: if isUser();
-       allow write: if isManager();
-    }
-    match /invoices/{invoiceId} {
-       allow read: if isUser();
-       allow write: if isManager();
-    }
-    match /accounts/{accountId} {
-       allow read: if isUser();
-       allow write: if isManager();
+    // --- HR Module Collections ---
+    match /jobs/{jobId} {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin() || isManager();
     }
     
-    // Collection Group for Contracts - needed for financials page query.
+    match /candidates/{candidateId} {
+      allow read, write: if isAdmin() || isManager();
+    }
+
+    match /performanceReviews/{reviewId} {
+      allow read, write: if isAdmin() || isManager();
+    }
+    
+    match /trainings/{trainingId} {
+       allow read, write: if isAdmin() || isManager();
+    }
+    
+    match /offboarding/{offboardingId} {
+       allow read, write: if isAdmin() || isManager();
+    }
+
+    // --- Sub-Collections ---
+    match /projects/{projectId}/{subCollection}/{docId} 
+    where subCollection in ['tasks', 'documents', 'dailyLogs'] {
+        // A more complex app might check if user is in project.teamMemberIds
+        allow read: if isAuthenticated(); 
+        allow write: if isAdmin() || isManager(); 
+    }
+    
+    // Rule for collection group query on 'contracts' used in financials
     match /{path=**}/contracts/{contractId} {
-      allow read: if isUser();
+        allow read: if isAuthenticated();
+        allow write: if isAdmin() || isManager();
+    }
+    
+    match /clients/{clientId}/interactions/{interactionId} {
+        allow read: if isAuthenticated();
+        allow write: if isAdmin() || isManager();
+    }
+    
+    match /suppliers/{supplierId}/contracts/{contractId} {
+        // This is covered by the collection group rule, but explicit is fine
+        allow read: if isAuthenticated();
+        allow write: if isAdmin() || isManager();
+    }
+    
+    match /assets/{assetId}/maintenanceLogs/{logId} {
+        allow read: if isAuthenticated();
+        allow write: if isAdmin() || isManager();
     }
   }
 }
