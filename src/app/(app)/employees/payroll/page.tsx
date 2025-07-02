@@ -116,15 +116,18 @@ export default function PayrollSummaryPage() {
     
     const unsubscribes: (() => void)[] = [];
 
+    // Query for active employees and then filter for salary on the client to avoid needing a composite index.
     const qEmployees = query(
         collection(firestore, 'employees'), 
-        where('status', '==', 'Active'),
-        where('salary', '>', 0)
+        where('status', '==', 'Active')
     );
     unsubscribes.push(onSnapshot(qEmployees, (querySnapshot) => {
       const employeesData: Employee[] = [];
       querySnapshot.forEach((doc) => {
-        employeesData.push({ id: doc.id, ...doc.data() } as Employee);
+        const data = doc.data() as Employee;
+        if (data.salary && data.salary > 0) {
+            employeesData.push({ id: doc.id, ...data });
+        }
       });
       employeesData.sort((a,b) => (b.salary || 0) - (a.salary || 0));
       setEmployees(employeesData);
@@ -134,7 +137,7 @@ export default function PayrollSummaryPage() {
         toast({
             variant: 'destructive',
             title: 'Error',
-            description: 'Failed to fetch payroll data. You may need to create a Firestore index.',
+            description: 'Failed to fetch payroll data.',
         });
         setIsLoading(false);
     }));
