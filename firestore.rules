@@ -2,179 +2,86 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    
-    // --- Helper Functions ---
-    // Check if the user is signed in
+
+    // Helper Functions to check user roles safely
+    function isUserDoc(userId) {
+      return exists(/databases/$(database)/documents/users/$(userId));
+    }
+    function getUserRole(userId) {
+      return get(/databases/$(database)/documents/users/$(userId)).data.role;
+    }
     function isSignedIn() {
       return request.auth != null;
     }
-    
-    // Check if the user has a specific role. Use get() which returns a resource, then access data with .data
-    function hasRole(role) {
-      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == role;
-    }
-    
-    // Check if the user is an admin. Safely checks for document existence first.
-    function isAdmin() {
-      return isSignedIn() && exists(/databases/$(database)/documents/users/$(request.auth.uid)) && hasRole('admin');
-    }
-    
-    // Check if the user is a manager or an admin.
     function isManager() {
-      return isSignedIn() && exists(/databases/$(database)/documents/users/$(request.auth.uid)) && (hasRole('manager') || hasRole('admin'));
+      return isSignedIn() && isUserDoc(request.auth.uid) && (getUserRole(request.auth.uid) == 'admin' || getUserRole(request.auth.uid) == 'manager');
     }
-
-    // --- Global Collections ---
-
-    // Users can read their own profile, admins can read any.
+    function isAdmin() {
+      return isSignedIn() && isUserDoc(request.auth.uid) && getUserRole(request.auth.uid) == 'admin';
+    }
+    
+    // Global Read Rule: Allow any signed-in user to read any document.
+    // This simplifies permissions for an internal tool where all users can view data.
+    match /{document=**} {
+      allow read: if isSignedIn();
+    }
+    
+    // --- WRITE RULES ---
+    // The rules below control who can create, update, or delete data.
+    
+    // User Roles: only admins can write
     match /users/{userId} {
-      allow read: if isSignedIn() && (request.auth.uid == userId || isAdmin());
-      allow write: if isAdmin(); // Only admins can change roles
-    }
-    
-    // Company profile is read-only for most, writable by admin.
-    match /company/{docId} {
-      allow read: if isSignedIn();
       allow write: if isAdmin();
     }
-
-    // Projects
-    match /projects/{projectId} {
-      allow read: if isSignedIn();
-      allow create: if isManager();
-      allow update: if isManager();
-      allow delete: if isAdmin();
-
-      // Tasks Sub-collection
-      match /tasks/{taskId} {
-        allow read: if isSignedIn();
-        allow write: if isManager();
-      }
-
-      // Documents Sub-collection
-      match /documents/{documentId} {
-        allow read: if isSignedIn();
-        allow write: if isManager();
-      }
-
-      // Daily Logs Sub-collection
-      match /dailyLogs/{logId} {
-        allow read: if isSignedIn();
-        allow create: if isSignedIn();
-        allow update, delete: if isManager();
-      }
-    }
-
-    // --- Human Capital Management ---
-    match /jobs/{jobId} {
-        allow read: if isSignedIn();
-        allow write: if isManager();
-    }
-    match /candidates/{candidateId} {
-        allow read: if isManager();
-        allow write: if isManager();
-    }
-    match /performanceReviews/{reviewId} {
-        allow read: if isManager();
-        allow write: if isManager();
-    }
-     match /trainings/{trainingId} {
-        allow read: if isManager();
-        allow write: if isManager();
-    }
-     match /offboarding/{offboardingId} {
-        allow read: if isManager();
-        allow write: if isManager();
-    }
-
-    // Clients
-    match /clients/{clientId} {
-      allow read: if isSignedIn();
-      allow write: if isManager();
-
-      match /interactions/{interactionId} {
-        allow read: if isSignedIn();
-        allow write: if isManager();
-      }
-      
-      match /contracts/{contractId} {
-        allow read: if isSignedIn();
-        allow write: if isManager();
-      }
+    
+    // Company Profile: only admins can write
+    match /company/main {
+      allow write: if isAdmin();
     }
     
-    // Suppliers
-    match /suppliers/{supplierId} {
-      allow read: if isSignedIn();
-      allow write: if isManager();
-      
-      match /contracts/{contractId} {
-        allow read: if isSignedIn();
-        allow write: if isManager();
-      }
+    // Activity Log: nobody can write directly (server-side only)
+    match /activityLog/{logId} {
+      allow write: if false; 
     }
 
-    // Inventory and related collections
-    match /inventory/{itemId} {
-      allow read: if isSignedIn();
-      allow write: if isManager();
-    }
+    // Settings Collections (Categories, Warehouses): Admins only
     match /inventoryCategories/{categoryId} {
-      allow read: if isSignedIn();
-      allow write: if isAdmin();
+        allow write: if isAdmin();
     }
     match /warehouses/{warehouseId} {
-      allow read: if isSignedIn();
-      allow write: if isAdmin();
-    }
-    
-    // Assets
-    match /assets/{assetId} {
-      allow read: if isSignedIn();
-      allow write: if isManager();
-      match /maintenanceLogs/{logId} {
-        allow read: if isSignedIn();
-        allow write: if isManager();
-      }
+        allow write: if isAdmin();
     }
 
-    // Procurement & Material Requests
-    match /procurement/{requestId} {
-      allow read: if isSignedIn();
-      allow write: if isManager();
-    }
-    match /materialRequests/{requestId} {
-      allow read: if isSignedIn();
-      allow create: if isSignedIn();
-      allow update: if isManager();
-      allow delete: if isManager();
-    }
-    
-    // Financials
-    match /transactions/{transactionId} {
-      allow read: if isSignedIn();
-      allow write: if isManager();
-    }
-     match /invoices/{invoiceId} {
-      allow read: if isSignedIn();
-      allow write: if isManager();
-    }
-    match /accounts/{accountId} {
-      allow read: if isSignedIn();
-      allow write: if isManager();
-    }
-    
-    // System-wide collections
-    match /activityLog/{logId} {
-      allow read: if isManager();
-      allow create: if isSignedIn(); // System services create these on behalf of users
-      allow update, delete: if isAdmin();
-    }
+    // HR Collections: managers/admins can write
+    match /jobs/{jobId} { allow write: if isManager(); }
+    match /candidates/{candidateId} { allow write: if isManager(); }
+    match /performanceReviews/{reviewId} { allow write: if isManager(); }
+    match /trainings/{trainingId} { allow write: if isManager(); }
+    match /offboarding/{offboardingId} { allow write: if isManager(); }
 
-    // Collection Group rule for 'contracts'.
-    // This is required to allow the collection group query on the financials page.
+    // Main operational collections: managers/admins can write.
+    match /projects/{docId} { allow write: if isManager(); }
+    match /employees/{docId} { allow write: if isManager(); }
+    match /clients/{docId} { allow write: if isManager(); }
+    match /suppliers/{docId} { allow write: if isManager(); }
+    match /inventory/{docId} { allow write: if isManager(); }
+    match /assets/{docId} { allow write: if isManager(); }
+    match /procurement/{docId} { allow write: if isManager(); }
+    match /materialRequests/{docId} { allow write: if isManager(); }
+    match /transactions/{docId} { allow write: if isManager(); }
+    match /invoices/{docId} { allow write: if isManager(); }
+    match /accounts/{docId} { allow write: if isManager(); }
+    
+    // Sub-collections: managers/admins can write
+    match /projects/{projectId}/tasks/{taskId} { allow write: if isManager(); }
+    match /projects/{projectId}/documents/{docId} { allow write: if isManager(); }
+    match /projects/{projectId}/dailyLogs/{logId} { allow write: if isManager(); }
+    match /clients/{clientId}/interactions/{interactionId} { allow write: if isManager(); }
+    match /assets/{assetId}/maintenanceLogs/{logId} { allow write: if isManager(); }
+    
+    // Collection Group for contracts: managers/admins can write
     match /{path=**}/contracts/{contractId} {
-        allow read: if isSignedIn();
+      allow write: if isManager();
     }
   }
 }
