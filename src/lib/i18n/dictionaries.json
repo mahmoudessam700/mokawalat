@@ -403,8 +403,22 @@
         "evaluation_notes_placeholder": "e.g., Consistently delivers on time, good quality materials...",
         "save_evaluation_button": "Save Evaluation"
     },
+    "human_capital_management": {
+      "page_title": "Human Capital",
+      "page_desc": "Manage the entire employee journey, from recruitment to offboarding.",
+      "recruitment": "Recruitment",
+      "recruitment_desc": "Manage job postings and track candidates. (Coming soon)",
+      "employee_management": "Employee Management",
+      "employee_management_desc": "View and manage all employee profiles.",
+      "performance": "Performance",
+      "performance_desc": "Track goals and conduct performance reviews. (Coming soon)",
+      "training": "Training & Development",
+      "training_desc": "Manage courses and track certifications. (Coming soon)",
+      "offboarding": "Offboarding",
+      "offboarding_desc": "Manage exit interviews and asset returns. (Coming soon)"
+    },
     "employees": {
-        "page_title": "Employee Management",
+        "page_title": "Employee Directory",
         "page_desc": "Manage all employee profiles, roles, and payroll information.",
         "payroll_summary_button": "Payroll Summary",
         "add_employee_button": "Add Employee",
@@ -1607,8 +1621,22 @@
         "evaluation_notes_placeholder": "مثال: يسلم دائمًا في الوقت المحدد، مواد ذات نوعية جيدة...",
         "save_evaluation_button": "حفظ التقييم"
     },
+    "human_capital_management": {
+      "page_title": "رأس المال البشري",
+      "page_desc": "إدارة رحلة الموظف بأكملها، من التوظيف إلى إنهاء الخدمة.",
+      "recruitment": "التوظيف",
+      "recruitment_desc": "إدارة إعلانات الوظائف وتتبع المرشحين. (قريبا)",
+      "employee_management": "إدارة الموظفين",
+      "employee_management_desc": "عرض وإدارة جميع ملفات تعريف الموظفين.",
+      "performance": "الأداء",
+      "performance_desc": "تتبع الأهداف وإجراء مراجعات الأداء. (قريبا)",
+      "training": "التدريب والتطوير",
+      "training_desc": "إدارة الدورات وتتبع الشهادات. (قريبا)",
+      "offboarding": "إنهاء الخدمة",
+      "offboarding_desc": "إدارة مقابلات الخروج وإرجاع الأصول. (قريبا)"
+    },
     "employees": {
-        "page_title": "إدارة الموظفين",
+        "page_title": "دليل الموظفين",
         "page_desc": "إدارة جميع ملفات الموظفين والأدوار ومعلومات الرواتب.",
         "payroll_summary_button": "ملخص الرواتب",
         "add_employee_button": "إضافة موظف",

@@ -29,7 +29,7 @@ import {
   ClipboardCheck,
   Receipt,
   User as UserIcon,
-  ListOrdered,
+  UsersRound,
   Loader2,
 } from 'lucide-react';
 import Link from 'next/link';
@@ -94,7 +94,7 @@ export function AppSidebar() {
       items: [
         { href: '/clients', label: t('clients.page_title'), icon: Contact },
         { href: '/suppliers', label: t('suppliers.page_title'), icon: Truck },
-        { href: '/employees', label: t('employees.page_title'), icon: Users },
+        { href: '/hr', label: t('human_capital_management.page_title'), icon: UsersRound },
       ],
     },
     {
@@ -113,7 +113,7 @@ export function AppSidebar() {
 
   const isActive = (href: string) => {
     // Exact match for top-level pages
-    if (href === '/dashboard' || href === '/approvals' || href === '/reports' || href === '/activity-log' || href === '/iso-compliance') {
+    if (href === '/dashboard' || href === '/approvals' || href === '/reports' || href === '/activity-log' || href === '/iso-compliance' || href === '/hr') {
       return pathname === href;
     }
     // Prefix match for nested pages
