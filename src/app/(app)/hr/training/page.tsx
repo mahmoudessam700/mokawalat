@@ -1,3 +1,4 @@
+
 'use client';
 
 import {
@@ -69,9 +70,11 @@ export default function TrainingPage() {
       setIsLoading(false);
     });
 
-    const qEmployees = query(collection(firestore, 'employees'), where('status', '==', 'Active'), orderBy('name', 'asc'));
+    const qEmployees = query(collection(firestore, 'employees'), where('status', '==', 'Active'));
     const unsubEmployees = onSnapshot(qEmployees, (snapshot) => {
-        setEmployees(snapshot.docs.map(doc => ({ id: doc.id, name: doc.data().name })));
+        const activeEmployees = snapshot.docs.map(doc => ({ id: doc.id, name: doc.data().name }));
+        activeEmployees.sort((a,b) => a.name.localeCompare(b.name));
+        setEmployees(activeEmployees);
     });
 
     return () => {
