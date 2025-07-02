@@ -1,9 +1,8 @@
-
 'use client';
 
 import { Card, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useLanguage } from '@/hooks/use-language';
-import { Award, Briefcase, ChevronRight, UserMinus, UserPlus, Users } from 'lucide-react';
+import { Award, ChevronRight, UserMinus, UserPlus, Users, TrendingUp } from 'lucide-react';
 import Link from 'next/link';
 
 export default function HrDashboardPage() {
@@ -27,23 +26,23 @@ export default function HrDashboardPage() {
     {
       title: t('human_capital_management.performance'),
       description: t('human_capital_management.performance_desc'),
-      icon: <Briefcase className="size-8" />,
-      href: '#',
-      disabled: true,
+      icon: <TrendingUp className="size-8" />,
+      href: '/hr/performance',
+      disabled: false,
     },
     {
       title: t('human_capital_management.training'),
       description: t('human_capital_management.training_desc'),
       icon: <Award className="size-8" />,
-      href: '#',
-      disabled: true,
+      href: '/hr/training',
+      disabled: false,
     },
     {
       title: t('human_capital_management.offboarding'),
       description: t('human_capital_management.offboarding_desc'),
       icon: <UserMinus className="size-8" />,
-      href: '#',
-      disabled: true,
+      href: '/hr/offboarding',
+      disabled: false,
     },
   ];
 
