@@ -1,3 +1,4 @@
+
 'use server';
 
 import { firestore } from '@/lib/firebase';
@@ -11,13 +12,14 @@ import {
   where,
   getDocs,
   limit,
+  getDoc,
 } from 'firebase/firestore';
 import { revalidatePath } from 'next/cache';
 import { format } from 'date-fns';
 
 export async function checkIn(employeeId: string, employeeName: string) {
   if (!employeeId || !employeeName) {
-    return { success: false, message: 'Employee information is required.' };
+    return { success: false, message: 'errors.employee_info_required' };
   }
 
   const todayStr = format(new Date(), 'yyyy-MM-dd');
@@ -28,13 +30,14 @@ export async function checkIn(employeeId: string, employeeName: string) {
     const q = query(
       attendanceCollection,
       where('employeeId', '==', employeeId),
-      where('date', '==', todayStr),
-      where('checkOutTime', '==', null),
-      limit(1)
+      where('date', '==', todayStr)
     );
-    const existingCheckIn = await getDocs(q);
-    if (!existingCheckIn.empty) {
-      return { success: false, message: 'You have already checked in today.' };
+    const todaysRecords = await getDocs(q);
+    
+    const hasOpenCheckIn = todaysRecords.docs.some(doc => doc.data().checkOutTime === null);
+
+    if (hasOpenCheckIn) {
+      return { success: false, message: 'hr.attendance.already_checked_in' };
     }
 
     // Create a new attendance record
@@ -57,16 +60,16 @@ export async function checkIn(employeeId: string, employeeName: string) {
     revalidatePath('/hr/attendance');
     revalidatePath(`/employees/${employeeId}`);
 
-    return { success: true, message: 'Checked in successfully.' };
+    return { success: true, message: 'hr.attendance.check_in_success' };
   } catch (error) {
     console.error('Error checking in:', error);
-    return { success: false, message: 'Failed to check in.' };
+    return { success: false, message: 'hr.attendance.check_in_fail' };
   }
 }
 
 export async function checkOut(attendanceId: string) {
   if (!attendanceId) {
-    return { success: false, message: 'Attendance record ID is required.' };
+    return { success: false, message: 'errors.attendance_id_required' };
   }
 
   try {
@@ -88,9 +91,9 @@ export async function checkOut(attendanceId: string) {
     revalidatePath('/hr/attendance');
     if(attendanceSnap.exists()) revalidatePath(`/employees/${attendanceSnap.data().employeeId}`);
 
-    return { success: true, message: 'Checked out successfully.' };
+    return { success: true, message: 'hr.attendance.check_out_success' };
   } catch (error) {
     console.error('Error checking out:', error);
-    return { success: false, message: 'Failed to check out.' };
+    return { success: false, message: 'hr.attendance.check_out_fail' };
   }
 }
