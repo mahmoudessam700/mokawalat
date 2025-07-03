@@ -51,7 +51,7 @@ import {
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, type MouseEvent } from 'react';
 import { addTransaction, deleteTransaction, updateTransaction } from './actions';
 import { useToast } from '@/hooks/use-toast';
 import { collection, onSnapshot, query, orderBy, type Timestamp, collectionGroup } from 'firebase/firestore';
@@ -313,13 +313,19 @@ export default function FinancialsPage() {
     setTransactionToDelete(null);
   }
 
-  const handleFormDialogOpenChange = (open: boolean) => {
-    if (!open) {
-      setTransactionToEdit(null);
+  const handleAddTransactionClick = (e: MouseEvent) => {
+    if (accounts.length === 0) {
+      e.preventDefault();
+      toast({
+        variant: 'destructive',
+        title: t('financials.no_accounts_error_title'),
+        description: t('financials.no_accounts_error_desc'),
+      });
+      return;
     }
-    setIsFormDialogOpen(open);
-  }
-
+    setTransactionToEdit(null);
+  };
+  
   const getLinkedEntity = (transaction: Transaction) => {
     if (transaction.contractId) {
         const contract = allContracts.find(c => c.id === transaction.contractId);
@@ -405,47 +411,47 @@ export default function FinancialsPage() {
                 </Button>
             )}
             {['admin', 'manager'].includes(profile?.role || '') && (
-              <Dialog open={isFormDialogOpen} onOpenChange={handleFormDialogOpenChange}>
-              <DialogTrigger asChild>
-                  <Button onClick={() => setTransactionToEdit(null)} disabled={accounts.length === 0}>
-                  <PlusCircle className="mr-2" />
-                  {t('financials.add_transaction_button')}
+              <Dialog open={isFormDialogOpen} onOpenChange={setIsFormDialogOpen}>
+                <DialogTrigger asChild>
+                  <Button onClick={handleAddTransactionClick}>
+                    <PlusCircle className="mr-2" />
+                    {t('financials.add_transaction_button')}
                   </Button>
-              </DialogTrigger>
-              <DialogContent className="sm:max-w-2xl">
-                  <DialogHeader>
-                  <DialogTitle>{transactionToEdit ? t('financials.edit_transaction_title') : t('financials.add_transaction_title')}</DialogTitle>
-                  <DialogDescription>
-                      {transactionToEdit ? t('financials.edit_transaction_desc') : t('financials.add_transaction_desc')}
-                  </DialogDescription>
-                  </DialogHeader>
-                  <Form {...form}>
-                  <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 py-4">
-                      <FormField control={form.control} name="description" render={({ field }) => (<FormItem><FormLabel>{t('description')}</FormLabel><FormControl><Input placeholder={t('financials.description_placeholder')} {...field} /></FormControl><FormMessage /></FormItem>)} />
-                      <div className="grid grid-cols-2 gap-4">
-                        <FormField control={form.control} name="amount" render={({ field }) => (<FormItem><FormLabel>{t('financials.amount_label')}</FormLabel><FormControl><Input type="number" placeholder={t('financials.amount_placeholder')} {...field} /></FormControl><FormMessage /></FormItem>)} />
-                        <FormField control={form.control} name="type" render={({ field }) => (<FormItem><FormLabel>{t('type')}</FormLabel><Select onValueChange={field.onChange} defaultValue={field.value}><FormControl><SelectTrigger><SelectValue placeholder={t('financials.type_placeholder')} /></SelectTrigger></FormControl><SelectContent><SelectItem value="Income">{t('financials.income')}</SelectItem><SelectItem value="Expense">{t('financials.expense')}</SelectItem></SelectContent></Select><FormMessage /></FormItem>)} />
-                      </div>
-                       <div className="grid grid-cols-2 gap-4">
-                          <FormField control={form.control} name="date" render={({ field }) => (<FormItem><FormLabel>{t('financials.date_label')}</FormLabel><FormControl><Input type="date" {...field} /></FormControl><FormMessage /></FormItem>)} />
-                          <FormField control={form.control} name="accountId" render={({ field }) => (<FormItem><FormLabel>{t('financials.account_label')}</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue placeholder={t('financials.account_placeholder')} /></SelectTrigger></FormControl><SelectContent>{accounts.map(acc => (<SelectItem key={acc.id} value={acc.id}>{acc.name}</SelectItem>))}</SelectContent></Select><FormMessage /></FormItem>)} />
-                      </div>
-                      <FormField control={form.control} name="projectId" render={({ field }) => (<FormItem><FormLabel>{t('financials.project_label')}</FormLabel><Select onValueChange={(value) => field.onChange(value === 'none' ? '' : value)} value={field.value || ''}><FormControl><SelectTrigger><SelectValue placeholder={t('financials.project_placeholder')} /></SelectTrigger></FormControl><SelectContent><SelectItem value="none">{t('projects.none')}</SelectItem>{projects.map(project => (<SelectItem key={project.id} value={project.id}>{project.name}</SelectItem>))}</SelectContent></Select><FormMessage /></FormItem>)} />
-                      
-                      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                          <FormField control={form.control} name="clientId" render={({ field }) => (<FormItem className={transactionType === 'Expense' ? 'hidden' : ''}><FormLabel>{t('financials.client_label')}</FormLabel><Select onValueChange={(value) => field.onChange(value === 'none' ? '' : value)} value={field.value || ''}><FormControl><SelectTrigger><SelectValue placeholder={t('financials.client_placeholder')} /></SelectTrigger></FormControl><SelectContent><SelectItem value="none">{t('projects.none')}</SelectItem>{clients.map(client => (<SelectItem key={client.id} value={client.id}>{client.name}</SelectItem>))}</SelectContent></Select><FormMessage /></FormItem>)} />
-                          <FormField control={form.control} name="supplierId" render={({ field }) => (<FormItem className={transactionType === 'Income' ? 'hidden' : ''}><FormLabel>{t('financials.supplier_label')}</FormLabel><Select onValueChange={(value) => field.onChange(value === 'none' ? '' : value)} value={field.value || ''}><FormControl><SelectTrigger><SelectValue placeholder={t('financials.supplier_placeholder')} /></SelectTrigger></FormControl><SelectContent><SelectItem value="none">{t('projects.none')}</SelectItem>{suppliers.map(supplier => (<SelectItem key={supplier.id} value={supplier.id}>{supplier.name}</SelectItem>))}</SelectContent></Select><FormMessage /></FormItem>)} />
-                      </div>
-                      
-                      <FormField control={form.control} name="contractId" render={({ field }) => (<FormItem><FormLabel>{t('financials.contract_label')}</FormLabel><Select onValueChange={(value) => field.onChange(value === 'none' ? '' : value)} value={field.value || ''} disabled={selectableContracts.length === 0}><FormControl><SelectTrigger><SelectValue placeholder={t('financials.contract_placeholder')} /></SelectTrigger></FormControl><SelectContent><SelectItem value="none">{t('projects.none')}</SelectItem>{selectableContracts.map(contract => (<SelectItem key={contract.id} value={contract.id}>{contract.title}</SelectItem>))}</SelectContent></Select><FormMessage /></FormItem>)} />
+                </DialogTrigger>
+                <DialogContent className="sm:max-w-2xl">
+                    <DialogHeader>
+                    <DialogTitle>{transactionToEdit ? t('financials.edit_transaction_title') : t('financials.add_transaction_title')}</DialogTitle>
+                    <DialogDescription>
+                        {transactionToEdit ? t('financials.edit_transaction_desc') : t('financials.add_transaction_desc')}
+                    </DialogDescription>
+                    </DialogHeader>
+                    <Form {...form}>
+                    <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 py-4">
+                        <FormField control={form.control} name="description" render={({ field }) => (<FormItem><FormLabel>{t('description')}</FormLabel><FormControl><Input placeholder={t('financials.description_placeholder')} {...field} /></FormControl><FormMessage /></FormItem>)} />
+                        <div className="grid grid-cols-2 gap-4">
+                            <FormField control={form.control} name="amount" render={({ field }) => (<FormItem><FormLabel>{t('financials.amount_label')}</FormLabel><FormControl><Input type="number" placeholder={t('financials.amount_placeholder')} {...field} /></FormControl><FormMessage /></FormItem>)} />
+                            <FormField control={form.control} name="type" render={({ field }) => (<FormItem><FormLabel>{t('type')}</FormLabel><Select onValueChange={field.onChange} defaultValue={field.value}><FormControl><SelectTrigger><SelectValue placeholder={t('financials.type_placeholder')} /></SelectTrigger></FormControl><SelectContent><SelectItem value="Income">{t('financials.income')}</SelectItem><SelectItem value="Expense">{t('financials.expense')}</SelectItem></SelectContent></Select><FormMessage /></FormItem>)} />
+                        </div>
+                        <div className="grid grid-cols-2 gap-4">
+                            <FormField control={form.control} name="date" render={({ field }) => (<FormItem><FormLabel>{t('financials.date_label')}</FormLabel><FormControl><Input type="date" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                            <FormField control={form.control} name="accountId" render={({ field }) => (<FormItem><FormLabel>{t('financials.account_label')}</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue placeholder={t('financials.account_placeholder')} /></SelectTrigger></FormControl><SelectContent>{accounts.map(acc => (<SelectItem key={acc.id} value={acc.id}>{acc.name}</SelectItem>))}</SelectContent></Select><FormMessage /></FormItem>)} />
+                        </div>
+                        <FormField control={form.control} name="projectId" render={({ field }) => (<FormItem><FormLabel>{t('financials.project_label')}</FormLabel><Select onValueChange={(value) => field.onChange(value === 'none' ? '' : value)} value={field.value || ''}><FormControl><SelectTrigger><SelectValue placeholder={t('financials.project_placeholder')} /></SelectTrigger></FormControl><SelectContent><SelectItem value="none">{t('projects.none')}</SelectItem>{projects.map(project => (<SelectItem key={project.id} value={project.id}>{project.name}</SelectItem>))}</SelectContent></Select><FormMessage /></FormItem>)} />
+                        
+                        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                            <FormField control={form.control} name="clientId" render={({ field }) => (<FormItem className={transactionType === 'Expense' ? 'hidden' : ''}><FormLabel>{t('financials.client_label')}</FormLabel><Select onValueChange={(value) => field.onChange(value === 'none' ? '' : value)} value={field.value || ''}><FormControl><SelectTrigger><SelectValue placeholder={t('financials.client_placeholder')} /></SelectTrigger></FormControl><SelectContent><SelectItem value="none">{t('projects.none')}</SelectItem>{clients.map(client => (<SelectItem key={client.id} value={client.id}>{client.name}</SelectItem>))}</SelectContent></Select><FormMessage /></FormItem>)} />
+                            <FormField control={form.control} name="supplierId" render={({ field }) => (<FormItem className={transactionType === 'Income' ? 'hidden' : ''}><FormLabel>{t('financials.supplier_label')}</FormLabel><Select onValueChange={(value) => field.onChange(value === 'none' ? '' : value)} value={field.value || ''}><FormControl><SelectTrigger><SelectValue placeholder={t('financials.supplier_placeholder')} /></SelectTrigger></FormControl><SelectContent><SelectItem value="none">{t('projects.none')}</SelectItem>{suppliers.map(supplier => (<SelectItem key={supplier.id} value={supplier.id}>{supplier.name}</SelectItem>))}</SelectContent></Select><FormMessage /></FormItem>)} />
+                        </div>
+                        
+                        <FormField control={form.control} name="contractId" render={({ field }) => (<FormItem><FormLabel>{t('financials.contract_label')}</FormLabel><Select onValueChange={(value) => field.onChange(value === 'none' ? '' : value)} value={field.value || ''} disabled={selectableContracts.length === 0}><FormControl><SelectTrigger><SelectValue placeholder={t('financials.contract_placeholder')} /></SelectTrigger></FormControl><SelectContent><SelectItem value="none">{t('projects.none')}</SelectItem>{selectableContracts.map(contract => (<SelectItem key={contract.id} value={contract.id}>{contract.title}</SelectItem>))}</SelectContent></Select><FormMessage /></FormItem>)} />
 
-                      <FormField control={form.control} name="purchaseOrderId" render={({ field }) => (<FormItem className={transactionType === 'Income' ? 'hidden' : ''}><FormLabel>{t('financials.po_label')}</FormLabel><Select onValueChange={(value) => field.onChange(value === 'none' ? '' : value)} value={field.value || ''} disabled={!selectedSupplierId}><FormControl><SelectTrigger><SelectValue placeholder={t('financials.po_placeholder')} /></SelectTrigger></FormControl><SelectContent><SelectItem value="none">{t('projects.none')}</SelectItem>{purchaseOrders.filter(po => po.supplierId === selectedSupplierId).map(po => (<SelectItem key={po.id} value={po.id}>{po.itemName} (...{po.id.slice(-5)})</SelectItem>))}</SelectContent></Select><FormMessage /></FormItem>)} />
-                      <DialogFooter>
-                          <Button type="submit" disabled={form.formState.isSubmitting}>{form.formState.isSubmitting ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />{t('saving')}</> : (transactionToEdit ? t('save_changes') : t('financials.save_transaction_button'))}</Button>
-                      </DialogFooter>
-                  </form>
-                  </Form>
-              </DialogContent>
+                        <FormField control={form.control} name="purchaseOrderId" render={({ field }) => (<FormItem className={transactionType === 'Income' ? 'hidden' : ''}><FormLabel>{t('financials.po_label')}</FormLabel><Select onValueChange={(value) => field.onChange(value === 'none' ? '' : value)} value={field.value || ''} disabled={!selectedSupplierId}><FormControl><SelectTrigger><SelectValue placeholder={t('financials.po_placeholder')} /></SelectTrigger></FormControl><SelectContent><SelectItem value="none">{t('projects.none')}</SelectItem>{purchaseOrders.filter(po => po.supplierId === selectedSupplierId).map(po => (<SelectItem key={po.id} value={po.id}>{po.itemName} (...{po.id.slice(-5)})</SelectItem>))}</SelectContent></Select><FormMessage /></FormItem>)} />
+                        <DialogFooter>
+                            <Button type="submit" disabled={form.formState.isSubmitting}>{form.formState.isSubmitting ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />{t('saving')}</> : (transactionToEdit ? t('save_changes') : t('financials.save_transaction_button'))}</Button>
+                        </DialogFooter>
+                    </form>
+                    </Form>
+                </DialogContent>
               </Dialog>
             )}
            </div>
@@ -502,7 +508,10 @@ export default function FinancialsPage() {
                             <DropdownMenuTrigger asChild><Button aria-haspopup="true" size="icon" variant="ghost"><MoreHorizontal className="h-4 w-4" /><span className="sr-only">{t('toggle_menu')}</span></Button></DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
                                 <DropdownMenuLabel>{t('actions')}</DropdownMenuLabel>
-                                <DropdownMenuItem onSelect={() => { setTransactionToEdit(transaction); setIsFormDialogOpen(true); }}>{t('edit')}</DropdownMenuItem>
+                                <DropdownMenuItem onSelect={() => { 
+                                    setTransactionToEdit(transaction); 
+                                    setIsFormDialogOpen(true);
+                                }}>{t('edit')}</DropdownMenuItem>
                                 <DropdownMenuItem className="text-destructive" onSelect={() => { setTransactionToDelete(transaction); setIsDeleteDialogOpen(true); }}><Trash2 className="mr-2 h-4 w-4" />{t('delete')}</DropdownMenuItem>
                             </DropdownMenuContent>
                             </DropdownMenu>
