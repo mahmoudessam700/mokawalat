@@ -1308,6 +1308,7 @@
     "user_management_desc": "View users and assign their system roles.",
     "user_list": "User List",
     "user_list_desc": "A list of all users registered in the system.",
+    "role": "Role",
     "select_role": "Select a role",
     "change_role": "Change Role",
     "no_users_found": "No users found.",

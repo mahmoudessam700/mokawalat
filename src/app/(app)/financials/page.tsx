@@ -141,7 +141,7 @@ export default function FinancialsPage() {
       setIsLoading(false);
     }, (error) => {
       console.error("Error fetching transactions: ", error);
-      toast({ variant: 'destructive', title: 'Error', description: 'Failed to fetch financial data.' });
+      toast({ variant: 'destructive', title: t('error'), description: 'Failed to fetch financial data.' });
       setIsLoading(false);
     }));
 
@@ -541,5 +541,4 @@ export default function FinancialsPage() {
     </>
   );
 }
-
     
