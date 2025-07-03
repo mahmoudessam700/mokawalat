@@ -197,30 +197,16 @@ export default function InvoicesPage() {
                 </DialogHeader>
                 <Form {...form}>
                 <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <FormField control={form.control} name="clientId" render={({ field }) => (<FormItem><FormLabel>{t('client')}</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue placeholder={t('invoices.select_client')} /></SelectTrigger></FormControl><SelectContent>{clients.map(c => (<SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>))}</SelectContent></Select><FormMessage /></FormItem>)} />
                         <FormField control={form.control} name="projectId" render={({ field }) => (<FormItem><FormLabel>{t('project')} ({t('optional')})</FormLabel><Select onValueChange={field.onChange} value={field.value || ''} disabled={!watchedClientId}><FormControl><SelectTrigger><SelectValue placeholder={t('invoices.select_project')} /></SelectTrigger></FormControl><SelectContent>{filteredProjects.map(p => (<SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>))}</SelectContent></Select><FormMessage /></FormItem>)} />
                     </div>
-                     <div className="grid grid-cols-2 gap-4">
+                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <FormField control={form.control} name="issueDate" render={({ field }) => (<FormItem><FormLabel>{t('invoices.issue_date')}</FormLabel><FormControl><Input type="date" {...field} /></FormControl><FormMessage /></FormItem>)} />
                         <FormField control={form.control} name="dueDate" render={({ field }) => (<FormItem><FormLabel>{t('invoices.due_date')}</FormLabel><FormControl><Input type="date" {...field} /></FormControl><FormMessage /></FormItem>)} />
                     </div>
                     
-                    <Card><CardHeader><CardTitle className="text-lg">{t('invoices.line_items')}</CardTitle></CardHeader><CardContent>
-                        <ScrollArea className="h-[200px] w-full">
-                        <div className="space-y-4 pr-4">
-                            {fields.map((field, index) => (
-                                <div key={field.id} className="grid grid-cols-[1fr,100px,120px,auto] items-start gap-2">
-                                    <FormField control={form.control} name={`lineItems.${index}.description`} render={({ field }) => (<FormItem><FormLabel className="sr-only">{t('description')}</FormLabel><FormControl><Input placeholder={t('invoices.item_description_placeholder')} {...field} /></FormControl><FormMessage /></FormItem>)} />
-                                    <FormField control={form.control} name={`lineItems.${index}.quantity`} render={({ field }) => (<FormItem><FormLabel className="sr-only">{t('inventory.quantity_label')}</FormLabel><FormControl><Input type="number" placeholder="Qty" {...field} /></FormControl><FormMessage /></FormItem>)} />
-                                    <FormField control={form.control} name={`lineItems.${index}.unitPrice`} render={({ field }) => (<FormItem><FormLabel className="sr-only">{t('invoices.unit_price_header')}</FormLabel><FormControl><Input type="number" placeholder={t('invoices.unit_price_header')} {...field} /></FormControl><FormMessage /></FormItem>)} />
-                                    <Button type="button" variant="ghost" size="icon" className="mt-1" onClick={() => remove(index)}><Trash2 className="size-4 text-destructive" /></Button>
-                                </div>
-                            ))}
-                        </div>
-                        </ScrollArea>
-                        <Button type="button" variant="outline" size="sm" className="mt-4" onClick={() => append({ description: '', quantity: 1, unitPrice: 0 })}><PlusCircle className="mr-2"/>{t('invoices.add_line_item')}</Button>
-                    </CardContent></Card>
+                    <Card><CardHeader><CardTitle className="text-lg">{t('invoices.line_items')}</CardTitle></CardHeader><CardContent><ScrollArea className="h-[200px] w-full"><div className="space-y-4 pr-4">{fields.map((field, index) => (<div key={field.id} className="grid grid-cols-[1fr,100px,120px,auto] items-start gap-2"><FormField control={form.control} name={`lineItems.${index}.description`} render={({ field }) => (<FormItem><FormLabel className="sr-only">{t('description')}</FormLabel><FormControl><Input placeholder={t('invoices.item_description_placeholder')} {...field} /></FormControl><FormMessage /></FormItem>)} /><FormField control={form.control} name={`lineItems.${index}.quantity`} render={({ field }) => (<FormItem><FormLabel className="sr-only">{t('inventory.quantity_label')}</FormLabel><FormControl><Input type="number" placeholder="Qty" {...field} /></FormControl><FormMessage /></FormItem>)} /><FormField control={form.control} name={`lineItems.${index}.unitPrice`} render={({ field }) => (<FormItem><FormLabel className="sr-only">{t('invoices.unit_price_header')}</FormLabel><FormControl><Input type="number" placeholder={t('invoices.unit_price_header')} {...field} /></FormControl><FormMessage /></FormItem>)} /><Button type="button" variant="ghost" size="icon" className="mt-1" onClick={() => remove(index)}><Trash2 className="size-4 text-destructive" /></Button></div>))}</div ></ScrollArea><Button type="button" variant="outline" size="sm" className="mt-4" onClick={() => append({ description: '', quantity: 1, unitPrice: 0 })}><PlusCircle className="mr-2"/>{t('invoices.add_line_item')}</Button></CardContent></Card>
                     <DialogFooter><Button type="submit" disabled={form.formState.isSubmitting}>{form.formState.isSubmitting ? <><Loader2 className="mr-2 h-4 w-4 animate-spin"/>{t('invoices.creating')}</> : t('invoices.create_button')}</Button></DialogFooter>
                 </form>
                 </Form>
@@ -256,7 +242,7 @@ export default function InvoicesPage() {
         </CardHeader>
         <CardContent>
           <Table>
-            <TableHeader><TableRow><TableHead>{t('invoices.number_header')}</TableHead><TableHead>{t('client')}</TableHead><TableHead>{t('invoices.issue_date')}</TableHead><TableHead>{t('invoices.due_date')}</TableHead><TableHead>{t('status')}</TableHead><TableHead className="text-right">{t('amount')}</TableHead><TableHead className='text-right'>{t('actions')}</TableHead></TableRow></TableHeader>
+            <TableHeader><TableRow><TableHead>{t('invoices.number_header')}</TableHead><TableHead className="hidden sm:table-cell">{t('client')}</TableHead><TableHead className="hidden md:table-cell">{t('invoices.issue_date')}</TableHead><TableHead className="hidden lg:table-cell">{t('invoices.due_date')}</TableHead><TableHead>{t('status')}</TableHead><TableHead className="text-right">{t('amount')}</TableHead><TableHead className='text-right'>{t('actions')}</TableHead></TableRow></TableHeader>
             <TableBody>
               {isLoading ? (Array.from({ length: 5 }).map((_, index) => (<TableRow key={index}><TableCell colSpan={7}><Skeleton className="h-8 w-full"/></TableCell></TableRow>)))
               : filteredInvoices.length > 0 ? (filteredInvoices.map((invoice) => (
@@ -266,9 +252,9 @@ export default function InvoicesPage() {
                         {invoice.invoiceNumber}
                       </Link>
                     </TableCell>
-                    <TableCell>{clientMap.get(invoice.clientId) || 'N/A'}</TableCell>
-                    <TableCell>{format(invoice.issueDate.toDate(), 'PPP')}</TableCell>
-                    <TableCell>{format(invoice.dueDate.toDate(), 'PPP')}</TableCell>
+                    <TableCell className="hidden sm:table-cell">{clientMap.get(invoice.clientId) || 'N/A'}</TableCell>
+                    <TableCell className="hidden md:table-cell">{format(invoice.issueDate.toDate(), 'PPP')}</TableCell>
+                    <TableCell className="hidden lg:table-cell">{format(invoice.dueDate.toDate(), 'PPP')}</TableCell>
                     <TableCell><Badge variant={statusVariant[invoice.status]}>{t(`invoices.status.${invoice.status}`)}</Badge></TableCell>
                     <TableCell className="text-right font-medium">{formatCurrency(invoice.totalAmount)}</TableCell>
                     <TableCell className="text-right">

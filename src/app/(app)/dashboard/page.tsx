@@ -463,8 +463,8 @@ export default function DashboardPage() {
           </CardContent>
         </Card>
       </div>
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-        <Card className="lg:col-span-2">
+      <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+        <Card className="md:col-span-2">
           <CardHeader>
             <CardTitle>{t('project_status_overview')}</CardTitle>
           </CardHeader>
@@ -594,7 +594,7 @@ export default function DashboardPage() {
             )}
           </CardContent>
         </Card>
-        <Card className="lg:col-span-2">
+        <Card className="md:col-span-2">
           <CardHeader>
             <CardTitle>{t('recent_activity')}</CardTitle>
             <CardDescription>

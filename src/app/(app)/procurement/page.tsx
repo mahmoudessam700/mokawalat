@@ -480,7 +480,7 @@ export default function ProcurementPage() {
               <TableRow>
                 <TableHead>{t('item')}</TableHead>
                 <TableHead>{t('inventory.quantity_label')}</TableHead>
-                <TableHead className="hidden md:table-cell">{t('procurement.total_cost_header')}</TableHead>
+                <TableHead className="hidden lg:table-cell">{t('procurement.total_cost_header')}</TableHead>
                 <TableHead className="hidden md:table-cell">{t('supplier')}</TableHead>
                 <TableHead className="hidden lg:table-cell">{t('project')}</TableHead>
                 <TableHead className="hidden md:table-cell">{t('procurement.requested_on')}</TableHead>
@@ -494,7 +494,7 @@ export default function ProcurementPage() {
                   <TableRow key={index}>
                     <TableCell><Skeleton className="h-4 w-[150px]" /></TableCell>
                     <TableCell><Skeleton className="h-4 w-[50px]" /></TableCell>
-                    <TableCell className="hidden md:table-cell"><Skeleton className="h-4 w-[100px]" /></TableCell>
+                    <TableCell className="hidden lg:table-cell"><Skeleton className="h-4 w-[100px]" /></TableCell>
                     <TableCell className="hidden md:table-cell"><Skeleton className="h-4 w-[120px]" /></TableCell>
                     <TableCell className="hidden lg:table-cell"><Skeleton className="h-4 w-[150px]" /></TableCell>
                     <TableCell className="hidden md:table-cell"><Skeleton className="h-4 w-[100px]" /></TableCell>
@@ -507,7 +507,7 @@ export default function ProcurementPage() {
                   <TableRow key={request.id}>
                     <TableCell className="font-medium">{request.itemName}</TableCell>
                     <TableCell>{request.quantity}</TableCell>
-                    <TableCell className="hidden md:table-cell">{formatCurrency(request.totalCost)}</TableCell>
+                    <TableCell className="hidden lg:table-cell">{formatCurrency(request.totalCost)}</TableCell>
                     <TableCell className="hidden md:table-cell">{supplierNames.get(request.supplierId) || 'N/A'}</TableCell>
                     <TableCell className="hidden lg:table-cell">{projectNames.get(request.projectId) || 'N/A'}</TableCell>
                     <TableCell className="hidden md:table-cell">{request.requestedAt ? format(request.requestedAt.toDate(), 'PPP') : 'N/A'}</TableCell>

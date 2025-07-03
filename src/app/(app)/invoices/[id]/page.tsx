@@ -201,7 +201,7 @@ export default function InvoiceDetailPage({ params }: { params: { id: string } }
 
   return (
     <div className="space-y-6">
-        <div className="flex items-center justify-between print:hidden">
+        <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between print:hidden">
             <div className="flex items-center gap-4">
                 <Button asChild variant="outline" size="icon"><Link href="/invoices"><ArrowLeft /><span className="sr-only">{t('invoices.detail.back')}</span></Link></Button>
                 <div>
@@ -234,26 +234,26 @@ export default function InvoiceDetailPage({ params }: { params: { id: string } }
         </div>
         
         <Card className="max-w-4xl mx-auto print:shadow-none print:border-none" id="invoice-content">
-            <CardHeader className="grid grid-cols-2 gap-6 p-8">
+            <CardHeader className="grid grid-cols-1 gap-6 p-8 md:grid-cols-2">
                 <div>
                     {company?.logoUrl ? <img src={company.logoUrl} alt={company.name} className="h-16 w-auto object-contain" /> : <Logo className="h-12 w-12 text-primary" />}
                     <h2 className="mt-4 text-xl font-bold text-primary">{company?.name || 'Mokawalat'}</h2>
                     <p className="text-sm text-muted-foreground">{company?.address}</p>
                     <p className="text-sm text-muted-foreground">{company?.email} &middot; {company?.phone}</p>
                 </div>
-                <div className="text-right">
+                <div className="text-left md:text-right">
                     <h1 className="text-4xl font-bold text-foreground tracking-tight">{t('invoices.detail.invoice_header')}</h1>
                     <p className="text-muted-foreground mt-2"># {invoice.invoiceNumber}</p>
                     <Badge variant={statusVariant[invoice.status]} className="mt-4 text-lg px-4 py-1">{t(`invoices.status.${invoice.status}`)}</Badge>
                 </div>
             </CardHeader>
             <CardContent className="p-8">
-                <div className="grid grid-cols-2 gap-6 mb-8">
+                <div className="grid grid-cols-1 gap-6 mb-8 md:grid-cols-2">
                     <div>
                         <h3 className="font-semibold mb-2">{t('invoices.detail.bill_to')}</h3>
                         {client ? (<><p className="font-bold">{client.name}</p><p className="text-sm text-muted-foreground">{client.company || ''}</p><p className="text-sm text-muted-foreground">{client.email || ''}</p><p className="text-sm text-muted-foreground">{client.phone || ''}</p></>) : <Skeleton className="h-20 w-48"/>}
                     </div>
-                    <div className="text-right">
+                    <div className="text-left md:text-right">
                         <p className="font-semibold">{t('invoices.detail.issue_date_label')} <span className="font-normal">{format(invoice.issueDate.toDate(), 'PPP')}</span></p>
                         <p className="font-semibold">{t('invoices.detail.due_date_label')} <span className="font-normal">{format(invoice.dueDate.toDate(), 'PPP')}</span></p>
                         {project && <p className="font-semibold mt-2">{t('invoices.detail.project_label')} <span className="font-normal">{project.name}</span></p>}
@@ -274,8 +274,8 @@ export default function InvoiceDetailPage({ params }: { params: { id: string } }
                 <DialogHeader><DialogTitle>{t('invoices.detail.edit_title')}</DialogTitle><DialogDescription>{t('invoices.detail.edit_desc')}</DialogDescription></DialogHeader>
                 <Form {...form}>
                     <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-                        <div className="grid grid-cols-2 gap-4"><FormField control={form.control} name="clientId" render={({ field }) => (<FormItem><FormLabel>{t('client')}</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue placeholder={t('invoices.select_client')} /></SelectTrigger></FormControl><SelectContent>{allClients.map(c => (<SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>))}</SelectContent></Select><FormMessage /></FormItem>)} /><FormField control={form.control} name="projectId" render={({ field }) => (<FormItem><FormLabel>{t('project')} ({t('optional')})</FormLabel><Select onValueChange={field.onChange} value={field.value || ''} disabled={!watchedClientId}><FormControl><SelectTrigger><SelectValue placeholder={t('invoices.select_project')} /></SelectTrigger></FormControl><SelectContent>{filteredProjects.map(p => (<SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>))}</SelectContent></Select><FormMessage /></FormItem>)} /></div>
-                        <div className="grid grid-cols-2 gap-4"><FormField control={form.control} name="issueDate" render={({ field }) => (<FormItem><FormLabel>{t('invoices.issue_date')}</FormLabel><FormControl><Input type="date" {...field} /></FormControl><FormMessage /></FormItem>)} /><FormField control={form.control} name="dueDate" render={({ field }) => (<FormItem><FormLabel>{t('invoices.due_date')}</FormLabel><FormControl><Input type="date" {...field} /></FormControl><FormMessage /></FormItem>)} /></div>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4"><FormField control={form.control} name="clientId" render={({ field }) => (<FormItem><FormLabel>{t('client')}</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue placeholder={t('invoices.select_client')} /></SelectTrigger></FormControl><SelectContent>{allClients.map(c => (<SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>))}</SelectContent></Select><FormMessage /></FormItem>)} /><FormField control={form.control} name="projectId" render={({ field }) => (<FormItem><FormLabel>{t('project')} ({t('optional')})</FormLabel><Select onValueChange={field.onChange} value={field.value || ''} disabled={!watchedClientId}><FormControl><SelectTrigger><SelectValue placeholder={t('invoices.select_project')} /></SelectTrigger></FormControl><SelectContent>{filteredProjects.map(p => (<SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>))}</SelectContent></Select><FormMessage /></FormItem>)} /></div>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4"><FormField control={form.control} name="issueDate" render={({ field }) => (<FormItem><FormLabel>{t('invoices.issue_date')}</FormLabel><FormControl><Input type="date" {...field} /></FormControl><FormMessage /></FormItem>)} /><FormField control={form.control} name="dueDate" render={({ field }) => (<FormItem><FormLabel>{t('invoices.due_date')}</FormLabel><FormControl><Input type="date" {...field} /></FormControl><FormMessage /></FormItem>)} /></div>
                         <Card><CardHeader><CardTitle className="text-lg">{t('invoices.line_items')}</CardTitle></CardHeader><CardContent><ScrollArea className="h-[200px] w-full"><div className="space-y-4 pr-4">{fields.map((field, index) => (<div key={field.id} className="grid grid-cols-[1fr,100px,120px,auto] items-start gap-2"><FormField control={form.control} name={`lineItems.${index}.description`} render={({ field }) => (<FormItem><FormLabel className="sr-only">{t('description')}</FormLabel><FormControl><Input placeholder={t('invoices.item_description_placeholder')} {...field} /></FormControl><FormMessage /></FormItem>)} /><FormField control={form.control} name={`lineItems.${index}.quantity`} render={({ field }) => (<FormItem><FormLabel className="sr-only">{t('inventory.quantity_label')}</FormLabel><FormControl><Input type="number" placeholder="Qty" {...field} /></FormControl><FormMessage /></FormItem>)} /><FormField control={form.control} name={`lineItems.${index}.unitPrice`} render={({ field }) => (<FormItem><FormLabel className="sr-only">{t('invoices.unit_price_header')}</FormLabel><FormControl><Input type="number" placeholder={t('invoices.unit_price_header')} {...field} /></FormControl><FormMessage /></FormItem>)} /><Button type="button" variant="ghost" size="icon" className="mt-1" onClick={() => remove(index)}><Trash2 className="size-4 text-destructive" /></Button></div>))}</div ></ScrollArea><Button type="button" variant="outline" size="sm" className="mt-4" onClick={() => append({ description: '', quantity: 1, unitPrice: 0 })}><PlusCircle className="mr-2"/>{t('invoices.add_line_item')}</Button></CardContent></Card>
                         <DialogFooter><Button type="submit" disabled={form.formState.isSubmitting}>{form.formState.isSubmitting ? <><Loader2 className="mr-2 h-4 w-4 animate-spin"/>{t('saving')}</> : t('save_changes')}</Button></DialogFooter>
                     </form>
