@@ -107,6 +107,7 @@ export function AppSidebar() {
      {
       items: [
         { href: '/iso-compliance', label: t('iso_compliance_title'), icon: CheckSquare },
+        { href: '/roadmap', label: t('roadmap_title'), icon: CheckSquare },
       ],
     },
   ], [t]);

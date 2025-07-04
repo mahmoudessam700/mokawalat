@@ -318,7 +318,7 @@ export default function SupplierDetailPage({ params }: { params: { id: string } 
             </TabsContent>
             <TabsContent value="contracts" className="pt-4">
                 <Card>
-                    <CardHeader className="flex flex-row items-center justify-between">
+                    <CardHeader className="flex-row items-center justify-between">
                         <div>
                             <CardTitle>{t('clients.contract_management_title')}</CardTitle>
                             <CardDescription>{t('suppliers.contract_management_desc')}</CardDescription>

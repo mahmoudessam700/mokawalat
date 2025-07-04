@@ -284,7 +284,7 @@ export default function RoadmapPage() {
     {
       title: t('roadmap.phase6.title'),
       objective: t('roadmap.phase6.objective'),
-      completed: true,
+      completed: false,
       subTasks: [
           {
               title: t('roadmap.phase6.subtask1.title'),
@@ -292,7 +292,7 @@ export default function RoadmapPage() {
                   t('roadmap.phase6.subtask1.detail1'),
                   t('roadmap.phase6.subtask1.detail2'),
               ],
-              completed: true,
+              completed: false,
           },
           {
               title: t('roadmap.phase6.subtask2.title'),
@@ -300,7 +300,7 @@ export default function RoadmapPage() {
                   t('roadmap.phase6.subtask2.detail1'),
                   t('roadmap.phase6.subtask2.detail2'),
               ],
-              completed: true,
+              completed: false,
           },
           {
               title: t('roadmap.phase6.subtask3.title'),
@@ -309,28 +309,28 @@ export default function RoadmapPage() {
                   t('roadmap.phase6.subtask3.detail2'),
                   t('roadmap.phase6.subtask3.detail3'),
               ],
-              completed: true,
+              completed: false,
           },
           {
               title: t('roadmap.phase6.subtask4.title'),
               details: [
                   t('roadmap.phase6.subtask4.detail1'),
               ],
-              completed: true,
+              completed: false,
           },
           {
               title: t('roadmap.phase6.subtask5.title'),
               details: [
                   t('roadmap.phase6.subtask5.detail1'),
               ],
-              completed: true,
+              completed: false,
           },
           {
               title: t('roadmap.phase6.subtask6.title'),
               details: [
                   t('roadmap.phase6.subtask6.detail1'),
               ],
-              completed: true,
+              completed: false,
           }
       ]
     }
@@ -348,14 +348,14 @@ export default function RoadmapPage() {
         </p>
       </div>
       
-       <Card className="bg-green-500/10 border-green-500/20">
+       <Card className="bg-primary/10 border-primary/20">
         <CardHeader className="flex flex-row items-center gap-4">
-          <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-full bg-green-500/20 text-green-600 dark:text-green-400">
+          <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-full bg-primary/20 text-primary">
             <Rocket className="h-6 w-6" />
           </div>
           <div>
-            <CardTitle className="text-green-800 dark:text-green-300">{t('project_complete')}</CardTitle>
-            <CardDescription className="text-green-700 dark:text-green-400/80">
+            <CardTitle className="text-primary-foreground/90">{t('project_complete')}</CardTitle>
+            <CardDescription className="text-primary-foreground/80">
               {t('project_complete_desc')}
             </CardDescription>
           </div>
@@ -417,5 +417,3 @@ export default function RoadmapPage() {
     </div>
   )
 }
-
-    
