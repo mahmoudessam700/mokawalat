@@ -59,7 +59,7 @@ export async function updateSupplier(supplierId: string, values: SupplierFormVal
   if (!validatedFields.success) {
     return {
       errors: validatedFields.error.flatten().fieldErrors,
-      message: 'Invalid data provided. Please check the form.',
+      message: 'Invalid data provided.',
     };
   }
 
@@ -69,6 +69,14 @@ export async function updateSupplier(supplierId: string, values: SupplierFormVal
       ...validatedFields.data,
       name_lowercase: validatedFields.data.name.toLowerCase(),
     });
+    
+    await addDoc(collection(firestore, 'activityLog'), {
+        message: `Supplier updated: ${validatedFields.data.name}`,
+        type: "SUPPLIER_UPDATED",
+        link: `/suppliers/${supplierId}`,
+        timestamp: serverTimestamp(),
+    });
+
     revalidatePath('/suppliers');
     revalidatePath(`/suppliers/${supplierId}`);
     return { message: 'Supplier updated successfully.', errors: null };
@@ -84,6 +92,13 @@ export async function deleteSupplier(supplierId: string) {
   }
 
   try {
+    const supplierRef = doc(firestore, 'suppliers', supplierId);
+    const supplierSnap = await getDoc(supplierRef);
+    if (!supplierSnap.exists()) {
+        return { success: false, message: 'Supplier not found.' };
+    }
+    const supplierName = supplierSnap.data().name;
+
     // Check for linked purchase orders
     const poQuery = query(collection(firestore, 'procurement'), where('supplierId', '==', supplierId));
     const poSnapshot = await getDocs(poQuery);
@@ -91,7 +106,15 @@ export async function deleteSupplier(supplierId: string) {
       return { success: false, message: 'Cannot delete supplier with existing purchase orders. Please re-assign or delete them first.' };
     }
 
-    await deleteDoc(doc(firestore, 'suppliers', supplierId));
+    await deleteDoc(supplierRef);
+
+    await addDoc(collection(firestore, 'activityLog'), {
+        message: `Supplier deleted: ${supplierName}`,
+        type: "SUPPLIER_DELETED",
+        link: `/suppliers`,
+        timestamp: serverTimestamp(),
+    });
+
     revalidatePath('/suppliers');
     return { success: true, message: 'Supplier deleted successfully.' };
   } catch (error) {
@@ -127,6 +150,17 @@ export async function evaluateSupplier(supplierId: string, values: EvaluateSuppl
       rating: validatedFields.data.rating,
       evaluationNotes: validatedFields.data.evaluationNotes || '',
     });
+
+    const supplierSnap = await getDoc(supplierRef);
+    const supplierName = supplierSnap.exists() ? supplierSnap.data().name : 'Unknown Supplier';
+
+    await addDoc(collection(firestore, 'activityLog'), {
+        message: `Supplier evaluated: ${supplierName} was given a rating of ${validatedFields.data.rating} stars.`,
+        type: "SUPPLIER_EVALUATED",
+        link: `/suppliers/${supplierId}`,
+        timestamp: serverTimestamp(),
+    });
+
     revalidatePath('/suppliers');
     revalidatePath(`/suppliers/${supplierId}`);
     return { message: 'Supplier evaluation updated successfully.', errors: null };
