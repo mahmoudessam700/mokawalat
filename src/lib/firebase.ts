@@ -14,11 +14,15 @@ const firebaseConfig = {
   measurementId: process.env.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID,
 };
 
-// Check if the necessary environment variables are loaded.
-if (!firebaseConfig.apiKey || !firebaseConfig.projectId) {
-    console.error("CRITICAL: Firebase environment variables are not loaded.");
-    console.error("Please ensure your NEXT_PUBLIC_FIREBASE_* variables are set in your hosting environment.");
+// CRITICAL: Check for the existence of the API key.
+// This is the most common cause of deployment failure.
+if (!firebaseConfig.apiKey) {
+  throw new Error(
+    'CRITICAL_ERROR: NEXT_PUBLIC_FIREBASE_API_KEY is not defined. ' +
+    'Please check your environment variables in your hosting provider control panel.'
+  );
 }
+
 
 // Initialize Firebase
 const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
