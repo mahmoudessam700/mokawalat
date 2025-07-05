@@ -1,5 +1,7 @@
+
 // This file is the custom server for Next.js.
 // It's used for hosting environments that need a single startup file.
+require('dotenv').config();
 
 const { createServer } = require('http');
 const { parse } = require('url');
