@@ -13,6 +13,13 @@ const firebaseConfig = {
   measurementId: process.env.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID,
 };
 
+// Check if the necessary environment variables are loaded.
+if (!firebaseConfig.apiKey || !firebaseConfig.projectId) {
+    console.error("CRITICAL: Firebase environment variables are not loaded.");
+    console.error("Please ensure NEXT_PUBLIC_FIREBASE_API_KEY and NEXT_PUBLIC_FIREBASE_PROJECT_ID are set in your hosting environment.");
+}
+
+
 // Initialize Firebase
 const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
 const auth = getAuth(app);
