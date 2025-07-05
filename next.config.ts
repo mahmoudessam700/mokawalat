@@ -2,7 +2,6 @@
 import type {NextConfig} from 'next';
 
 const nextConfig: NextConfig = {
-  basePath: '/essam',
   /* config options here */
   typescript: {
     ignoreBuildErrors: true,
