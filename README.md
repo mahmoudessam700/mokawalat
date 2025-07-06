@@ -23,7 +23,7 @@ The application is structured into the following fully-integrated modules:
 -   **AI-Powered ISO 9001 Assistant**: Get actionable, AI-driven suggestions to improve your ERP operations for better alignment with ISO 9001 quality standards.
 -   **System Settings**: A dedicated, admin-only area to manage users and roles, company profile details, inventory categories, and warehouse locations.
 
-## Getting Started
+## Getting Started (Local Development)
 
 To run the development server:
 
@@ -31,43 +31,26 @@ To run the development server:
 npm run dev
 ```
 
-The application will be available at `http://localhost:9002`.
+The application will be available at `http://localhost:9003`.
 
 To run the Genkit AI flows locally for development:
 ```bash
 npm run genkit:watch
 ```
 
-## Deployment
+## Deployment to cPanel or similar environments
 
-This application is built with Next.js and is ready to be deployed to Firebase Hosting.
+This application is configured to run on hosting services like cPanel that support Node.js applications.
 
-1.  **Install the Firebase CLI:**
-    If you haven't already, install the Firebase Command Line Interface globally:
-    ```bash
-    npm install -g firebase-tools
-    ```
-
-2.  **Login to Firebase:**
-    ```bash
-    firebase login
-    ```
-
-3.  **Initialize Firebase in your project:**
-    It looks like Firebase is already initialized. If you need to re-initialize or connect to a different project, run:
-    ```bash
-    firebase init
-    ```
-    Select "Hosting: Configure files for Firebase Hosting and (optionally) set up GitHub Action deploys". Follow the prompts, but when asked "What do you want to use as your public directory?", enter `.next`. **Do not overwrite existing files.**
-
-4.  **Build the application:**
-    ```bash
-    npm run build
-    ```
-
-5.  **Deploy to Firebase Hosting:**
-    ```bash
-    firebase deploy --only hosting
-    ```
-
-Your application will be deployed and live at the URL provided by Firebase.
+1.  **Upload Files:** Upload all project files to the application root directory on your server (e.g., `/home/username/yourdomain.com`).
+2.  **Configure Node.js App:**
+    *   In your cPanel, go to "Setup Node.js App".
+    *   Create a new application or select your existing one.
+    *   Ensure the **Node.js version** is set to **20.x** or higher.
+    *   Set the **Application mode** to **Production**.
+    *   Set the **Application root** to the directory where you uploaded your files (e.g., `/home/username/yourdomain.com`).
+    *   Set the **Application startup file** to `server.js`.
+3.  **Add Environment Variables:**
+    *   In the "Environment variables" section, add all the keys from your local `.env` file (e.g., `NEXT_PUBLIC_FIREBASE_API_KEY`) and their corresponding values.
+4.  **Install Dependencies:** Click the **"Run NPM Install"** button. This will install all packages and automatically run `npm run build` because of the `heroku-postbuild` script.
+5.  **Start the App:** Click the **"Restart"** button. Your application should now be live at your domain.
