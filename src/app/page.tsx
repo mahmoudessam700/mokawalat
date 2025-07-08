@@ -10,8 +10,8 @@ export default function WelcomePage() {
     <div className="relative flex min-h-screen items-center justify-center bg-background p-4">
        <Image
         src="https://placehold.co/1920x1080.png"
-        alt="Modern office background"
-        data-ai-hint="office building"
+        alt="Construction site background"
+        data-ai-hint="construction site architecture"
         fill
         className="object-cover object-center opacity-20 dark:opacity-10"
         priority
@@ -23,10 +23,10 @@ export default function WelcomePage() {
               <Logo className="size-16 text-primary" />
             </div>
             <CardTitle className="font-headline text-3xl font-bold">
-              Welcome to ElitePlan ERP
+              Welcome to Mokawalat ERP
             </CardTitle>
             <CardDescription>
-              Your comprehensive solution for operational excellence.
+              Your comprehensive solution for construction management.
             </CardDescription>
           </CardHeader>
           <CardContent className="grid gap-4">

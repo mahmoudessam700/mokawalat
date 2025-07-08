@@ -1,7 +1,8 @@
 
-# Do not remove this file. It is used to tell cPanel how to run the application.
-PassengerNodejs /usr/bin/node
-PassengerAppRoot /home/englizyedu/mokawalat.englizyedu.com
+# DO NOT REMOVE.
+# This file is required for the application to work correctly on cPanel.
+PassengerAppRoot "/home/englizyedu/mokawalat.englizyedu.com"
+PassengerBaseURI "/"
 PassengerAppType node
 PassengerStartupFile server.js
 PassengerAppEnv production
