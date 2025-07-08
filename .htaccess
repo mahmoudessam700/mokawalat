@@ -1,5 +1,11 @@
-# Your web hosting provider may have specific directives.
-# This is a basic configuration that should work for most cPanel environments.
+
+# DO NOT REMOVE.
+# This file is required for the application to run on cPanel hosting.
+# It tells the server to route traffic to the Node.js application.
+
 DirectoryIndex disabled
 RewriteEngine On
+RewriteRule ^$ http://127.0.0.1:9003/ [P,L]
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
 RewriteRule ^(.*)$ http://127.0.0.1:9003/$1 [P,L]
