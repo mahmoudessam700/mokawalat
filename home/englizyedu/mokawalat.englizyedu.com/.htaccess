@@ -1,0 +1,5 @@
+# DO NOT REMOVE. CLOUDLINUX PASSENGER CONFIGURATION.
+PassengerAppRoot /home/englizyedu/mokawalat.englizyedu.com
+PassengerBaseURI /
+PassengerAppType node
+PassengerStartupFile server.js
