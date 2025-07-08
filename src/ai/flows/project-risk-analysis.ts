@@ -7,9 +7,9 @@
  * - ProjectRiskAnalysisInput - The input type for the analyzeProjectRisks function.
  * - ProjectRiskAnalysisOutput - The return type for the analyzeProjectRisks function.
  */
-
-import {ai} from '@/ai/genkit';
-import {z} from 'genkit';
+import { generate } from 'genkit';
+import * as z from 'zod';
+import { geminiPro } from '../genkit';
 
 const ProjectRiskAnalysisInputSchema = z.object({
   name: z.string().describe('The name of the construction project.'),
@@ -33,32 +33,24 @@ export type ProjectRiskAnalysisOutput = z.infer<typeof ProjectRiskAnalysisOutput
 export async function analyzeProjectRisks(
   input: ProjectRiskAnalysisInput
 ): Promise<ProjectRiskAnalysisOutput> {
-  return projectRiskAnalysisFlow(input);
-}
-
-const prompt = ai.definePrompt({
-  name: 'projectRiskAnalysisPrompt',
-  input: {schema: ProjectRiskAnalysisInputSchema},
-  output: {schema: ProjectRiskAnalysisOutputSchema},
-  prompt: `You are an expert risk management consultant specializing in large-scale construction projects.
+  const prompt = `You are an expert risk management consultant specializing in large-scale construction projects.
 
   Based on the following project details, identify a list of potential risks. For each risk, provide a severity level (Low, Medium, or High) and a practical suggestion for mitigation. Focus on common construction risks such as budget overruns, schedule delays, safety hazards, supplier issues, and regulatory hurdles. Also consider location-specific risks (e.g., geological, weather, local regulations).
 
-  Project Name: {{{name}}}
-  Project Budget: {{{budget}}}
-  Project Location: {{{location}}}
-  Project Description: {{{description}}}
-  `,
-});
-
-const projectRiskAnalysisFlow = ai.defineFlow(
-  {
-    name: 'projectRiskAnalysisFlow',
-    inputSchema: ProjectRiskAnalysisInputSchema,
-    outputSchema: ProjectRiskAnalysisOutputSchema,
-  },
-  async input => {
-    const {output} = await prompt(input);
-    return output!;
-  }
-);
+  Project Name: ${input.name}
+  Project Budget: ${input.budget}
+  Project Location: ${input.location}
+  Project Description: ${input.description}
+  `;
+  
+  const llmResponse = await generate({
+      model: geminiPro,
+      prompt: prompt,
+      output: {
+          format: 'json',
+          schema: ProjectRiskAnalysisOutputSchema
+      }
+  });
+  
+  return llmResponse.output()!;
+}

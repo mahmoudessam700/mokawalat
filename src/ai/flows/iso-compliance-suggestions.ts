@@ -8,9 +8,9 @@
  * - SuggestISOComplianceImprovementsInput - The input type for the suggestISOComplianceImprovements function.
  * - SuggestISOComplianceImprovementsOutput - The return type for the suggestISOComplianceImprovements function.
  */
-
-import {ai} from '@/ai/genkit';
-import {z} from 'genkit';
+import { generate } from 'genkit';
+import { geminiPro } from '@/ai/genkit';
+import * as z from 'zod';
 
 const SuggestISOComplianceImprovementsInputSchema = z.object({
   erpDescription: z
@@ -35,29 +35,21 @@ export type SuggestISOComplianceImprovementsOutput = z.infer<
 export async function suggestISOComplianceImprovements(
   input: SuggestISOComplianceImprovementsInput
 ): Promise<SuggestISOComplianceImprovementsOutput> {
-  return suggestISOComplianceImprovementsFlow(input);
-}
-
-const prompt = ai.definePrompt({
-  name: 'suggestISOComplianceImprovementsPrompt',
-  input: {schema: SuggestISOComplianceImprovementsInputSchema},
-  output: {schema: SuggestISOComplianceImprovementsOutputSchema},
-  prompt: `You are an expert in ISO 9001 compliance and ERP systems.
+  const prompt = `You are an expert in ISO 9001 compliance and ERP systems.
 
   Based on the following description of current ERP operations, provide a list of actionable suggestions for improvement. Focus on changes that will facilitate the collection of feedback and continuous improvement, in line with ISO 9001 standards. Suggestions should be specific and practical.
 
-  ERP Operations Description: {{{erpDescription}}}
-  `,
-});
+  ERP Operations Description: ${input.erpDescription}
+  `;
 
-const suggestISOComplianceImprovementsFlow = ai.defineFlow(
-  {
-    name: 'suggestISOComplianceImprovementsFlow',
-    inputSchema: SuggestISOComplianceImprovementsInputSchema,
-    outputSchema: SuggestISOComplianceImprovementsOutputSchema,
-  },
-  async input => {
-    const {output} = await prompt(input);
-    return output!;
-  }
-);
+  const llmResponse = await generate({
+    model: geminiPro,
+    prompt: prompt,
+    output: {
+        format: 'json',
+        schema: SuggestISOComplianceImprovementsOutputSchema,
+    },
+  });
+
+  return llmResponse.output()!;
+}

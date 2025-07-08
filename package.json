@@ -15,8 +15,8 @@
     "node": ">=20.0.0"
   },
   "dependencies": {
-    "@genkit-ai/googleai": "^1.14.0",
-    "@genkit-ai/next": "^1.14.0",
+    "@genkit-ai/googleai": "0.5.1",
+    "@genkit-ai/next": "0.6.0",
     "@hookform/resolvers": "^3.10.0",
     "@radix-ui/react-accordion": "^1.2.0",
     "@radix-ui/react-alert-dialog": "^1.1.1",
@@ -51,8 +51,8 @@
     "date-fns": "^3.6.0",
     "dotenv": "^16.4.5",
     "firebase": "^10.12.3",
-    "genkit": "^1.14.0",
-    "jsdom": "^24.1.0",
+    "genkit": "0.6.0",
+    "jsdom": "^24.1.1",
     "lucide-react": "^0.522.0",
     "next": "14.2.4",
     "next-themes": "^0.3.0",
@@ -73,6 +73,6 @@
     "zod": "^3.24.1"
   },
   "devDependencies": {
-    "genkit-cli": "^1.14.0"
+    "genkit-cli": "0.6.0"
   }
 }

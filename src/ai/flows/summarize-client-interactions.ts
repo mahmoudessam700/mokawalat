@@ -8,9 +8,9 @@
  * - SummarizeClientInteractionsInput - The input type for the summarizeClientInteractions function.
  * - SummarizeClientInteractionsOutput - The return type for the summarizeClientInteractions function.
  */
-
-import {ai} from '@/ai/genkit';
-import {z} from 'genkit';
+import { generate } from 'genkit';
+import * as z from 'zod';
+import { geminiPro } from '../genkit';
 
 const SummarizeClientInteractionsInputSchema = z.object({
   interactionLog: z
@@ -33,14 +33,7 @@ export type SummarizeClientInteractionsOutput = z.infer<
 export async function summarizeClientInteractions(
   input: SummarizeClientInteractionsInput
 ): Promise<SummarizeClientInteractionsOutput> {
-  return summarizeClientInteractionsFlow(input);
-}
-
-const prompt = ai.definePrompt({
-  name: 'summarizeClientInteractionsPrompt',
-  input: {schema: SummarizeClientInteractionsInputSchema},
-  output: {schema: SummarizeClientInteractionsOutputSchema},
-  prompt: `You are an expert CRM assistant. Based on the following interaction log, provide a concise summary of the client relationship. 
+  const prompt = `You are an expert CRM assistant. Based on the following interaction log, provide a concise summary of the client relationship. 
   
   The summary should highlight:
   - Key events or decisions made.
@@ -48,18 +41,17 @@ const prompt = ai.definePrompt({
   - The overall sentiment or health of the client relationship (e.g., positive, neutral, needs attention).
 
   Interaction Log:
-  {{{interactionLog}}}
-  `,
-});
+  ${input.interactionLog}
+  `;
 
-const summarizeClientInteractionsFlow = ai.defineFlow(
-  {
-    name: 'summarizeClientInteractionsFlow',
-    inputSchema: SummarizeClientInteractionsInputSchema,
-    outputSchema: SummarizeClientInteractionsOutputSchema,
-  },
-  async input => {
-    const {output} = await prompt(input);
-    return output!;
-  }
-);
+  const llmResponse = await generate({
+      model: geminiPro,
+      prompt: prompt,
+      output: {
+          format: 'json',
+          schema: SummarizeClientInteractionsOutputSchema
+      }
+  });
+  
+  return llmResponse.output()!;
+}

@@ -7,9 +7,9 @@
  * - SuggestProjectTasksInput - The input type for the suggestProjectTasks function.
  * - SuggestProjectTasksOutput - The return type for the suggestProjectTasks function.
  */
-
-import {ai} from '@/ai/genkit';
-import {z} from 'genkit';
+import { generate } from 'genkit';
+import * as z from 'zod';
+import { geminiPro } from '../genkit';
 
 const SuggestProjectTasksInputSchema = z.object({
   projectName: z.string().describe('The name of the construction project.'),
@@ -29,28 +29,20 @@ export type SuggestProjectTasksOutput = z.infer<typeof SuggestProjectTasksOutput
 export async function suggestProjectTasks(
   input: SuggestProjectTasksInput
 ): Promise<SuggestProjectTasksOutput> {
-  return suggestProjectTasksFlow(input);
+  const prompt = `You are an expert construction project manager. Based on the following project details, generate a comprehensive list of common tasks required for such a project. The tasks should be logical and sequential where appropriate.
+
+  Project Name: ${input.projectName}
+  Project Description: ${input.projectDescription}
+  `;
+
+  const llmResponse = await generate({
+      model: geminiPro,
+      prompt: prompt,
+      output: {
+          format: 'json',
+          schema: SuggestProjectTasksOutputSchema
+      }
+  });
+
+  return llmResponse.output()!;
 }
-
-const prompt = ai.definePrompt({
-  name: 'suggestProjectTasksPrompt',
-  input: {schema: SuggestProjectTasksInputSchema},
-  output: {schema: SuggestProjectTasksOutputSchema},
-  prompt: `You are an expert construction project manager. Based on the following project details, generate a comprehensive list of common tasks required for such a project. The tasks should be logical and sequential where appropriate.
-
-  Project Name: {{{projectName}}}
-  Project Description: {{{projectDescription}}}
-  `,
-});
-
-const suggestProjectTasksFlow = ai.defineFlow(
-  {
-    name: 'suggestProjectTasksFlow',
-    inputSchema: SuggestProjectTasksInputSchema,
-    outputSchema: SuggestProjectTasksOutputSchema,
-  },
-  async input => {
-    const {output} = await prompt(input);
-    return output!;
-  }
-);
