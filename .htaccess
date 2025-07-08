@@ -1,8 +1,10 @@
 
-# DO NOT REMOVE. Needed for Next.js to work on cPanel
+# DO NOT REMOVE. CLOUDLINUX DEPLOYMENT CONFIGURATION.
+# The following directives are required for the Node.js application to work correctly.
+
 DirectoryIndex disabled
 RewriteEngine On
-RewriteCond %{REQUEST_FILENAME} -f [OR]
-RewriteCond %{REQUEST_FILENAME} -d
-RewriteRule ^ - [L]
-RewriteRule ^(.*) http://127.0.0.1:9003/$1 [P,L]
+RewriteRule ^$ http://127.0.0.1:%{ENV:PORT}/ [P,L]
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule ^(.*)$ http://127.0.0.1:%{ENV:PORT}/$1 [P,L]
