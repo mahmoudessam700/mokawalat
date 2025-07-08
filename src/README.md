@@ -42,13 +42,13 @@ npm run genkit:watch
 
 This application is configured to run on hosting services like cPanel that support Node.js applications.
 
-1.  **Upload Files:** Upload all project files to the application root directory on your server (e.g., `/home/username/yourdomain.com`).
+1.  **Upload Files:** Upload all project files to the application root directory on your server (e.g., `/home/englizyedu/mokawalat.englizyedu.com`).
 2.  **Configure Node.js App:**
     *   In your cPanel, go to "Setup Node.js App".
     *   Create a new application or select your existing one.
     *   Ensure the **Node.js version** is set to **20.x** or higher.
     *   Set the **Application mode** to **Production**.
-    *   Set the **Application root** to the directory where you uploaded your files (e.g., `/home/username/yourdomain.com`).
+    *   Set the **Application root** to the directory where you uploaded your files: `/home/englizyedu/mokawalat.englizyedu.com`.
     *   Set the **Application startup file** to `server.js`.
 3.  **Add Environment Variables:**
     *   In the "Environment variables" section, add all the keys from your local `.env` file (e.g., `NEXT_PUBLIC_FIREBASE_API_KEY`) and their corresponding values.
