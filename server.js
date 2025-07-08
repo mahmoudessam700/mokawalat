@@ -1,7 +1,6 @@
-
 // This file is the custom server for Next.js.
 // It's used for hosting environments that need a single startup file.
-require('dotenv').config({ path: './.env.local' });
+require('dotenv').config();
 
 const { createServer } = require('http');
 const { parse } = require('url');
@@ -11,7 +10,7 @@ const dev = process.env.NODE_ENV !== 'production';
 // Use '0.0.0.0' to accept connections on all network interfaces, which is necessary for many hosting environments.
 const hostname = '0.0.0.0'; 
 // The hosting provider (like cPanel) will set the PORT environment variable.
-const port = process.env.PORT || 9003; 
+const port = process.env.PORT || 3000; 
 
 const app = next({ dev });
 const handle = app.getRequestHandler();
