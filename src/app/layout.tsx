@@ -21,8 +21,8 @@ const spaceGrotesk = Space_Grotesk({
 });
 
 export const metadata: Metadata = {
-  title: 'Mokawalat',
-  description: 'Comprehensive ERP for Large Construction Companies',
+  title: 'ElitePlan',
+  description: 'AI-Powered ERP for Business Excellence',
 };
 
 export default function RootLayout({

@@ -1,10 +1,7 @@
 
-# DO NOT REMOVE. CLOUDLINUX DEPLOYMENT CONFIGURATION.
-# The following directives are required for the Node.js application to work correctly.
-
-DirectoryIndex disabled
-RewriteEngine On
-RewriteRule ^$ http://127.0.0.1:%{ENV:PORT}/ [P,L]
-RewriteCond %{REQUEST_FILENAME} !-f
-RewriteCond %{REQUEST_FILENAME} !-d
-RewriteRule ^(.*)$ http://127.0.0.1:%{ENV:PORT}/$1 [P,L]
+# Do not remove this file. It is used to tell cPanel how to run the application.
+PassengerNodejs /usr/bin/node
+PassengerAppRoot /home/englizyedu/mokawalat.englizyedu.com
+PassengerAppType node
+PassengerStartupFile server.js
+PassengerAppEnv production
