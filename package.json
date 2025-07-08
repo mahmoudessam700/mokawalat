@@ -71,7 +71,5 @@
     "vitest": "^2.0.2",
     "zod": "^3.24.1"
   },
-  "devDependencies": {
-    "genkit-cli": "0.4.0"
-  }
+  "devDependencies": {}
 }
