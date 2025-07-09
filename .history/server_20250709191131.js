@@ -52,11 +52,8 @@ const app = next({
 });
 const handle = app.getRequestHandler();
 
-console.log('Preparing Next.js app...');
 app.prepare().then(() => {
-  console.log('Next.js app prepared successfully');
-  
-  const server = createServer(async (req, res) => {
+  createServer(async (req, res) => {
     try {
       const parsedUrl = parse(req.url, true);
       await handle(req, res, parsedUrl);
@@ -65,13 +62,8 @@ app.prepare().then(() => {
       res.statusCode = 500;
       res.end('internal server error');
     }
-  });
-
-  server.listen(port, hostname, (err) => {
-    if (err) {
-      console.error('Server failed to start:', err);
-      throw err;
-    }
+  }).listen(port, hostname, (err) => {
+    if (err) throw err;
     console.log(`> Ready on http://${hostname}:${port}`);
     console.log(`> Environment: ${process.env.NODE_ENV || 'development'}`);
     
@@ -90,18 +82,6 @@ app.prepare().then(() => {
     }
   });
 }).catch((ex) => {
-  console.error('Next.js app preparation failed:', ex);
-  console.error('Stack trace:', ex.stack);
+  console.error('Server failed to start:', ex.stack);
   process.exit(1);
-});
-
-// Graceful shutdown
-process.on('SIGTERM', () => {
-  console.log('SIGTERM received, shutting down gracefully');
-  process.exit(0);
-});
-
-process.on('SIGINT', () => {
-  console.log('SIGINT received, shutting down gracefully');
-  process.exit(0);
 });

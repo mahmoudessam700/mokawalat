@@ -90,18 +90,6 @@ app.prepare().then(() => {
     }
   });
 }).catch((ex) => {
-  console.error('Next.js app preparation failed:', ex);
-  console.error('Stack trace:', ex.stack);
+  console.error('Server failed to start:', ex.stack);
   process.exit(1);
-});
-
-// Graceful shutdown
-process.on('SIGTERM', () => {
-  console.log('SIGTERM received, shutting down gracefully');
-  process.exit(0);
-});
-
-process.on('SIGINT', () => {
-  console.log('SIGINT received, shutting down gracefully');
-  process.exit(0);
 });

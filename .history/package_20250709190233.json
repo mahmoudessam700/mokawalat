@@ -8,13 +8,12 @@
     "build": "next build",
     "start": "NODE_ENV=production node server.js",
     "production": "npm run build && npm run start",
-    "cpanel": "node app.js",
+    "cpanel": "node server.js",
     "lint": "next lint",
     "typecheck": "tsc --noEmit",
     "test": "vitest",
     "heroku-postbuild": "npm run build"
   },
-  "main": "app.js",
   "engines": {
     "node": ">=20.0.0"
   },

@@ -10,28 +10,11 @@ const next = require('next');
 // Set memory limits for shared hosting
 process.env.NODE_OPTIONS = '--max-old-space-size=1024';
 
-// Enhanced error handling
-process.on('uncaughtException', (error) => {
-  console.error('Uncaught Exception:', error);
-  process.exit(1);
-});
-
-process.on('unhandledRejection', (reason, promise) => {
-  console.error('Unhandled Rejection at:', promise, 'reason:', reason);
-  process.exit(1);
-});
-
 const dev = process.env.NODE_ENV !== 'production';
 // Use '0.0.0.0' to accept connections on all network interfaces, which is necessary for many hosting environments.
 const hostname = '0.0.0.0'; 
 // The hosting provider (like cPanel) will set the PORT environment variable.
 const port = process.env.PORT || 3000; 
-
-console.log(`Initializing Next.js app...`);
-console.log(`- Environment: ${process.env.NODE_ENV}`);
-console.log(`- Development mode: ${dev}`);
-console.log(`- Port: ${port}`);
-console.log(`- Hostname: ${hostname}`); 
 
 // Configure Next.js for production optimization
 const app = next({ 
@@ -52,11 +35,8 @@ const app = next({
 });
 const handle = app.getRequestHandler();
 
-console.log('Preparing Next.js app...');
 app.prepare().then(() => {
-  console.log('Next.js app prepared successfully');
-  
-  const server = createServer(async (req, res) => {
+  createServer(async (req, res) => {
     try {
       const parsedUrl = parse(req.url, true);
       await handle(req, res, parsedUrl);
@@ -65,13 +45,8 @@ app.prepare().then(() => {
       res.statusCode = 500;
       res.end('internal server error');
     }
-  });
-
-  server.listen(port, hostname, (err) => {
-    if (err) {
-      console.error('Server failed to start:', err);
-      throw err;
-    }
+  }).listen(port, hostname, (err) => {
+    if (err) throw err;
     console.log(`> Ready on http://${hostname}:${port}`);
     console.log(`> Environment: ${process.env.NODE_ENV || 'development'}`);
     
@@ -90,18 +65,6 @@ app.prepare().then(() => {
     }
   });
 }).catch((ex) => {
-  console.error('Next.js app preparation failed:', ex);
-  console.error('Stack trace:', ex.stack);
+  console.error('Server failed to start:', ex.stack);
   process.exit(1);
-});
-
-// Graceful shutdown
-process.on('SIGTERM', () => {
-  console.log('SIGTERM received, shutting down gracefully');
-  process.exit(0);
-});
-
-process.on('SIGINT', () => {
-  console.log('SIGINT received, shutting down gracefully');
-  process.exit(0);
 });
