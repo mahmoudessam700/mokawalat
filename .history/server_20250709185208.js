@@ -47,24 +47,6 @@ app.prepare().then(() => {
     }
   }).listen(port, hostname, (err) => {
     if (err) throw err;
-    console.log(`> Ready on http://${hostname}:${port}`);
-    console.log(`> Environment: ${process.env.NODE_ENV || 'development'}`);
-    
-    // Monitor memory usage for shared hosting
-    if (process.env.NODE_ENV === 'production') {
-      setInterval(() => {
-        const memUsage = process.memoryUsage();
-        if (memUsage.heapUsed > 800 * 1024 * 1024) { // 800MB warning
-          console.warn('High memory usage detected:', Math.round(memUsage.heapUsed / 1024 / 1024) + 'MB');
-          if (global.gc) {
-            global.gc();
-            console.log('Garbage collection triggered');
-          }
-        }
-      }, 30000); // Check every 30 seconds
-    }
+    console.log(`> Ready on http://localhost:${port}`);
   });
-}).catch((ex) => {
-  console.error('Server failed to start:', ex.stack);
-  process.exit(1);
 });
