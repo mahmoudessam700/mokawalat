@@ -1,0 +1,8 @@
+
+# DO NOT REMOVE.
+# This file is required for the application to work correctly on cPanel.
+PassengerAppRoot "/home/englizyedu/mokawalat.englizyedu.com"
+PassengerBaseURI "/"
+PassengerAppType node
+PassengerStartupFile server.js
+PassengerAppEnv production

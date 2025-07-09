@@ -1,0 +1,132 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Helper functions
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function getUserData() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+    }
+
+    function isManagerOrAdmin() {
+      let userRole = getUserData().role;
+      return userRole == 'admin' || userRole == 'manager';
+    }
+
+    // Default deny all reads and writes
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Allow any authenticated user to read from any collection.
+    // This is a common and secure pattern for internal applications where all users are trusted to see the data.
+    match /{path=**}/{document} {
+        allow read: if isSignedIn();
+    }
+    
+    // --- Specific Write Rules ---
+    // More specific rules should come after more general rules.
+    // However, since our general rule is a read-only rule, we can define our write rules here.
+    
+    // --- Core Modules ---
+    match /users/{userId} {
+      allow read: if isSignedIn();
+      allow write: if getUserData().role == 'admin';
+    }
+    
+    match /company/{docId} {
+        allow read: if isSignedIn();
+        allow write: if getUserData().role == 'admin';
+    }
+
+    match /projects/{projectId} {
+        allow write: if isManagerOrAdmin();
+    }
+
+    match /projects/{projectId}/{subcollection}/{docId} {
+        allow write: if isSignedIn();
+    }
+    
+    match /clients/{clientId} {
+        allow write: if isManagerOrAdmin();
+    }
+    match /clients/{clientId}/{subcollection}/{docId} {
+        allow write: if isSignedIn();
+    }
+
+    match /suppliers/{supplierId} {
+        allow write: if isManagerOrAdmin();
+    }
+     match /suppliers/{supplierId}/{subcollection}/{docId} {
+        allow write: if isSignedIn();
+    }
+
+    match /inventory/{itemId} {
+        allow write: if isManagerOrAdmin();
+    }
+    
+    match /inventoryCategories/{categoryId} {
+        allow write: if getUserData().role == 'admin';
+    }
+    
+    match /warehouses/{warehouseId} {
+        allow write: if getUserData().role == 'admin';
+    }
+
+    match /assets/{assetId} {
+      allow write: if isManagerOrAdmin();
+    }
+    match /assets/{assetId}/{subcollection}/{docId} {
+      allow write: if isManagerOrAdmin();
+    }
+
+    match /procurement/{requestId} {
+      allow write: if isManagerOrAdmin();
+    }
+
+    match /materialRequests/{requestId} {
+      allow write: if isManagerOrAdmin();
+    }
+
+    match /transactions/{transactionId} {
+      allow write: if isManagerOrAdmin();
+    }
+
+    match /invoices/{invoiceId} {
+        allow write: if isManagerOrAdmin();
+    }
+
+    match /accounts/{accountId} {
+      allow write: if getUserData().role == 'admin';
+    }
+
+    // --- Human Capital Management ---
+    match /employees/{employeeId} {
+      allow write: if isManagerOrAdmin();
+    }
+    match /jobs/{jobId} {
+      allow write: if isManagerOrAdmin();
+    }
+    match /candidates/{candidateId} {
+      allow write: if isManagerOrAdmin();
+    }
+    match /performanceReviews/{reviewId} {
+      allow write: if isManagerOrAdmin();
+    }
+    match /trainings/{trainingId} {
+      allow write: if isManagerOrAdmin();
+    }
+    match /offboarding/{offboardingId} {
+      allow write: if isManagerOrAdmin();
+    }
+
+    // --- System Wide ---
+    match /activityLog/{logId} {
+      allow write: if isSignedIn();
+    }
+  }
+}
