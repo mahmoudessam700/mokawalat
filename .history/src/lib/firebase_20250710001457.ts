@@ -1,8 +1,8 @@
 
-import { getApp, getApps, initializeApp, FirebaseApp } from 'firebase/app';
-import { getAuth } from 'firebase/auth';
-import { getFirestore } from 'firebase/firestore';
-import { getStorage } from 'firebase/storage';
+import { getApp, getApps, initializeApp } from 'firebase/app';
+import { getAuth, connectAuthEmulator } from 'firebase/auth';
+import { getFirestore, connectFirestoreEmulator } from 'firebase/firestore';
+import { getStorage, connectStorageEmulator } from 'firebase/storage';
 import { getAnalytics, isSupported } from 'firebase/analytics';
 
 const firebaseConfig = {
@@ -25,7 +25,7 @@ if (!hasValidConfig) {
 }
 
 // Initialize Firebase
-let app: FirebaseApp;
+let app;
 try {
   app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
   console.log('✅ Firebase initialized successfully with project:', firebaseConfig.projectId);
@@ -38,17 +38,21 @@ const auth = getAuth(app);
 const firestore = getFirestore(app);
 const storage = getStorage(app);
 
-// Initialize Analytics (only in browser and production)
-let analytics = null;
-if (typeof window !== 'undefined') {
-  isSupported().then((supported) => {
-    if (supported) {
-      analytics = getAnalytics(app);
-      console.log('✅ Firebase Analytics initialized');
+// Connect to emulators in demo mode (development only)
+if (isDemoConfig && typeof window !== 'undefined' && process.env.NODE_ENV === 'development') {
+  try {
+    if (!auth._delegate?.config) {
+      connectAuthEmulator(auth, 'http://localhost:9099');
     }
-  }).catch((error) => {
-    console.warn('⚠️ Firebase Analytics not supported:', error);
-  });
+    if (!firestore._delegate?._settings?.host?.includes('localhost')) {
+      connectFirestoreEmulator(firestore, 'localhost', 8080);
+    }
+    if (!storage._delegate?._config?.emulatorOrigin) {
+      connectStorageEmulator(storage, 'localhost', 9199);
+    }
+  } catch (error) {
+    console.debug('Firebase emulators not available:', error);
+  }
 }
 
-export { app, auth, firestore, storage, analytics };
+export { app, auth, firestore, storage, isDemoConfig };

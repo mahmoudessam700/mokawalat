@@ -4,7 +4,7 @@
 import React, { useState, useEffect, createContext, useContext, type ReactNode } from 'react';
 import { onAuthStateChanged, type User as FirebaseAuthUser } from 'firebase/auth';
 import { doc, onSnapshot } from 'firebase/firestore';
-import { auth, firestore } from '@/lib/firebase';
+import { auth, firestore, isDemoConfig } from '@/lib/firebase';
 
 export type UserRole = 'admin' | 'manager' | 'user';
 
@@ -31,6 +31,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   });
 
   useEffect(() => {
+    // Handle demo configuration
+    if (isDemoConfig) {
+      console.debug('Using demo authentication configuration');
+      setAuthState({
+        user: null,
+        profile: null,
+        isLoading: false,
+      });
+      return;
+    }
+
     let unsubscribeProfile: (() => void) | null = null;
 
     try {

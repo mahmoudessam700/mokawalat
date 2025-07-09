@@ -45,7 +45,6 @@ export default function RootLayout({
         >
           <I18nProvider>
             <AuthProvider>
-              <ClientInitializer />
               {children}
               <Toaster />
             </AuthProvider>

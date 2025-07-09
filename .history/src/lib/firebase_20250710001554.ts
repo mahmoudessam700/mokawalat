@@ -1,5 +1,5 @@
 
-import { getApp, getApps, initializeApp, FirebaseApp } from 'firebase/app';
+import { getApp, getApps, initializeApp } from 'firebase/app';
 import { getAuth } from 'firebase/auth';
 import { getFirestore } from 'firebase/firestore';
 import { getStorage } from 'firebase/storage';
@@ -25,7 +25,7 @@ if (!hasValidConfig) {
 }
 
 // Initialize Firebase
-let app: FirebaseApp;
+let app;
 try {
   app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
   console.log('✅ Firebase initialized successfully with project:', firebaseConfig.projectId);
