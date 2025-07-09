@@ -34,3 +34,42 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# Cache and temporary files
+.cache/
+.temp/
+.tmp/
+
+# History files
+.history/
+
+# Deployment folders (these contain large files)
+deployment/
+
+# Firebase debug logs
+firebase-debug.log
+firestore-debug.log
+pglite-debug.log
+
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS generated files
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Logs
+*.log
+logs/
+pids/
+*.pid
+*.seed
+*.pid.lock
