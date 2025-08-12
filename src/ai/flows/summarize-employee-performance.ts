@@ -75,5 +75,5 @@ export async function summarizeEmployeePerformance(
       }
   });
 
-  return llmResponse.output!;
+  return llmResponse.output()!;
 }

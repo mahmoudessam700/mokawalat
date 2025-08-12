@@ -560,7 +560,7 @@ export default function ClientDetailPage({ params }: { params: { id: string } })
 
     <AlertDialog open={!!contractToDelete} onOpenChange={(open) => !open && setContractToDelete(null)}>
         <AlertDialogContent>
-            <AlertDialogHeader><AlertDialogTitle>{t('are_you_sure')}</AlertDialogTitle><AlertDialogDescription>{t('clients.delete_contract_confirm_desc', { title: contractToDelete?.title })}</AlertDialogDescription></AlertDialogHeader>
+            <AlertDialogHeader><AlertDialogTitle>{t('are_you_sure')}</AlertDialogTitle><AlertDialogDescription>{t('clients.delete_contract_confirm_desc', { title: contractToDelete?.title ?? '' })}</AlertDialogDescription></AlertDialogHeader>
             <AlertDialogFooter>
                 <AlertDialogCancel onClick={() => setContractToDelete(null)}>{t('cancel')}</AlertDialogCancel>
                 <AlertDialogAction onClick={handleDeleteContract} disabled={isDeletingContract} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">{isDeletingContract ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> {t('deleting')}</> : <><Trash2 className="mr-2 h-4 w-4" /> {t('delete')}</>}</AlertDialogAction>

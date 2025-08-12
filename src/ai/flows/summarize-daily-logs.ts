@@ -65,5 +65,5 @@ export async function summarizeDailyLogs(
         }
     });
 
-    return llmResponse.output!;
+    return llmResponse.output()!;
 }

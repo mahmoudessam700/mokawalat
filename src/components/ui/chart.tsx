@@ -79,7 +79,7 @@ const ChartStyle = ({ id, config }: { id: string; config: ChartConfig }) => {
   return (
     <style
       dangerouslySetInnerHTML={{
-        __html: Object.entries(THEMES)
+  __html: Object.entries(THEMES)
           .map(
             ([theme, prefix]) => `
 ${prefix} [data-chart=${id}] {
@@ -92,6 +92,11 @@ ${colorConfig
   })
   .join("\n")}
 }
+${prefix} [data-chart=${id}] [data-series] { color: var(--color-text, currentColor) }
+${prefix} [data-chart=${id}] [data-series="expense"] { color: var(--color-expense, currentColor) }
+${prefix} [data-chart=${id}] [data-series="income"] { color: var(--color-income, currentColor) }
+${prefix} [data-chart=${id}] [data-series] .bg-current { background-color: currentColor }
+${prefix} [data-chart=${id}] [data-series] .border-current { border-color: currentColor }
 `
           )
           .join("\n"),
@@ -193,6 +198,7 @@ const ChartTooltipContent = React.forwardRef<
             return (
               <div
                 key={item.dataKey}
+                data-series={key}
                 className={cn(
                   "flex w-full flex-wrap items-stretch gap-2 [&>svg]:h-2.5 [&>svg]:w-2.5 [&>svg]:text-muted-foreground",
                   indicator === "dot" && "items-center"
@@ -208,21 +214,15 @@ const ChartTooltipContent = React.forwardRef<
                       !hideIndicator && (
                         <div
                           className={cn(
-                            "shrink-0 rounded-[2px] border-[--color-border] bg-[--color-bg]",
+                            "shrink-0 rounded-[2px]",
                             {
-                              "h-2.5 w-2.5": indicator === "dot",
-                              "w-1": indicator === "line",
-                              "w-0 border-[1.5px] border-dashed bg-transparent":
+                              "h-2.5 w-2.5 bg-current border-current": indicator === "dot",
+                              "w-1 bg-current": indicator === "line",
+                              "w-0 border-[1.5px] border-dashed bg-transparent border-current":
                                 indicator === "dashed",
                               "my-0.5": nestLabel && indicator === "dashed",
                             }
                           )}
-                          style={
-                            {
-                              "--color-bg": indicatorColor,
-                              "--color-border": indicatorColor,
-                            } as React.CSSProperties
-                          }
                         />
                       )
                     )}
@@ -299,12 +299,9 @@ const ChartLegendContent = React.forwardRef<
               {itemConfig?.icon && !hideIcon ? (
                 <itemConfig.icon />
               ) : (
-                <div
-                  className="h-2 w-2 shrink-0 rounded-[2px]"
-                  style={{
-                    backgroundColor: item.color,
-                  }}
-                />
+                <span data-series={key}>
+                  <div className="h-2 w-2 shrink-0 rounded-[2px] bg-current" />
+                </span>
               )}
               {itemConfig?.label}
             </div>

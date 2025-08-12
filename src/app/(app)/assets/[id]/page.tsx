@@ -113,13 +113,13 @@ export default function AssetDetailPage({ params }: { params: { id: string } }) 
     const unsubscribes: (() => void)[] = [];
 
     const assetRef = doc(firestore, 'assets', assetId);
-    unsubscribes.push(onSnapshot(assetRef, (doc) => {
-        if (doc.exists()) {
-            const assetData = { id: doc.id, ...doc.data() } as Asset;
+    unsubscribes.push(onSnapshot(assetRef, (assetDoc) => {
+        if (assetDoc.exists()) {
+            const assetData = { id: assetDoc.id, ...assetDoc.data() } as Asset;
             setAsset(assetData);
             if (assetData.currentProjectId) {
                 const projectRef = doc(firestore, 'projects', assetData.currentProjectId);
-                unsubscribes.push(onSnapshot(projectRef, (projectDoc) => {
+                unsubscribes.push(onSnapshot(projectRef, (projectDoc: any) => {
                     setProject(projectDoc.exists() ? { id: projectDoc.id, ...projectDoc.data() } as Project : null);
                 }));
             }

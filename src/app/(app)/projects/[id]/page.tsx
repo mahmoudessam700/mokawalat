@@ -2,7 +2,7 @@
 'use client';
 
 import { useEffect, useState, useMemo } from 'react';
-import { doc, type Timestamp, collection, query, where, onSnapshot, orderBy } from 'firebase/firestore';
+import { doc as fsDoc, type Timestamp, collection, query, where, onSnapshot, orderBy, type DocumentSnapshot, type DocumentData } from 'firebase/firestore';
 import { firestore } from '@/lib/firebase';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -42,6 +42,10 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel,
 import { updateMaterialRequestStatus } from '../../material-requests/actions';
 import { ProjectTasksView } from './project-tasks-view';
 import { useLanguage } from '@/hooks/use-language';
+import { ChartContainer, ChartLegend, ChartLegendContent, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
+import { Line, LineChart, CartesianGrid, XAxis, YAxis } from 'recharts';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
 
 type ProjectStatus = 'In Progress' | 'Planning' | 'Completed' | 'On Hold';
 type TaskStatus = 'To Do' | 'In Progress' | 'Done';
@@ -230,11 +234,58 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
   const [isDeletingDocument, setIsDeletingDocument] = useState(false);
   const [isDeletingTask, setIsDeletingTask] = useState(false);
   const [isSuggestingTasks, setIsSuggestingTasks] = useState(false);
+    const [includeCommitments, setIncludeCommitments] = useState(false);
   const { profile } = useAuth();
   const { toast } = useToast();
   const { t } = useLanguage();
   
   const projectId = params.id;
+
+    const { totalExpense, totalIncome, percentSpent, remainingBudget } = useMemo(() => {
+        const totals = transactions.reduce(
+            (acc, tx) => {
+                if (tx.type === 'Expense') acc.expense += Math.max(0, tx.amount || 0);
+                if (tx.type === 'Income') acc.income += Math.max(0, tx.amount || 0);
+                return acc;
+            },
+            { expense: 0, income: 0 }
+        );
+        const budget = Math.max(0, project?.budget || 0);
+        const spentPct = budget > 0 ? Math.min(100, Math.round((totals.expense / budget) * 100)) : 0;
+        const remaining = (project?.budget || 0) - totals.expense;
+        return { totalExpense: totals.expense, totalIncome: totals.income, percentSpent: spentPct, remainingBudget: remaining };
+    }, [transactions, project]);
+
+        const committedAmount = useMemo(() => {
+            // Sum of Approved POs that are not yet ordered/received
+            return procurements
+                .filter(p => p.status === 'Approved')
+                .reduce((sum, p) => sum + (Number((p as any).totalCost || 0)), 0);
+        }, [procurements]);
+
+        const budgetDerived = useMemo(() => {
+            const budget = Math.max(0, project?.budget || 0);
+            const effectiveSpent = includeCommitments ? totalExpense + committedAmount : totalExpense;
+            const pct = budget > 0 ? Math.min(100, Math.round((effectiveSpent / budget) * 100)) : 0;
+            const remaining = (project?.budget || 0) - effectiveSpent;
+            return { effectiveSpent, percent: pct, remaining };
+        }, [includeCommitments, totalExpense, committedAmount, project]);
+
+        const spendingSeries = useMemo(() => {
+            const byMonth = new Map<string, { key: string; label: string; expense: number }>();
+            transactions
+                .filter((tx) => tx.type === 'Expense' && tx.date)
+                .forEach((tx) => {
+                    const d = (tx.date as Timestamp).toDate();
+                    const key = format(d, 'yyyy-MM');
+                    const label = format(d, 'MMM yyyy');
+                    const rec = byMonth.get(key) || { key, label, expense: 0 };
+                    rec.expense += Math.max(0, tx.amount || 0);
+                    byMonth.set(key, rec);
+                });
+            const arr = Array.from(byMonth.values()).sort((a, b) => a.key.localeCompare(b.key));
+            return arr;
+        }, [transactions]);
 
   useEffect(() => {
     if (!projectId) return;
@@ -242,15 +293,15 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
 
     const unsubscribes: (() => void)[] = [];
 
-    const projectRef = doc(firestore, 'projects', projectId);
-    unsubscribes.push(onSnapshot(projectRef, (doc) => {
-        if (doc.exists()) {
-            const projectData = { id: doc.id, ...doc.data() } as Project;
+    const projectRef = fsDoc(firestore, 'projects', projectId);
+    unsubscribes.push(onSnapshot(projectRef, (projectSnap: DocumentSnapshot<DocumentData>) => {
+        if (projectSnap.exists()) {
+            const projectData = { id: projectSnap.id, ...projectSnap.data() } as Project;
             setProject(projectData);
 
             if (projectData.clientId) {
-                const clientRef = doc(firestore, 'clients', projectData.clientId);
-                unsubscribes.push(onSnapshot(clientRef, (clientDoc) => {
+                const clientRef = fsDoc(firestore, 'clients', projectData.clientId);
+                unsubscribes.push(onSnapshot(clientRef, (clientDoc: DocumentSnapshot<DocumentData>) => {
                     if (clientDoc.exists()) {
                         setClient({ id: clientDoc.id, ...clientDoc.data() } as Client);
                     } else {
@@ -410,15 +461,15 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
         formData.append('photo', values.photo[0]);
     }
 
-    const result = await addDailyLog(projectId, { 
+        const result = await addDailyLog(projectId, { 
         uid: profile.uid, 
         email: profile.email 
     }, formData);
 
     if (result.errors) {
-      if (result.errors.photo) {
-        dailyLogForm.setError('photo', { type: 'server', message: result.errors.photo[0] });
-      }
+            if ('photo' in result.errors && (result.errors as any).photo) {
+                dailyLogForm.setError('photo', { type: 'server', message: (result.errors as any).photo[0] });
+            }
       toast({ variant: 'destructive', title: t('error'), description: result.message });
     } else {
       toast({ title: t('success'), description: result.message });
@@ -436,11 +487,11 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
     }
 
     const result = await addProjectDocument(projectId, formData);
-    if (result.errors) {
-      toast({ variant: 'destructive', title: 'Error', description: result.message });
-      if (result.errors.file) {
-        documentForm.setError('file', { type: 'server', message: result.errors.file[0] });
-      }
+        if (result.errors) {
+            toast({ variant: 'destructive', title: 'Error', description: result.message });
+            if ('file' in result.errors && (result.errors as any).file) {
+                documentForm.setError('file', { type: 'server', message: (result.errors as any).file[0] });
+            }
     } else {
       toast({ title: t('success'), description: result.message });
       documentForm.reset();
@@ -657,6 +708,80 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
                         </div>
                     </CardContent>
                 </Card>
+                <Card className="mt-4">
+                    <CardHeader>
+                        <CardTitle>{t('projects.budget_vs_actual') || 'Budget vs Actual'}</CardTitle>
+                                                <CardDescription>{t('projects.budget_vs_actual_desc') || 'Track project spending against the approved budget.'}</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                                                <div className="flex items-center justify-end mb-4 gap-2">
+                                                    <Switch id="include-commitments" checked={includeCommitments} onCheckedChange={setIncludeCommitments} />
+                                                    <Label htmlFor="include-commitments" className="text-sm text-muted-foreground cursor-pointer">
+                                                        {t('projects.include_commitments') || 'Include commitments (Approved POs)'}
+                                                    </Label>
+                                                </div>
+                        <div className="grid gap-6 md:grid-cols-3">
+                            <div className="space-y-2">
+                                <p className="text-sm text-muted-foreground">{t('projects.budget')}</p>
+                                <p className="text-lg font-semibold">{formatCurrency(project.budget || 0)}</p>
+                            </div>
+                            <div className="space-y-2">
+                                <p className="text-sm text-muted-foreground">{t('projects.actual_spend') || 'Actual Spend'}</p>
+                                <p className="text-lg font-semibold">{formatCurrency(totalExpense)}</p>
+                            </div>
+                                                        {includeCommitments && (
+                                                            <div className="space-y-2">
+                                                                <p className="text-sm text-muted-foreground">{t('projects.committed') || 'Committed (Approved POs)'}</p>
+                                                                <p className="text-lg font-semibold">{formatCurrency(committedAmount)}</p>
+                                                            </div>
+                                                        )}
+                            <div className="space-y-2">
+                                                                <p className="text-sm text-muted-foreground">
+                                                                    {budgetDerived.remaining >= 0 ? (t('projects.remaining') || 'Remaining') : (t('projects.over_budget') || 'Over Budget')}
+                                                                </p>
+                                                                <p className={`text-lg font-semibold ${budgetDerived.remaining < 0 ? 'text-destructive' : ''}`}>
+                                                                        {budgetDerived.remaining >= 0 ? formatCurrency(budgetDerived.remaining) : `-${formatCurrency(Math.abs(budgetDerived.remaining))}`}
+                                </p>
+                            </div>
+                        </div>
+                        <div className="mt-6">
+                            <div className="flex items-center justify-between text-sm mb-2">
+                                                                <span className="text-muted-foreground">
+                                                                    {includeCommitments ? (t('projects.spending_progress_incl') || 'Spending progress (incl. commitments)') : (t('projects.spending_progress') || 'Spending progress')}
+                                                                </span>
+                                                                <span className={`${budgetDerived.percent >= 90 ? 'text-destructive' : budgetDerived.percent >= 75 ? 'text-amber-600' : ''}`}>{budgetDerived.percent}%</span>
+                            </div>
+                                                        <Progress value={budgetDerived.percent} />
+                                                        {budgetDerived.percent >= 90 && (
+                                <p className="mt-2 text-xs text-destructive">{t('projects.near_or_over_budget_warning') || 'Warning: Spending is near or over the budget.'}</p>
+                            )}
+                        </div>
+                    </CardContent>
+                </Card>
+                                <Card className="mt-4">
+                                        <CardHeader>
+                                                <CardTitle>{t('projects.spending_over_time') || 'Spending over time'}</CardTitle>
+                                                <CardDescription>{t('projects.spending_over_time_desc') || 'Monthly expenses for this project.'}</CardDescription>
+                                        </CardHeader>
+                                        <CardContent>
+                                                {spendingSeries.length > 0 ? (
+                                                    <ChartContainer
+                                                        className="w-full"
+                                                        config={{ expense: { label: t('financials.expense') || 'Expense', color: 'hsl(var(--primary))' } }}
+                                                    >
+                                                        <LineChart data={spendingSeries} margin={{ left: 12, right: 12 }}>
+                                                            <CartesianGrid vertical={false} strokeDasharray="3 3" />
+                                                            <XAxis dataKey="label" tickLine={false} axisLine={false} />
+                                                            <YAxis tickLine={false} axisLine={false} />
+                                                            <ChartTooltip content={<ChartTooltipContent />} />
+                                                            <Line type="monotone" dataKey="expense" stroke="var(--color-expense)" dot={false} strokeWidth={2} />
+                                                        </LineChart>
+                                                    </ChartContainer>
+                                                ) : (
+                                                    <div className="text-sm text-muted-foreground">{t('projects.no_spending_data') || 'No spending data yet.'}</div>
+                                                )}
+                                        </CardContent>
+                                </Card>
             </TabsContent>
             <TabsContent value="tasks" className="pt-4">
                 <Card>
@@ -1139,7 +1264,7 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
     </div>
     <AlertDialog open={!!documentToDelete} onOpenChange={(open) => !open && setDocumentToDelete(null)}>
         <AlertDialogContent>
-            <AlertDialogHeader><AlertDialogTitle>{t('are_you_sure')}</AlertDialogTitle><AlertDialogDescription>{t('delete_document_confirm_desc', { title: documentToDelete?.title })}</AlertDialogDescription></AlertDialogHeader>
+            <AlertDialogHeader><AlertDialogTitle>{t('are_you_sure')}</AlertDialogTitle><AlertDialogDescription>{t('delete_document_confirm_desc', { title: documentToDelete?.title ?? '' })}</AlertDialogDescription></AlertDialogHeader>
             <AlertDialogFooter>
                 <AlertDialogCancel onClick={() => setDocumentToDelete(null)}>{t('cancel')}</AlertDialogCancel>
                 <AlertDialogAction onClick={handleDeleteDocument} disabled={isDeletingDocument} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
@@ -1150,7 +1275,7 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
     </AlertDialog>
     <AlertDialog open={!!taskToDelete} onOpenChange={(open) => !open && setTaskToDelete(null)}>
         <AlertDialogContent>
-            <AlertDialogHeader><AlertDialogTitle>{t('are_you_sure')}</AlertDialogTitle><AlertDialogDescription>{t('delete_task_confirm_desc', { name: taskToDelete?.name })}</AlertDialogDescription></AlertDialogHeader>
+            <AlertDialogHeader><AlertDialogTitle>{t('are_you_sure')}</AlertDialogTitle><AlertDialogDescription>{t('delete_task_confirm_desc', { name: taskToDelete?.name ?? '' })}</AlertDialogDescription></AlertDialogHeader>
             <AlertDialogFooter>
                 <AlertDialogCancel onClick={() => setTaskToDelete(null)}>{t('cancel')}</AlertDialogCancel>
                 <AlertDialogAction onClick={handleDeleteTask} disabled={isDeletingTask} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">

@@ -444,7 +444,7 @@ export default function AssetsPage() {
           <AlertDialogContent>
               <AlertDialogHeader>
                   <AlertDialogTitle>{t('are_you_sure')}</AlertDialogTitle>
-                  <AlertDialogDescription>{t('assets.delete_confirm_desc', { name: assetToDelete?.name })}</AlertDialogDescription>
+                  <AlertDialogDescription>{t('assets.delete_confirm_desc', { name: assetToDelete?.name ?? '' })}</AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter>
                   <AlertDialogCancel onClick={() => setAssetToDelete(null)}>{t('cancel')}</AlertDialogCancel>

@@ -623,7 +623,7 @@ export default function InventoryPage() {
             <AlertDialogHeader>
                 <AlertDialogTitle>{t('are_you_sure')}</AlertDialogTitle>
                 <AlertDialogDescription>
-                    {t('inventory.delete_confirm_desc', { name: itemToDelete?.name })}
+                    {t('inventory.delete_confirm_desc', { name: itemToDelete?.name ?? '' })}
                 </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>

@@ -487,7 +487,7 @@ export default function SuppliersPage() {
             <AlertDialogHeader>
                 <AlertDialogTitle>{t('are_you_sure')}</AlertDialogTitle>
                 <AlertDialogDescription>
-                    {t('suppliers.delete_confirm_desc', { name: supplierToDelete?.name })}
+                    {t('suppliers.delete_confirm_desc', { name: supplierToDelete?.name ?? '' })}
                 </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>

@@ -236,7 +236,7 @@ export default function JobPostingsPage() {
         <AlertDialogContent>
             <AlertDialogHeader>
                 <AlertDialogTitle>{t('are_you_sure')}</AlertDialogTitle>
-                <AlertDialogDescription>{t('jobs.delete_confirm_desc', { title: jobToDelete?.title })}</AlertDialogDescription>
+                <AlertDialogDescription>{t('jobs.delete_confirm_desc', { title: jobToDelete?.title ?? '' })}</AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
                 <AlertDialogCancel onClick={() => setJobToDelete(null)}>{t('cancel')}</AlertDialogCancel>

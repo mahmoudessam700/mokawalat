@@ -85,9 +85,9 @@ export default function ProcurementDetailPage({ params }: { params: { id: string
     const unsubscribes: (() => void)[] = [];
     
     const requestRef = doc(firestore, 'procurement', requestId);
-    const unsubRequest = onSnapshot(requestRef, (doc) => {
-        if (doc.exists()) {
-            const requestData = { id: doc.id, ...doc.data() } as PurchaseOrder;
+    const unsubRequest = onSnapshot(requestRef, (requestDoc) => {
+        if (requestDoc.exists()) {
+            const requestData = { id: requestDoc.id, ...requestDoc.data() } as PurchaseOrder;
             setRequest(requestData);
 
             if (requestData.projectId) {

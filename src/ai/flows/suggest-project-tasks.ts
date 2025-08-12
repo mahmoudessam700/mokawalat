@@ -38,9 +38,10 @@ export async function suggestProjectTasks(
       model: 'googleai/gemini-pro',
       prompt: prompt,
       output: {
-          schema: SuggestProjectTasksOutputSchema
+    format: 'json',
+    schema: SuggestProjectTasksOutputSchema
       }
   });
 
-  return llmResponse.output!;
+  return llmResponse.output() as SuggestProjectTasksOutput;
 }

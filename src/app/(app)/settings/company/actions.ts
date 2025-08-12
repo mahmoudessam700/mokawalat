@@ -57,10 +57,10 @@ export async function updateCompanyProfile(formData: FormData) {
   }
   
   const logoFile = formData.get('logo') as File | null;
-  const currentData = await getCompanyProfile() || {};
+  const currentData: Partial<CompanyProfileFormValues> = (await getCompanyProfile()) ?? {};
 
   try {
-    let { logoUrl, logoPath } = currentData;
+  let { logoUrl, logoPath } = currentData;
     
     if (logoFile && logoFile.size > 0) {
       // Delete old logo if it exists

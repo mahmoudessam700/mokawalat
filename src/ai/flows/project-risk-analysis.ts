@@ -50,5 +50,5 @@ export async function analyzeProjectRisks(
       }
   });
   
-  return llmResponse.output!;
+  return llmResponse.output()!;
 }

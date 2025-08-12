@@ -51,5 +51,5 @@ export async function summarizeClientInteractions(
       }
   });
   
-  return llmResponse.output!;
+  return llmResponse.output()!;
 }

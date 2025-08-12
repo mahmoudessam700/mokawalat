@@ -140,6 +140,7 @@ export default function ProjectsPage() {
   const [isDeleting, setIsDeleting] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('All');
+  const [projectExpenses, setProjectExpenses] = useState<Record<string, number>>({});
   const { toast } = useToast();
   const { profile } = useAuth();
   const { t } = useLanguage();
@@ -177,6 +178,19 @@ export default function ProjectsPage() {
         const clientsData: Client[] = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Client));
         clientsData.sort((a, b) => a.name.localeCompare(b.name));
         setClients(clientsData);
+    }));
+
+    // Listen to transactions to compute per-project expenses
+    const qTransactions = query(collection(firestore, 'transactions'));
+    unsubscribes.push(onSnapshot(qTransactions, (snapshot) => {
+      const totals: Record<string, number> = {};
+      snapshot.docs.forEach(d => {
+        const data = d.data() as any;
+        if (data.type === 'Expense' && data.projectId) {
+          totals[data.projectId] = (totals[data.projectId] || 0) + Number(data.amount || 0);
+        }
+      });
+      setProjectExpenses(totals);
     }));
 
     return () => unsubscribes.forEach(unsub => unsub());
@@ -558,6 +572,11 @@ export default function ProjectsPage() {
                   <TableRow key={project.id}>
                     <TableCell className="font-medium">
                       {project.name}
+                      {project.budget > 0 && (projectExpenses[project.id] || 0) / project.budget >= 0.9 && (
+                        <span className="ml-2 inline-flex items-center rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-800">
+                          {t('projects.near_budget') || 'Near budget'}
+                        </span>
+                      )}
                     </TableCell>
                     <TableCell>
                       {project.clientId && clientNames.has(project.clientId) ? (
@@ -647,7 +666,7 @@ export default function ProjectsPage() {
         <AlertDialogHeader>
           <AlertDialogTitle>{t('are_you_sure')}</AlertDialogTitle>
           <AlertDialogDescription>
-            {t('projects.delete_confirm_desc', { name: projectToDelete?.name })}
+            {t('projects.delete_confirm_desc', { name: projectToDelete?.name ?? '' })}
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>

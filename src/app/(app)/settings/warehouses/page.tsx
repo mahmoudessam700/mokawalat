@@ -241,7 +241,7 @@ export default function WarehousesPage() {
         <AlertDialogContent>
             <AlertDialogHeader>
                 <AlertDialogTitle>{t('are_you_sure')}</AlertDialogTitle>
-                <AlertDialogDescription>{t('delete_warehouse_confirm_desc', { name: warehouseToDelete?.name })}</AlertDialogDescription>
+                <AlertDialogDescription>{t('delete_warehouse_confirm_desc', { name: warehouseToDelete?.name ?? '' })}</AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
                 <AlertDialogCancel onClick={() => setWarehouseToDelete(null)}>{t('cancel')}</AlertDialogCancel>

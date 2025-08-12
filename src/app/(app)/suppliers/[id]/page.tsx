@@ -526,7 +526,7 @@ export default function SupplierDetailPage({ params }: { params: { id: string } 
         <AlertDialogHeader>
           <AlertDialogTitle>{t('are_you_sure')}</AlertDialogTitle>
           <AlertDialogDescription>
-            {t('clients.delete_contract_confirm_desc', { title: contractToDelete?.title })}
+            {t('clients.delete_contract_confirm_desc', { title: contractToDelete?.title ?? '' })}
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>

@@ -558,7 +558,7 @@ export default function EmployeesPage() {
             <AlertDialogHeader>
                 <AlertDialogTitle>{t('are_you_sure')}</AlertDialogTitle>
                 <AlertDialogDescription>
-                    {t('employees.delete_confirm_desc', { name: employeeToDelete?.name })}
+                    {t('employees.delete_confirm_desc', { name: employeeToDelete?.name ?? '' })}
                 </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>

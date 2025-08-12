@@ -135,7 +135,8 @@ export default function PayrollSummaryPage() {
       querySnapshot.forEach((doc) => {
         const data = doc.data() as Employee;
         if (data.salary && data.salary > 0) {
-            employeesData.push({ id: doc.id, ...data });
+            const { id: _ignored, ...rest } = data as any;
+            employeesData.push({ id: doc.id, ...(rest as any) });
         }
       });
       employeesData.sort((a,b) => (b.salary || 0) - (a.salary || 0));

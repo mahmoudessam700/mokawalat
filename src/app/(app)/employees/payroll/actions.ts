@@ -71,8 +71,8 @@ export async function runPayroll(runBy: { uid: string, email: string }, values: 
     const transactionsCollection = collection(firestore, 'transactions');
     let totalPayroll = 0;
 
-    employeesSnapshot.forEach((doc) => {
-      const employee = doc.data();
+    employeesSnapshot.forEach((empDoc) => {
+      const employee = empDoc.data();
       const newTransactionRef = doc(transactionsCollection);
       batch.set(newTransactionRef, {
         description: `Monthly Salary for ${employee.name} (${payrollPeriodId})`,

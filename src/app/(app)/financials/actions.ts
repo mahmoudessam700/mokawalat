@@ -7,7 +7,8 @@
  */
 
 import { firestore } from '@/lib/firebase';
-import { collection, addDoc, serverTimestamp, doc, deleteDoc, updateDoc, getDoc } from 'firebase/firestore';
+import { collection, addDoc, serverTimestamp, doc, deleteDoc, updateDoc, getDoc, query, where, getDocs } from 'firebase/firestore';
+import { sendBudgetAlertWebhooks } from '@/lib/alerts';
 import { z } from 'zod';
 import { revalidatePath } from 'next/cache';
 
@@ -45,7 +46,7 @@ export async function addTransaction(values: TransactionFormValues) {
   }
 
   try {
-    await addDoc(collection(firestore, 'transactions'), {
+  const createdRef = await addDoc(collection(firestore, 'transactions'), {
         ...validatedFields.data,
         date: new Date(validatedFields.data.date),
         createdAt: serverTimestamp(),
@@ -57,6 +58,56 @@ export async function addTransaction(values: TransactionFormValues) {
         link: `/financials`,
         timestamp: serverTimestamp(),
     });
+
+    // If this is a project expense, check budget thresholds and log alerts
+    if (validatedFields.data.type === 'Expense' && validatedFields.data.projectId) {
+      try {
+        const projectRef = doc(firestore, 'projects', validatedFields.data.projectId);
+        const projectSnap = await getDoc(projectRef);
+        if (projectSnap.exists()) {
+          const projectData = projectSnap.data() as { name?: string; budget?: number };
+          const budget = Math.max(0, Number(projectData.budget || 0));
+          if (budget > 0) {
+            const txQ = query(collection(firestore, 'transactions'), where('projectId', '==', validatedFields.data.projectId));
+            const txSnap = await getDocs(txQ);
+            const totalExpense = txSnap.docs
+              .map(d => d.data() as any)
+              .filter(d => d.type === 'Expense')
+              .reduce((sum, d) => sum + Number(d.amount || 0), 0);
+            const prevTotal = totalExpense - Number(validatedFields.data.amount || 0);
+            const prevPct = budget ? (prevTotal / budget) * 100 : 0;
+            const newPct = budget ? (totalExpense / budget) * 100 : 0;
+            const thresholds = [75, 90, 100];
+            for (const th of thresholds) {
+              if (prevPct < th && newPct >= th) {
+                await addDoc(collection(firestore, 'activityLog'), {
+                  message: `Budget alert: Project "${projectData.name || validatedFields.data.projectId}" reached ${th}% of budget`,
+                  type: 'BUDGET_ALERT',
+                  link: `/projects/${validatedFields.data.projectId}`,
+                  projectId: validatedFields.data.projectId,
+                  threshold: th,
+                  timestamp: serverTimestamp(),
+                });
+                // Fire optional webhooks
+                await sendBudgetAlertWebhooks({
+                  projectId: validatedFields.data.projectId,
+                  projectName: projectData.name,
+                  threshold: th,
+                  budget,
+                  totalExpense,
+                  percent: newPct,
+                  link: `/projects/${validatedFields.data.projectId}`,
+                });
+              }
+            }
+            // revalidate project page since budget status may change
+            revalidatePath(`/projects/${validatedFields.data.projectId}`);
+          }
+        }
+      } catch (e) {
+        console.warn('Budget alert check failed:', e);
+      }
+    }
 
     revalidatePath('/financials');
     revalidatePath('/financials/accounts');

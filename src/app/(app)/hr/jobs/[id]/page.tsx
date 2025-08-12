@@ -21,7 +21,7 @@ import {
 import { format } from 'date-fns';
 import { useAuth } from '@/hooks/use-auth';
 import { useLanguage } from '@/hooks/use-language';
-import { addCandidate, type CandidateFormValues, updateCandidateStatus, type CandidateStatus } from '../../actions';
+import { addCandidate, updateCandidateStatus, type CandidateStatus } from '../../actions';
 import {
   Dialog,
   DialogContent,
@@ -85,6 +85,8 @@ const candidateFormSchema = z.object({
   resume: z.any().optional(),
 });
 
+type CandidateFormWithResume = z.infer<typeof candidateFormSchema>;
+
 
 export default function JobDetailPage({ params }: { params: { id: string } }) {
   const [job, setJob] = useState<Job | null>(null);
@@ -123,12 +125,12 @@ export default function JobDetailPage({ params }: { params: { id: string } }) {
     return () => unsubscribes.forEach(unsub => unsub());
   }, [jobId]);
 
-  const form = useForm<CandidateFormValues>({
+  const form = useForm<CandidateFormWithResume>({
     resolver: zodResolver(candidateFormSchema),
     defaultValues: { name: '', email: '', phone: '' },
   });
 
-  async function onCandidateSubmit(values: CandidateFormValues) {
+  async function onCandidateSubmit(values: CandidateFormWithResume) {
     const formData = new FormData();
     formData.append('name', values.name);
     formData.append('email', values.email);

@@ -234,7 +234,7 @@ export default function CategoriesPage() {
         <AlertDialogContent>
             <AlertDialogHeader>
                 <AlertDialogTitle>{t('are_you_sure')}</AlertDialogTitle>
-                <AlertDialogDescription>{t('delete_category_confirm_desc', { name: categoryToDelete?.name })}</AlertDialogDescription>
+                <AlertDialogDescription>{t('delete_category_confirm_desc', { name: categoryToDelete?.name ?? '' })}</AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
                 <AlertDialogCancel onClick={() => setCategoryToDelete(null)}>{t('cancel')}</AlertDialogCancel>

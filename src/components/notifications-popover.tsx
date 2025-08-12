@@ -10,12 +10,12 @@ import { Button } from '@/components/ui/button';
 import { Bell, Warehouse, ShoppingCart, ClipboardList } from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { useState, useEffect, useMemo } from 'react';
-import { collection, onSnapshot, query, where, Timestamp } from 'firebase/firestore';
+import { collection, onSnapshot, query, where, Timestamp, orderBy, limit } from 'firebase/firestore';
 import { firestore } from '@/lib/firebase';
 import { Skeleton } from './ui/skeleton';
 import Link from 'next/link';
 
-type NotificationType = 'Low Stock' | 'Pending PO' | 'Pending Material Request';
+type NotificationType = 'Low Stock' | 'Pending PO' | 'Pending Material Request' | 'Budget Alert';
 
 type Notification = {
   id: string;
@@ -28,13 +28,15 @@ type Notification = {
 const notificationIcons: { [key in NotificationType]: React.ReactNode } = {
   'Low Stock': <Warehouse className="size-4" />,
   'Pending PO': <ShoppingCart className="size-4" />,
-  'Pending Material Request': <ClipboardList className="size-4" />,
+    'Pending Material Request': <ClipboardList className="size-4" />,
+    'Budget Alert': <Bell className="size-4" />,
 };
 
 export function NotificationsPopover() {
     const [inventoryNotifs, setInventoryNotifs] = useState<Notification[]>([]);
     const [poNotifs, setPoNotifs] = useState<Notification[]>([]);
     const [materialNotifs, setMaterialNotifs] = useState<Notification[]>([]);
+    const [budgetNotifs, setBudgetNotifs] = useState<Notification[]>([]);
     const [isLoading, setIsLoading] = useState(true);
 
     // Fetch Low Stock
@@ -81,15 +83,35 @@ export function NotificationsPopover() {
         }, (error) => console.error("Error fetching material request notifications:", error));
         return () => unsubscribe();
     }, []);
+
+    // Fetch recent budget alerts from activityLog
+    useEffect(() => {
+        const q = query(
+          collection(firestore, 'activityLog'),
+          where('type', '==', 'BUDGET_ALERT'),
+          orderBy('timestamp', 'desc'),
+          limit(10)
+        );
+        const unsubscribe = onSnapshot(q, (snapshot) => {
+            setBudgetNotifs(snapshot.docs.map(doc => ({
+                id: doc.id,
+                message: doc.data().message || 'Budget alert',
+                type: 'Budget Alert',
+                link: doc.data().link || '/projects',
+                timestamp: doc.data().timestamp || Timestamp.now(),
+            })));
+        }, (error) => console.error('Error fetching budget alerts:', error));
+        return () => unsubscribe();
+    }, []);
     
     // Combine and sort notifications
     const notifications = useMemo(() => {
-        const all = [...inventoryNotifs, ...poNotifs, ...materialNotifs];
+        const all = [...inventoryNotifs, ...poNotifs, ...materialNotifs, ...budgetNotifs];
         // Ensure all timestamps are valid before sorting
         return all
             .filter(n => n.timestamp && typeof n.timestamp.toMillis === 'function')
             .sort((a, b) => b.timestamp.toMillis() - a.timestamp.toMillis());
-    }, [inventoryNotifs, poNotifs, materialNotifs]);
+    }, [inventoryNotifs, poNotifs, materialNotifs, budgetNotifs]);
     
     useEffect(() => {
         const timer = setTimeout(() => setIsLoading(false), 2000);

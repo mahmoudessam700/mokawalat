@@ -262,7 +262,7 @@ export default function UserManagementPage() {
             <DialogHeader>
               <DialogTitle>{t('change_user_role_title')}</DialogTitle>
               <DialogDescription>
-                {t('change_user_role_desc', { email: userToEdit?.email })}
+                {t('change_user_role_desc', { email: userToEdit?.email ?? '' })}
               </DialogDescription>
             </DialogHeader>
             <Form {...form}>

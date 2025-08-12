@@ -238,8 +238,8 @@ export default function FinancialsPage() {
 
   const selectableContracts = useMemo(() => {
     let parentId = '';
-    if (transactionType === 'Income') parentId = selectedClientId;
-    else if (transactionType === 'Expense') parentId = selectedSupplierId;
+  if (transactionType === 'Income') parentId = selectedClientId ?? '';
+  else if (transactionType === 'Expense') parentId = selectedSupplierId ?? '';
     
     if (!parentId) return [];
     
@@ -533,7 +533,7 @@ export default function FinancialsPage() {
         <AlertDialogContent>
             <AlertDialogHeader>
                 <AlertDialogTitle>{t('are_you_sure')}</AlertDialogTitle>
-                <AlertDialogDescription>{t('financials.delete_confirm_desc', { description: transactionToDelete?.description })}</AlertDialogDescription>
+                <AlertDialogDescription>{t('financials.delete_confirm_desc', { description: transactionToDelete?.description ?? '' })}</AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
                 <AlertDialogCancel onClick={() => setTransactionToDelete(null)}>{t('cancel')}</AlertDialogCancel>

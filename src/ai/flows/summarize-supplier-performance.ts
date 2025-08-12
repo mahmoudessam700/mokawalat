@@ -23,7 +23,7 @@ const SummarizeSupplierPerformanceOutputSchema = z.object({
     .string()
     .describe('A concise summary of the supplier\'s performance, highlighting reliability, contract history, and overall sentiment based on evaluations.'),
 });
-type SummarizeSupplierPerformanceOutput = z.infer<
+export type SummarizeSupplierPerformanceOutput = z.infer<
   typeof SummarizeSupplierPerformanceOutputSchema
 >;
 
@@ -90,5 +90,5 @@ export async function summarizeSupplierPerformance(
       }
   });
 
-  return llmResponse.output!;
+  return llmResponse.output()!;
 }

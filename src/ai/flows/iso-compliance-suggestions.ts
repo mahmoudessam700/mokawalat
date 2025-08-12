@@ -49,5 +49,5 @@ export async function suggestISOComplianceImprovements(
     },
   });
 
-  return llmResponse.output!;
+  return llmResponse.output()!;
 }

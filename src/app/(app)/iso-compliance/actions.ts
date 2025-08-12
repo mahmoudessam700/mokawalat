@@ -23,8 +23,10 @@ export async function getComplianceSuggestions(
   );
 
   if (!validatedFields.success) {
+    const flat = validatedFields.error.flatten();
+  const errMsg = (flat.formErrors && flat.formErrors[0]) || 'Invalid input.';
     return {
-      message: validatedFields.error.flatten().fieldErrors.erpDescription?.[0] || 'Invalid input.',
+      message: errMsg,
       data: null,
       error: true,
     };

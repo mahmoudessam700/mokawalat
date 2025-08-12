@@ -598,7 +598,7 @@ export default function ProcurementPage() {
             <AlertDialogHeader>
                 <AlertDialogTitle>{t('are_you_sure')}</AlertDialogTitle>
                 <AlertDialogDescription>
-                    {t('procurement.delete_confirm_desc', { name: requestToDelete?.itemName })}
+                    {t('procurement.delete_confirm_desc', { name: requestToDelete?.itemName ?? '' })}
                 </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>

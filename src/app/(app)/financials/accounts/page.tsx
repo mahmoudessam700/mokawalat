@@ -299,7 +299,7 @@ export default function AccountsPage() {
         <AlertDialogContent>
             <AlertDialogHeader>
                 <AlertDialogTitle>{t('are_you_sure')}</AlertDialogTitle>
-                <AlertDialogDescription>{t('financials.accounts.delete_confirm_desc', { name: accountToDelete?.name })}</AlertDialogDescription>
+                <AlertDialogDescription>{t('financials.accounts.delete_confirm_desc', { name: accountToDelete?.name ?? '' })}</AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
                 <AlertDialogCancel onClick={() => setAccountToDelete(null)}>{t('cancel')}</AlertDialogCancel>

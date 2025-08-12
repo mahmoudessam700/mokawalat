@@ -3,6 +3,7 @@
 
 import { firestore } from '@/lib/firebase';
 import { collection, addDoc, serverTimestamp, doc, deleteDoc, updateDoc, getDoc, runTransaction, query, where, getDocs, limit, writeBatch } from 'firebase/firestore';
+import { sendBudgetAlertWebhooks } from '@/lib/alerts';
 import { z } from 'zod';
 import { revalidatePath } from 'next/cache';
 
@@ -126,7 +127,13 @@ export async function deletePurchaseRequest(requestId: string) {
         if (!requestSnap.exists()) {
             return { success: false, message: 'Purchase order not found.' };
         }
-        const poName = requestSnap.data().itemName;
+    const poData = requestSnap.data();
+    const poName = poData.itemName;
+
+    // Only allow deleting Pending requests to keep history consistent
+    if (poData.status && poData.status !== 'Pending') {
+      return { success: false, message: `Cannot delete a ${poData.status} purchase order. Only Pending requests can be deleted.` };
+    }
         
         await deleteDoc(requestRef);
 
@@ -206,12 +213,59 @@ export async function orderAndPayPurchaseRequest(requestId: string, values: Orde
         timestamp: serverTimestamp(),
     });
 
-    await batch.commit();
+  await batch.commit();
 
     revalidatePath('/procurement');
     revalidatePath(`/procurement/${requestId}`);
     revalidatePath('/financials');
     revalidatePath('/financials/accounts');
+    if (poData.projectId) {
+      try {
+        // After expense creation, compute budget threshold crossing similarly to financials/actions
+        const projectRef = doc(firestore, 'projects', poData.projectId);
+        const projectSnap = await getDoc(projectRef);
+        if (projectSnap.exists()) {
+          const projectData = projectSnap.data() as { name?: string; budget?: number };
+          const budget = Math.max(0, Number(projectData.budget || 0));
+          if (budget > 0) {
+            const txQ = query(collection(firestore, 'transactions'), where('projectId', '==', poData.projectId));
+            const txSnap = await getDocs(txQ);
+            const totalExpense = txSnap.docs
+              .map(d => d.data() as any)
+              .filter(d => d.type === 'Expense')
+              .reduce((sum, d) => sum + Number(d.amount || 0), 0);
+            const prevTotal = totalExpense - Number(poData.totalCost || 0);
+            const prevPct = budget ? (prevTotal / budget) * 100 : 0;
+            const newPct = budget ? (totalExpense / budget) * 100 : 0;
+            const thresholds = [75, 90, 100];
+            for (const th of thresholds) {
+              if (prevPct < th && newPct >= th) {
+                await addDoc(collection(firestore, 'activityLog'), {
+                  message: `Budget alert: Project "${projectData.name || poData.projectId}" reached ${th}% of budget`,
+                  type: 'BUDGET_ALERT',
+                  link: `/projects/${poData.projectId}`,
+                  projectId: poData.projectId,
+                  threshold: th,
+                  timestamp: serverTimestamp(),
+                });
+                await sendBudgetAlertWebhooks({
+                  projectId: poData.projectId,
+                  projectName: projectData.name,
+                  threshold: th,
+                  budget,
+                  totalExpense,
+                  percent: newPct,
+                  link: `/projects/${poData.projectId}`,
+                });
+              }
+            }
+            revalidatePath(`/projects/${poData.projectId}`);
+          }
+        }
+      } catch (e) {
+        console.warn('Budget alert check (PO) failed:', e);
+      }
+    }
     revalidatePath('/approvals');
 
     return { success: true, message: 'Purchase Order marked as Ordered and payment transaction created.' };
@@ -295,16 +349,17 @@ export async function markPOAsReceived(purchaseOrderId: string) {
             const currentQuantity = itemDoc.data().quantity;
             const newQuantity = currentQuantity + poData.quantity;
 
-            let newStatus: 'In Stock' | 'Low Stock' | 'Out of Stock';
-            if (newQuantity <= 0) {
-                newStatus = 'Out of Stock';
-            } else if (newQuantity <= 10) {
-                newStatus = 'Low Stock';
-            } else {
-                newStatus = 'In Stock';
-            }
+      let newStatus: 'In Stock' | 'Low Stock' | 'Out of Stock';
+      if (newQuantity <= 0) {
+        newStatus = 'Out of Stock';
+      } else if (newQuantity <= 10) {
+        newStatus = 'Low Stock';
+      } else {
+        newStatus = 'In Stock';
+      }
 
-            transaction.update(itemRef, { quantity: newQuantity, status: newItemStatus });
+      // Update inventory with the computed status
+      transaction.update(itemRef, { quantity: newQuantity, status: newStatus });
             transaction.update(poRef, { status: 'Received' });
         });
 
@@ -317,8 +372,9 @@ export async function markPOAsReceived(purchaseOrderId: string) {
             });
         }
 
-        revalidatePath('/procurement');
-        revalidatePath('/inventory');
+  revalidatePath('/procurement');
+  revalidatePath(`/procurement/${purchaseOrderId}`);
+  revalidatePath('/inventory');
         return { success: true, message: 'Order marked as received and inventory updated.' };
 
     } catch (error: any) {

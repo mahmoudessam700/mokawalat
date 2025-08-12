@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useActionState } from 'react';
+import { useState, useTransition, FormEvent } from 'react';
 import { useFormStatus } from 'react-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
@@ -12,11 +12,7 @@ import { CheckCircle, AlertCircle, Loader2 } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useLanguage } from '@/hooks/use-language';
 
-const initialState: FormState = {
-  message: null,
-  data: null,
-  error: false,
-};
+const initialState: FormState = { message: null, data: null, error: false };
 
 function SubmitButton() {
   const { pending } = useFormStatus();
@@ -100,11 +96,32 @@ function Results({ state }: { state: FormState }) {
 
 
 export function IsoComplianceClient() {
-  const [state, formAction] = useActionState(getComplianceSuggestions, initialState);
+  const [state, setState] = useState<FormState>(initialState);
+  const [isPending, startTransition] = useTransition();
+  const [input, setInput] = useState('');
   const { t } = useLanguage();
 
   return (
-    <form action={formAction} className="grid gap-6">
+    <form
+      className="grid gap-6"
+      onSubmit={(e: FormEvent<HTMLFormElement>) => {
+        e.preventDefault();
+        startTransition(async () => {
+          try {
+            const res = await fetch('/api/iso-compliance', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ erpDescription: input }),
+            });
+            const json = (await res.json()) as FormState;
+            setState(json);
+          } catch (err) {
+            console.error(err);
+            setState({ message: t('unexpected_error'), data: null, error: true });
+          }
+        });
+      }}
+    >
       <Card>
         <CardHeader>
           <CardTitle className="font-headline">{t('describe_erp_ops')}</CardTitle>
@@ -119,6 +136,8 @@ export function IsoComplianceClient() {
             rows={8}
             required
             aria-label="ERP Operations Description"
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
           />
         </CardContent>
         <CardFooter className="flex justify-between">
@@ -129,7 +148,8 @@ export function IsoComplianceClient() {
         </CardFooter>
       </Card>
 
-      <Results state={state} />
+  {/* Pass a pending status via context hook below still works for button/skeleton */}
+  <Results state={state} />
     </form>
   );
 }

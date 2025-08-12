@@ -59,6 +59,10 @@ export function OrderPoDialog({ request, accounts, children }: OrderPoDialogProp
   });
 
   async function onSubmit(values: OrderPoFormValues) {
+    if (!accounts || accounts.length === 0) {
+      toast({ variant: 'destructive', title: t('error'), description: t('financials.no_accounts_error_desc') });
+      return;
+    }
     const result = await orderAndPayPurchaseRequest(request.id, values);
 
     if (result.success) {
@@ -72,7 +76,16 @@ export function OrderPoDialog({ request, accounts, children }: OrderPoDialogProp
 
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
-      <DialogTrigger asChild>{children}</DialogTrigger>
+      <DialogTrigger
+        asChild
+        onClick={() => {
+          if (!accounts || accounts.length === 0) {
+            toast({ variant: 'destructive', title: t('error'), description: t('financials.no_accounts_error_desc') });
+          }
+        }}
+      >
+        {children}
+      </DialogTrigger>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
           <DialogTitle>{t('procurement.order_dialog.title')}</DialogTitle>
@@ -91,7 +104,7 @@ export function OrderPoDialog({ request, accounts, children }: OrderPoDialogProp
                 render={({ field }) => (
                     <FormItem>
                         <FormLabel>{t('employees.payment_account_label')}</FormLabel>
-                        <Select onValueChange={field.onChange} value={field.value}>
+                        <Select onValueChange={field.onChange} value={field.value} disabled={!accounts || accounts.length === 0}>
                         <FormControl>
                             <SelectTrigger>
                             <SelectValue placeholder={t('employees.select_account_placeholder')} />
@@ -104,11 +117,14 @@ export function OrderPoDialog({ request, accounts, children }: OrderPoDialogProp
                         </SelectContent>
                         </Select>
                         <FormMessage />
+                        {(!accounts || accounts.length === 0) && (
+                          <p className="text-xs text-muted-foreground mt-1">{t('financials.no_accounts_error_desc')}</p>
+                        )}
                     </FormItem>
                 )}
             />
             <DialogFooter>
-              <Button type="submit" disabled={form.formState.isSubmitting}>
+              <Button type="submit" disabled={form.formState.isSubmitting || !accounts || accounts.length === 0}>
                 {form.formState.isSubmitting ? (
                   <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> {t('saving')}</>
                 ) : (

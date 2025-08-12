@@ -68,6 +68,7 @@
       "search_placeholder": "Search by project name...",
       "team_header": "Team",
       "progress": "Progress",
+  "near_budget": "Near budget",
       "delete_confirm_desc": "This will permanently delete the project: \"{name}\". This action cannot be undone.",
       "back_to_projects": "Back to Projects",
       "detail_page_desc": "An overview of the project, tasks, team, and more.",
@@ -576,6 +577,7 @@
       "full_name_label": "Full Name",
       "full_name_placeholder": "e.g., Fatima Ahmed",
       "email_placeholder": "e.g., employee@company.com",
+  "select_employee": "Select an employee...",
       "select_department": "Select department",
       "status": {
         "Active": "Active",
@@ -1451,6 +1453,7 @@
       "search_placeholder": "ابحث باسم المشروع...",
       "team_header": "الفريق",
       "progress": "التقدم",
+  "near_budget": "قرب حد الميزانية",
       "delete_confirm_desc": "سيؤدي هذا إلى حذف المشروع \"{name}\" بشكل دائم. لا يمكن التراجع عن هذا الإجراء.",
       "back_to_projects": "العودة إلى المشاريع",
       "detail_page_desc": "نظرة عامة على المشروع والمهام والفريق والمزيد.",
@@ -1959,6 +1962,7 @@
       "full_name_label": "الاسم الكامل",
       "full_name_placeholder": "مثال: فاطمة أحمد",
       "email_placeholder": "مثال: employee@company.com",
+  "select_employee": "اختر الموظف",
       "select_department": "اختر القسم",
       "status": {
         "Active": "نشط",

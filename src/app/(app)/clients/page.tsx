@@ -466,7 +466,7 @@ export default function ClientsPage() {
             <AlertDialogHeader>
                 <AlertDialogTitle>{t('are_you_sure')}</AlertDialogTitle>
                 <AlertDialogDescription>
-                    {t('clients.delete_confirm_desc', { name: clientToDelete?.name })}
+                    {t('clients.delete_confirm_desc', { name: clientToDelete?.name ?? '' })}
                 </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
