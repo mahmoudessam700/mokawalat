@@ -806,14 +806,14 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
                                                     render={({ field }) => (
                                                         <FormItem>
                                                             <FormLabel>{t('employees.assigned_projects_title')} ({t('optional')})</FormLabel>
-                                                            <Select onValueChange={field.onChange} value={field.value || ''}>
+                                                            <Select onValueChange={(v) => field.onChange(v === 'none' ? '' : v)} value={field.value || 'none'}>
                                                                 <FormControl>
                                                                     <SelectTrigger>
                                                                         <SelectValue placeholder={t('employees.select_employee')} />
                                                                     </SelectTrigger>
                                                                 </FormControl>
                                                                 <SelectContent>
-                                                                    <SelectItem value="">{t('unassigned')}</SelectItem>
+                                                                    <SelectItem value="none">{t('unassigned')}</SelectItem>
                                                                     {assignedTeam.map(member => (
                                                                         <SelectItem key={member.id} value={member.id}>
                                                                             {member.name}
