@@ -34,8 +34,14 @@ service cloud.firestore {
     
     // --- Core Modules ---
     match /users/{userId} {
-      allow read: if isSignedIn();
-      allow write: if getUserData().role == 'admin';
+  allow read: if isSignedIn();
+  // Bootstrap: allow the signed-in seeded admin to create their own user doc
+  // so subsequent role checks can pass. Restrict strictly by uid and email.
+  allow create, update: if request.auth != null
+        && request.auth.uid == userId
+        && request.auth.token.email == 'admin@mokawalat.com';
+  // Deletes remain restricted to admins only.
+  allow delete: if getUserData().role == 'admin';
     }
     
     match /company/{docId} {
