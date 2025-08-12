@@ -7,12 +7,11 @@
  * - summarizeDailyLogs - A function that generates a summary of daily logs for a project.
  * - SummarizeDailyLogsInput - The input type for the summarizeDailyLogs function.
  */
-import { generate } from 'genkit';
+import { ai } from '@/ai';
 import * as z from 'zod';
 import { firestore } from '@/lib/firebase';
 import { collection, getDocs, orderBy, query, type Timestamp } from 'firebase/firestore';
 import { format } from 'date-fns';
-import { geminiPro } from '../genkit';
 
 const SummarizeDailyLogsInputSchema = z.object({
   projectId: z.string().describe('The ID of the project to summarize logs for.'),
@@ -57,8 +56,8 @@ export async function summarizeDailyLogs(
     ${logHistory}
     `;
 
-    const llmResponse = await generate({
-        model: geminiPro,
+    const llmResponse = await ai.generate({
+        model: 'googleai/gemini-pro',
         prompt: prompt,
         output: {
             format: 'json',
@@ -66,5 +65,5 @@ export async function summarizeDailyLogs(
         }
     });
 
-    return llmResponse.output()!;
+    return llmResponse.output!;
 }

@@ -8,8 +8,7 @@
  * - SuggestISOComplianceImprovementsInput - The input type for the suggestISOComplianceImprovements function.
  * - SuggestISOComplianceImprovementsOutput - The return type for the suggestISOComplianceImprovements function.
  */
-import { generate } from 'genkit';
-import { geminiPro } from '@/ai/genkit';
+import {ai} from '@/ai';
 import * as z from 'zod';
 
 const SuggestISOComplianceImprovementsInputSchema = z.object({
@@ -42,14 +41,13 @@ export async function suggestISOComplianceImprovements(
   ERP Operations Description: ${input.erpDescription}
   `;
 
-  const llmResponse = await generate({
-    model: geminiPro,
+  const llmResponse = await ai.generate({
+    model: 'googleai/gemini-pro',
     prompt: prompt,
     output: {
-        format: 'json',
-        schema: SuggestISOComplianceImprovementsOutputSchema,
+      schema: SuggestISOComplianceImprovementsOutputSchema,
     },
   });
 
-  return llmResponse.output()!;
+  return llmResponse.output!;
 }

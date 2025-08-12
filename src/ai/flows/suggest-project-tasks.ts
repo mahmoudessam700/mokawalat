@@ -7,9 +7,8 @@
  * - SuggestProjectTasksInput - The input type for the suggestProjectTasks function.
  * - SuggestProjectTasksOutput - The return type for the suggestProjectTasks function.
  */
-import { generate } from 'genkit';
+import {ai} from '@/ai';
 import * as z from 'zod';
-import { geminiPro } from '../genkit';
 
 const SuggestProjectTasksInputSchema = z.object({
   projectName: z.string().describe('The name of the construction project.'),
@@ -35,14 +34,13 @@ export async function suggestProjectTasks(
   Project Description: ${input.projectDescription}
   `;
 
-  const llmResponse = await generate({
-      model: geminiPro,
+  const llmResponse = await ai.generate({
+      model: 'googleai/gemini-pro',
       prompt: prompt,
       output: {
-          format: 'json',
           schema: SuggestProjectTasksOutputSchema
       }
   });
 
-  return llmResponse.output()!;
+  return llmResponse.output!;
 }

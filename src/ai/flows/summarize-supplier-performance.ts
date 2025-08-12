@@ -7,12 +7,11 @@
  * - summarizeSupplierPerformance - A function that generates a summary of supplier performance.
  * - SummarizeSupplierPerformanceInput - The input type for the summarizeSupplierPerformance function.
  */
-import { generate } from 'genkit';
+import { ai } from '@/ai';
 import * as z from 'zod';
 import { firestore } from '@/lib/firebase';
 import { collection, getDocs, query, orderBy, Timestamp, doc, getDoc, where } from 'firebase/firestore';
 import { format } from 'date-fns';
-import { geminiPro } from '../genkit';
 
 const SummarizeSupplierPerformanceInputSchema = z.object({
   supplierId: z.string().describe('The ID of the supplier to summarize.'),
@@ -82,8 +81,8 @@ export async function summarizeSupplierPerformance(
   ${performanceData}
   `;
 
-  const llmResponse = await generate({
-      model: geminiPro,
+  const llmResponse = await ai.generate({
+      model: 'googleai/gemini-pro',
       prompt: prompt,
       output: {
           format: 'json',
@@ -91,5 +90,5 @@ export async function summarizeSupplierPerformance(
       }
   });
 
-  return llmResponse.output()!;
+  return llmResponse.output!;
 }

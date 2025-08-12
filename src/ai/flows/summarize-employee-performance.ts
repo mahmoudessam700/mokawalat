@@ -7,11 +7,10 @@
  * - summarizeEmployeePerformance - A function that generates a summary of an employee's performance.
  * - SummarizeEmployeePerformanceInput - The input type for the summarizeEmployeePerformance function.
  */
-import { generate } from 'genkit';
+import { ai } from '@/ai';
 import * as z from 'zod';
 import { firestore } from '@/lib/firebase';
 import { collection, getDocs, query, where, doc, getDoc } from 'firebase/firestore';
-import { geminiPro } from '../genkit';
 
 const SummarizeEmployeePerformanceInputSchema = z.object({
   employeeId: z.string().describe('The ID of the employee to summarize.'),
@@ -67,8 +66,8 @@ export async function summarizeEmployeePerformance(
   ${performanceData}
   `;
 
-  const llmResponse = await generate({
-      model: geminiPro,
+  const llmResponse = await ai.generate({
+      model: 'googleai/gemini-pro',
       prompt: prompt,
       output: {
           format: 'json',
@@ -76,5 +75,5 @@ export async function summarizeEmployeePerformance(
       }
   });
 
-  return llmResponse.output()!;
+  return llmResponse.output!;
 }

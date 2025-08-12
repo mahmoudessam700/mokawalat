@@ -7,9 +7,8 @@
  * - ProjectRiskAnalysisInput - The input type for the analyzeProjectRisks function.
  * - ProjectRiskAnalysisOutput - The return type for the analyzeProjectRisks function.
  */
-import { generate } from 'genkit';
+import {ai} from '@/ai';
 import * as z from 'zod';
-import { geminiPro } from '../genkit';
 
 const ProjectRiskAnalysisInputSchema = z.object({
   name: z.string().describe('The name of the construction project.'),
@@ -43,14 +42,13 @@ export async function analyzeProjectRisks(
   Project Description: ${input.description}
   `;
   
-  const llmResponse = await generate({
-      model: geminiPro,
+  const llmResponse = await ai.generate({
+      model: 'googleai/gemini-pro',
       prompt: prompt,
       output: {
-          format: 'json',
           schema: ProjectRiskAnalysisOutputSchema
       }
   });
   
-  return llmResponse.output()!;
+  return llmResponse.output!;
 }

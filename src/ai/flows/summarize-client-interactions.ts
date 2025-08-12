@@ -8,9 +8,8 @@
  * - SummarizeClientInteractionsInput - The input type for the summarizeClientInteractions function.
  * - SummarizeClientInteractionsOutput - The return type for the summarizeClientInteractions function.
  */
-import { generate } from 'genkit';
+import {ai} from '@/ai';
 import * as z from 'zod';
-import { geminiPro } from '../genkit';
 
 const SummarizeClientInteractionsInputSchema = z.object({
   interactionLog: z
@@ -44,14 +43,13 @@ export async function summarizeClientInteractions(
   ${input.interactionLog}
   `;
 
-  const llmResponse = await generate({
-      model: geminiPro,
+  const llmResponse = await ai.generate({
+      model: 'googleai/gemini-pro',
       prompt: prompt,
       output: {
-          format: 'json',
           schema: SummarizeClientInteractionsOutputSchema
       }
   });
   
-  return llmResponse.output()!;
+  return llmResponse.output!;
 }
