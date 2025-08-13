@@ -10,8 +10,6 @@
     "lint": "next lint",
     "typecheck": "tsc --noEmit",
     "test": "vitest",
-  "seed": "node scripts/seed.mjs",
-  "seed:admin": "node --experimental-json-modules scripts/admin-seed.mjs",
     "heroku-postbuild": "npm run build"
   },
   "engines": {

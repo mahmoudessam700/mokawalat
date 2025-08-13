@@ -2,8 +2,9 @@
 'use client';
 
 import { useEffect, useState, useMemo } from 'react';
-import { doc, onSnapshot, collection, query, orderBy, Timestamp, where } from 'firebase/firestore';
+import { doc, onSnapshot, collection, query, orderBy, Timestamp, where, addDoc, serverTimestamp, setDoc, getDoc, deleteDoc } from 'firebase/firestore';
 import { firestore } from '@/lib/firebase';
+import { storage } from '@/lib/firebase';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -28,13 +29,14 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useToast } from '@/hooks/use-toast';
-import { addInteraction, addContract, deleteContract } from './actions';
+// Server actions are avoided to ensure Firestore rules see client auth
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAuth } from '@/hooks/use-auth';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import React from 'react';
 import { ClientAiSummary } from './client-ai-summary';
 import { useLanguage } from '@/hooks/use-language';
+import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
 
 
 type ClientStatus = 'Lead' | 'Active' | 'Inactive';
@@ -64,6 +66,7 @@ type Contract = {
   effectiveDate: Timestamp;
   value?: number;
   fileUrl?: string;
+  filePath?: string;
 };
 
 type Transaction = {
@@ -204,12 +207,58 @@ export default function ClientDetailPage({ params }: { params: { id: string } })
         console.error('Error fetching transactions:', err);
     }));
 
-    const projectsQuery = query(collection(firestore, 'projects'), where('clientId', '==', clientId), orderBy('name', 'asc'));
-    unsubscribes.push(onSnapshot(projectsQuery, (snapshot) => {
-        setProjects(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Project)));
-    }, (err) => {
-        console.error('Error fetching projects for client:', err);
-    }));
+    // Query linked projects; support multiple historical shapes
+    // 1) clientId: string (current)
+    // 2) clientRef: DocumentReference (legacy)
+    // 3) client.id: string (legacy nested object)
+    const combineAndSet = (
+      a: Project[],
+      b: Project[],
+      c: Project[]
+    ) => {
+      const map = new Map<string, Project>();
+      [...a, ...b, ...c].forEach((p) => map.set(p.id, p));
+      const list = Array.from(map.values());
+      list.sort((x, y) => (x.name || '').localeCompare(y.name || ''));
+      setProjects(list);
+    };
+
+    let setA: Project[] = [];
+    let setB: Project[] = [];
+    let setC: Project[] = [];
+
+    const qA = query(collection(firestore, 'projects'), where('clientId', '==', clientId));
+    unsubscribes.push(
+      onSnapshot(qA, (snap) => {
+        setA = snap.docs.map((d) => ({ id: d.id, ...d.data() } as Project));
+        combineAndSet(setA, setB, setC);
+      }, (err) => console.error('Error fetching projects (clientId):', err))
+    );
+
+    try {
+      const clientRefForEq = doc(firestore, 'clients', clientId);
+      const qB = query(collection(firestore, 'projects'), where('clientRef', '==', clientRefForEq as any));
+      unsubscribes.push(
+        onSnapshot(qB, (snap) => {
+          setB = snap.docs.map((d) => ({ id: d.id, ...d.data() } as Project));
+          combineAndSet(setA, setB, setC);
+        }, (err) => console.error('Error fetching projects (clientRef):', err))
+      );
+    } catch (e) {
+      console.warn('Skipping clientRef fallback query:', e);
+    }
+
+    try {
+      const qC = query(collection(firestore, 'projects'), where('client.id', '==', clientId as any));
+      unsubscribes.push(
+        onSnapshot(qC, (snap) => {
+          setC = snap.docs.map((d) => ({ id: d.id, ...d.data() } as Project));
+          combineAndSet(setA, setB, setC);
+        }, (err) => console.error('Error fetching projects (client.id):', err))
+      );
+    } catch (e) {
+      console.warn('Skipping nested client.id fallback query:', e);
+    }
     
     const invoicesQuery = query(collection(firestore, 'invoices'), where('clientId', '==', clientId), orderBy('issueDate', 'desc'));
     unsubscribes.push(onSnapshot(invoicesQuery, (snapshot) => {
@@ -235,48 +284,95 @@ export default function ClientDetailPage({ params }: { params: { id: string } })
   });
 
   async function onInteractionSubmit(values: InteractionFormValues) {
-    const result = await addInteraction(clientId, values);
-    if (result.errors) {
-      toast({ variant: 'destructive', title: 'Error', description: result.message });
-    } else {
-      toast({ title: 'Success', description: result.message });
+    try {
+      await addDoc(collection(firestore, 'clients', clientId, 'interactions'), {
+        type: values.type,
+        notes: values.notes,
+        date: new Date(values.date),
+        createdAt: serverTimestamp(),
+      });
+      toast({ title: 'Success', description: 'Interaction logged successfully.' });
       interactionForm.reset();
       setIsInteractionFormOpen(false);
+    } catch (error) {
+      console.error('Failed to log interaction:', error);
+      toast({ variant: 'destructive', title: 'Error', description: 'Failed to log interaction.' });
     }
   }
 
   async function onContractSubmit(values: ContractFormValues) {
-    const formData = new FormData();
-    formData.append('title', values.title);
-    formData.append('effectiveDate', values.effectiveDate);
-    if (values.value) {
-        formData.append('value', values.value.toString());
-    }
-    if (values.file && values.file.length > 0) {
-        formData.append('file', values.file[0]);
-    }
+    try {
+      const newDocRef = doc(collection(firestore, 'clients', clientId, 'contracts'));
+      let fileUrl = '';
+      let filePath = '';
 
-    const result = await addContract(clientId, formData);
-    if (result.errors) {
-      toast({ variant: 'destructive', title: 'Error', description: result.message });
-    } else {
-      toast({ title: 'Success', description: result.message });
+      const fileList = (values as any).file as FileList | undefined;
+      const file = fileList && fileList.length > 0 ? fileList[0] : null;
+
+      if (file && file.size > 0) {
+        filePath = `contracts/clients/${clientId}/${newDocRef.id}/${file.name}`;
+        const storageRef = ref(storage, filePath);
+        await uploadBytes(storageRef, file);
+        fileUrl = await getDownloadURL(storageRef);
+      }
+
+      await setDoc(newDocRef, {
+        title: values.title,
+        effectiveDate: new Date(values.effectiveDate),
+        value: values.value || undefined,
+        fileUrl,
+        filePath,
+        createdAt: serverTimestamp(),
+      });
+
+      // Best-effort activity log
+      addDoc(collection(firestore, 'activityLog'), {
+        message: `New contract "${values.title}" added for client: ${client?.name || clientId}`,
+        type: 'CONTRACT_ADDED',
+        link: `/clients/${clientId}`,
+        timestamp: serverTimestamp(),
+      }).catch(() => {});
+
+      toast({ title: 'Success', description: 'Contract added successfully.' });
       contractForm.reset();
       setIsContractFormOpen(false);
+    } catch (error) {
+      console.error('Failed to add contract:', error);
+      toast({ variant: 'destructive', title: 'Error', description: 'Failed to add contract.' });
     }
   }
 
   async function handleDeleteContract() {
     if (!contractToDelete) return;
     setIsDeletingContract(true);
-    const result = await deleteContract(clientId, contractToDelete.id);
-    if (result.success) {
-      toast({ title: 'Success', description: result.message });
-    } else {
-      toast({ variant: 'destructive', title: 'Error', description: result.message });
+    try {
+      // Delete associated file if present
+      if (contractToDelete.filePath) {
+        try {
+          await deleteObject(ref(storage, contractToDelete.filePath));
+        } catch (e) {
+          console.warn('Failed to delete contract file from storage:', e);
+        }
+      }
+
+      await deleteDoc(doc(firestore, 'clients', clientId, 'contracts', contractToDelete.id));
+
+      // Best-effort activity log
+      addDoc(collection(firestore, 'activityLog'), {
+        message: `Contract "${contractToDelete.title}" deleted from client`,
+        type: 'CONTRACT_DELETED',
+        link: `/clients/${clientId}`,
+        timestamp: serverTimestamp(),
+      }).catch(() => {});
+
+      toast({ title: 'Success', description: 'Contract deleted successfully.' });
+    } catch (error) {
+      console.error('Failed to delete contract:', error);
+      toast({ variant: 'destructive', title: 'Error', description: 'Failed to delete contract.' });
+    } finally {
+      setIsDeletingContract(false);
+      setContractToDelete(null);
     }
-    setIsDeletingContract(false);
-    setContractToDelete(null);
   }
 
   if (isLoading) {

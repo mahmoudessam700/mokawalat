@@ -3,7 +3,7 @@
 
 import React, { useState, useEffect, createContext, useContext, type ReactNode } from 'react';
 import { onAuthStateChanged, type User as FirebaseAuthUser } from 'firebase/auth';
-import { doc, onSnapshot } from 'firebase/firestore';
+import { doc, onSnapshot, setDoc } from 'firebase/firestore';
 import { auth, firestore } from '@/lib/firebase';
 
 export type UserRole = 'admin' | 'manager' | 'user';
@@ -35,20 +35,35 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (user) {
         // User is signed in, now listen for their profile document
         const profileDocRef = doc(firestore, 'users', user.uid);
-        const unsubscribeProfile = onSnapshot(profileDocRef, (doc) => {
-          if (doc.exists()) {
-            setAuthState({ user, profile: doc.data() as UserProfile, isLoading: false });
+        const unsubscribeProfile = onSnapshot(profileDocRef, async (snap) => {
+          if (snap.exists()) {
+            setAuthState({ user, profile: snap.data() as UserProfile, isLoading: false });
           } else {
-            // Profile doesn't exist yet. Create a fallback profile to prevent UI issues.
-            // This can happen if the user was created in the auth console but not in Firestore.
+            // Bootstrap: if this is the known admin email, try to create an admin profile document.
+            // This relies on the Firestore rules bootstrap exception for this email.
+            try {
+              if (user.email === 'admin@mokawalat.com') {
+                await setDoc(profileDocRef, {
+                  uid: user.uid,
+                  email: user.email,
+                  role: 'admin',
+                }, { merge: true });
+                setAuthState({ user, profile: { uid: user.uid, email: user.email || 'No email', role: 'admin' }, isLoading: false });
+                return;
+              }
+            } catch (e) {
+              // If this fails due to rules, continue with fallback below.
+              console.warn('Failed to bootstrap admin profile doc:', e);
+            }
+            // Fallback profile to prevent UI issues.
             setAuthState({ 
-                user, 
-                profile: {
-                    uid: user.uid,
-                    email: user.email || 'No email',
-                    role: 'user' // Default to 'user' as a safe fallback
-                }, 
-                isLoading: false 
+              user, 
+              profile: {
+                uid: user.uid,
+                email: user.email || 'No email',
+                role: 'user'
+              }, 
+              isLoading: false 
             });
           }
         }, (error) => {

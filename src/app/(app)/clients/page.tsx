@@ -52,9 +52,9 @@ import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useState, useEffect, useMemo } from 'react';
-import { addClient, deleteClient, updateClient } from './actions';
+// Using client-side Firestore writes so authenticated user context is applied to security rules
 import { useToast } from '@/hooks/use-toast';
-import { collection, onSnapshot, query, orderBy, type Timestamp } from 'firebase/firestore';
+import { collection, onSnapshot, query, type Timestamp, addDoc, serverTimestamp, doc, updateDoc, deleteDoc, where, getDocs, getDoc } from 'firebase/firestore';
 import { firestore } from '@/lib/firebase';
 import { Skeleton } from '@/components/ui/skeleton';
 import Link from 'next/link';
@@ -104,13 +104,20 @@ export default function ClientsPage() {
   const { t } = useLanguage();
 
   useEffect(() => {
-    const q = query(collection(firestore, 'clients'), orderBy('createdAt', 'desc'));
+    // Avoid ordering at query-level to ensure docs missing 'createdAt' are included.
+    const q = query(collection(firestore, 'clients'));
     const unsubscribe = onSnapshot(q, (snapshot) => {
-      const data: Client[] = [];
-      snapshot.forEach((doc) => {
-        data.push({ id: doc.id, ...doc.data() } as Client);
+      const data: Client[] = snapshot.docs.map((d) => ({ id: d.id, ...(d.data() as any) }));
+      // Sort locally: createdAt desc, fallback by name/name_lowercase
+      data.sort((a: any, b: any) => {
+        const aTs = a.createdAt && typeof (a.createdAt as any).toMillis === 'function' ? a.createdAt.toMillis() : 0;
+        const bTs = b.createdAt && typeof (b.createdAt as any).toMillis === 'function' ? b.createdAt.toMillis() : 0;
+        if (aTs !== bTs) return bTs - aTs;
+        const an = (a.name_lowercase || a.name || '').toString();
+        const bn = (b.name_lowercase || b.name || '').toString();
+        return an.localeCompare(bn);
       });
-      setClients(data);
+      setClients(data as Client[]);
       setIsLoading(false);
     }, (error) => {
       console.error("Error fetching clients: ", error);
@@ -160,23 +167,48 @@ export default function ClientsPage() {
 
 
   async function onSubmit(values: ClientFormValues) {
-    const result = clientToEdit
-        ? await updateClient(clientToEdit.id, values)
-        : await addClient(values);
-
-    if (result.errors) {
-      toast({
-        variant: 'destructive',
-        title: 'Error',
-        description: result.message,
-      });
-    } else {
-      toast({
-        title: 'Success',
-        description: result.message,
-      });
+    try {
+      if (clientToEdit) {
+        const clientRef = doc(firestore, 'clients', clientToEdit.id);
+        await updateDoc(clientRef, {
+          ...values,
+          name_lowercase: values.name.toLowerCase(),
+        });
+        try {
+          await addDoc(collection(firestore, 'activityLog'), {
+            message: `Client updated: ${values.name}`,
+            type: 'CLIENT_UPDATED',
+            link: `/clients/${clientToEdit.id}`,
+            timestamp: serverTimestamp(),
+          });
+        } catch (e) {
+          // Ignore if rules disallow direct activityLog writes
+          console.warn('activityLog write skipped:', e);
+        }
+        toast({ title: 'Success', description: 'Client updated successfully.' });
+      } else {
+        const clientRef = await addDoc(collection(firestore, 'clients'), {
+          ...values,
+          name_lowercase: values.name.toLowerCase(),
+          createdAt: serverTimestamp(),
+        });
+        try {
+          await addDoc(collection(firestore, 'activityLog'), {
+            message: `New client added: ${values.name}`,
+            type: 'CLIENT_ADDED',
+            link: `/clients/${clientRef.id}`,
+            timestamp: serverTimestamp(),
+          });
+        } catch (e) {
+          console.warn('activityLog write skipped:', e);
+        }
+        toast({ title: 'Success', description: 'Client added successfully.' });
+      }
       setIsFormDialogOpen(false);
       setClientToEdit(null);
+    } catch (error) {
+      console.error('Error saving client:', error);
+      toast({ variant: 'destructive', title: 'Error', description: 'Failed to save client. Check your permissions.' });
     }
   }
 
@@ -184,21 +216,45 @@ export default function ClientsPage() {
     if (!clientToDelete) return;
 
     setIsDeleting(true);
-    const result = await deleteClient(clientToDelete.id);
-    setIsDeleting(false);
-
-    if (result.success) {
-      toast({
-        title: 'Success',
-        description: result.message,
-      });
-    } else {
-      toast({
-        variant: 'destructive',
-        title: 'Error',
-        description: result.message,
-      });
+    try {
+      // Safeguards similar to server checks
+      const clientId = clientToDelete.id;
+      const projectsSnapshot = await getDocs(query(collection(firestore, 'projects'), where('clientId', '==', clientId)));
+      if (!projectsSnapshot.empty) {
+        toast({ variant: 'destructive', title: 'Error', description: 'Cannot delete client with active projects. Please re-assign them first.' });
+        setIsDeleting(false);
+        setIsDeleteDialogOpen(false);
+        setClientToDelete(null);
+        return;
+      }
+      const transactionsSnapshot = await getDocs(query(collection(firestore, 'transactions'), where('clientId', '==', clientId)));
+      if (!transactionsSnapshot.empty) {
+        toast({ variant: 'destructive', title: 'Error', description: 'Cannot delete client with existing financial transactions.' });
+        setIsDeleting(false);
+        setIsDeleteDialogOpen(false);
+        setClientToDelete(null);
+        return;
+      }
+      const clientRef = doc(firestore, 'clients', clientId);
+      const clientSnap = await getDoc(clientRef);
+      const clientName = clientSnap.exists() ? (clientSnap.data() as any).name : 'Client';
+      await deleteDoc(clientRef);
+      try {
+        await addDoc(collection(firestore, 'activityLog'), {
+          message: `Client deleted: ${clientName}`,
+          type: 'CLIENT_DELETED',
+          link: `/clients`,
+          timestamp: serverTimestamp(),
+        });
+      } catch (e) {
+        console.warn('activityLog write skipped:', e);
+      }
+      toast({ title: 'Success', description: 'Client deleted successfully.' });
+    } catch (error) {
+      console.error('Error deleting client:', error);
+      toast({ variant: 'destructive', title: 'Error', description: 'Failed to delete client.' });
     }
+    setIsDeleting(false);
     setIsDeleteDialogOpen(false);
     setClientToDelete(null);
   }

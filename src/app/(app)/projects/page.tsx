@@ -66,7 +66,7 @@ import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useState, useEffect, useMemo } from 'react';
-import { addProject, deleteProject, updateProject } from './actions';
+// Server actions omitted for create/update/delete to ensure Firestore rules see client auth
 import { useToast } from '@/hooks/use-toast';
 import {
   collection,
@@ -75,6 +75,11 @@ import {
   orderBy,
   Timestamp,
   where,
+  addDoc,
+  serverTimestamp,
+  doc,
+  updateDoc,
+  deleteDoc,
 } from 'firebase/firestore';
 import { firestore } from '@/lib/firebase';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -235,23 +240,63 @@ export default function ProjectsPage() {
   }, [projectToEdit, form]);
 
   async function onSubmit(values: ProjectFormValues) {
-    const result = projectToEdit
-      ? await updateProject(projectToEdit.id, values)
-      : await addProject(values);
+    if (projectToEdit) {
+      // Update project on the client so Firestore rules can use the signed-in user's auth
+      try {
+        await updateDoc(doc(firestore, 'projects', projectToEdit.id), {
+          ...values,
+          name_lowercase: values.name.toLowerCase(),
+          startDate: new Date(values.startDate),
+        } as any);
 
-    if (result.errors) {
-      toast({
-        variant: 'destructive',
-        title: t('error'),
-        description: result.message,
+        // Best-effort activity log; don't block on failure
+        addDoc(collection(firestore, 'activityLog'), {
+          message: `Project details updated for: ${values.name}`,
+          type: 'PROJECT_UPDATED',
+          link: `/projects/${projectToEdit.id}`,
+          timestamp: serverTimestamp(),
+        }).catch((err) => {
+          console.warn('Failed to write activity log for project update:', err);
+        });
+
+        toast({ title: t('success'), description: 'Project updated successfully.' });
+        setIsDialogOpen(false);
+        setProjectToEdit(null);
+      } catch (error: any) {
+        console.error('Failed to update project:', error);
+        toast({ variant: 'destructive', title: t('error'), description: 'Failed to update project.' });
+      }
+      return;
+    }
+
+    // Create project on the client so Firestore rules can use the signed-in user's auth
+    try {
+      const data = {
+        ...values,
+        name_lowercase: values.name.toLowerCase(),
+        progress: 0,
+        startDate: new Date(values.startDate),
+        createdAt: serverTimestamp(),
+      } as any;
+
+      const projRef = await addDoc(collection(firestore, 'projects'), data);
+
+      // Best-effort activity log; don't block on failure
+      addDoc(collection(firestore, 'activityLog'), {
+        message: `New project created: ${values.name}`,
+        type: 'PROJECT_CREATED',
+        link: `/projects/${projRef.id}`,
+        timestamp: serverTimestamp(),
+      }).catch((err) => {
+        console.warn('Failed to write activity log for project create:', err);
       });
-    } else {
-      toast({
-        title: t('success'),
-        description: result.message,
-      });
+
+  toast({ title: t('success'), description: 'Project added successfully.' });
       setIsDialogOpen(false);
       setProjectToEdit(null);
+    } catch (error: any) {
+      console.error('Failed to add project:', error);
+  toast({ variant: 'destructive', title: t('error'), description: 'Failed to add project.' });
     }
   }
 
@@ -259,23 +304,30 @@ export default function ProjectsPage() {
     if (!projectToDelete) return;
 
     setIsDeleting(true);
-    const result = await deleteProject(projectToDelete.id);
-    setIsDeleting(false);
+    try {
+      const id = projectToDelete.id;
+      const name = projectToDelete.name;
+      await deleteDoc(doc(firestore, 'projects', id));
 
-    if (result.success) {
-      toast({
-        title: t('success'),
-        description: result.message,
+      // Best-effort activity log; don't block on failure
+      addDoc(collection(firestore, 'activityLog'), {
+        message: `Project deleted: ${name}`,
+        type: 'PROJECT_DELETED',
+        link: `/projects`,
+        timestamp: serverTimestamp(),
+      }).catch((err) => {
+        console.warn('Failed to write activity log for project delete:', err);
       });
-    } else {
-      toast({
-        variant: 'destructive',
-        title: t('error'),
-        description: result.message,
-      });
+
+      toast({ title: t('success'), description: 'Project deleted successfully.' });
+    } catch (error: any) {
+      console.error('Failed to delete project:', error);
+      toast({ variant: 'destructive', title: t('error'), description: 'Failed to delete project.' });
+    } finally {
+      setIsDeleting(false);
+      setIsDeleteDialogOpen(false);
+      setProjectToDelete(null);
     }
-    setIsDeleteDialogOpen(false);
-    setProjectToDelete(null);
   }
 
   const formatCurrency = (value: number) => {
@@ -652,7 +704,7 @@ export default function ProjectsPage() {
               ) : (
                 <TableRow>
                   <TableCell colSpan={8} className="h-24 text-center">
-                    {t('clients.no_clients_match_filters')}
+                    {t('projects.no_projects_match_filters')}
                   </TableCell>
                 </TableRow>
               )}
